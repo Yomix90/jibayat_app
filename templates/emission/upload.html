@@ -181,6 +181,13 @@
                         <input type="number" name="annee" class="form-control" placeholder="Ex: {{ today.year }} (Laisser vide pour auto)">
                     </div>
                 </div>
+                <div class="row mt-3">
+                    <div class="col-md-6 form-group">
+                        <label>Montant Total des Émissions Collectives (DH)</label>
+                        <input type="number" step="0.01" name="montant_collectif" class="form-control" placeholder="Laisser vide pour auto-calcul">
+                        <small class="form-text text-muted">Sera utilisé comme "Montant Total Des Émissions De La Collective" dans le PDF. Par défaut : somme des lignes importées.</small>
+                    </div>
+                </div>
                 <div class="form-text mt-3 text-muted" style="font-size:0.8rem;">
                     <i style="color:#e8a020">⚠️ Note :</i> Le système recherchera automatiquement <strong>"MOIS :"</strong> et <strong>"ANNEE :"</strong> dans l'en-tête du document. Il n'est pas nécessaire de remplir ces champs sauf si l'auto-détection échoue.
                 </div>

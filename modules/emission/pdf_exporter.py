@@ -78,7 +78,7 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     ps_left_bold = ParagraphStyle('LB', parent=ps_left, fontName='Helvetica-Bold')
     ps_left_sm = ParagraphStyle('LSm', parent=ps_left, fontSize=8, textColor=colors.HexColor('#555'))
 
-    # ── HEADER (French) ──
+    # ── HEADER (French, all uppercase) ──
     header_data = [
         [Paragraph(f"<b>{COMMUNE_CONFIG['pays']}</b>", ps_left_bold),
          Paragraph(f"<b>{COMMUNE_CONFIG['ministere']}</b>", ps_right := ParagraphStyle('R', parent=ps_left, alignment=TA_RIGHT, fontName='Helvetica-Bold', fontSize=10))],
@@ -94,13 +94,11 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     # Gold line
     elements.append(HRFlowable(width="100%", thickness=1, color=_GOLD, spaceBefore=4, spaceAfter=4))
 
-    # Province & Commune
-    province_info = f"{COMMUNE_CONFIG.get('prefecture', 'Préfecture de')} {COMMUNE_CONFIG['province']}"
-    elements.append(Paragraph(province_info, ps_left))
-    elements.append(Paragraph(COMMUNE_CONFIG['nom'], ps_left_bold))
-
-    # Separator line
-    elements.append(HRFlowable(width="60%", thickness=0.5, color=navy, spaceBefore=6, spaceAfter=2))
+    # Province & Commune — each on its own line, all uppercase
+    prefecture_label = COMMUNE_CONFIG.get('prefecture', 'PRÉFECTURE DE').upper()
+    elements.append(Paragraph(f"{prefecture_label} ..........", ps_left))
+    elements.append(Paragraph(COMMUNE_CONFIG['province'].upper(), ps_left))
+    elements.append(Paragraph(COMMUNE_CONFIG['nom'].upper(), ps_left_bold))
 
     elements.append(Spacer(1, 12))
 

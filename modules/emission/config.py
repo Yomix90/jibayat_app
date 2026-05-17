@@ -17,6 +17,10 @@ MOIS_NOMS = {
     9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
 }
 
+# Valeur initiale par défaut pour "Montant Total Des Emissions De La Collective"
+# Utilisée comme référence dans la page d'émission ; peut être modifiée par import.
+MONTANT_COLLECTIF_DEFAUT = 0.0
+
 # Mapping Code Budgétaire → (nom_feuille, intitulé)
 CODE_TO_RUBRIQUE = {
     "1140201016": ("Trans-Public", "Taxe sur le transport public des voyageurs"),

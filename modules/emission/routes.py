@@ -101,12 +101,17 @@ def upload():
         for l in parsed['lignes']:
             conn.execute('INSERT INTO lignes_recettes (bordereau_id, code_budgetaire, nature_recette, montant) VALUES (?, ?, ?, ?)',
                         (bv_id, l['code_budgetaire'], l['nature_recette'], l['montant']))
-                        
+
+        # Optional: override total collectif with user-provided value
+        montant_collectif = request.form.get('montant_collectif', type=float)
+        if montant_collectif is not None:
+            conn.execute('UPDATE bordereaux_versement SET total_general=? WHERE id=?', (montant_collectif, bv_id))
+
         conn.commit()
         conn.close()
-        
+
         generer_tous_bordereaux(bv_id, EXPORT_DIR)
-        
+
         flash(f"Import réussi pour {MOIS_NOMS.get(mois)} {annee}. {len(parsed['lignes'])} rubriques trouvées.", 'success')
         return redirect(url_for('emission.view', annee=annee, mois=mois))
         
