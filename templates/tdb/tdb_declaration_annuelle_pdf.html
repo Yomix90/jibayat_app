@@ -15,7 +15,7 @@
 
   /* En-tête */
   .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-    margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px solid #1e3a5f; }
+    margin-bottom: 14px; padding-bottom: 14px; border-bottom: 3px double #1e3a5f; }
   .box-left { width: 35%; font-size: 10pt; font-weight: 700; color: #1e3a5f; line-height: 1.9; }
   .box-center { width: 25%; text-align: center; }
   .box-right { width: 35%; font-size: 10.5pt; font-weight: 800; text-align: center; }
@@ -27,7 +27,7 @@
 
   /* Titre */
   .main-title { text-align: center; margin: 14px 0 10px; }
-  .main-title h1 { font-size: 17pt; font-weight: 900; color: #1e3a5f; margin-bottom: 4px; }
+  .main-title h1 { font-size: 22pt; font-weight: 900; color: #1e3a5f; margin-bottom: 4px; }
   .main-title h2 { font-size: 13pt; font-weight: 700; color: #333;
     border-bottom: 2px solid #c8a84b; display: inline-block; padding: 2px 30px; }
 
@@ -72,11 +72,11 @@
 <div class="header">
   <div class="box-left">
     <div style="font-size:13pt;font-weight:900">المملكة المغربية</div>
-    <hr style="border:none;border-top:1px solid #c8a84b;margin:4px auto;width:50%">
+    <hr style="border:none;border-top:1px solid #c8a84b;margin:6px auto;width:60%">
     <div>وزارة الداخلية</div>
-    <div style="font-size:9pt;color:#444">جهة {{ region_ar }}</div>
-    <div style="font-size:9pt;color:#444">عمالة/إقليم {{ province_ar or province or '..................' }}</div>
-    <div style="margin-top:3px">جماعة <strong style="color:#c8a84b;font-size:12pt">{{ commune_ar or commune }}</strong></div>
+    <div style="font-size:10pt;color:#444">جهة {{ region_ar }}</div>
+    <div style="font-size:10pt;color:#444">عمالة/إقليم {{ province_ar or province or '..................' }}</div>
+    <div style="margin-top:4px">جماعة <strong style="color:#c8a84b;font-size:12pt">{{ commune_ar or commune }}</strong></div>
     <div style="font-size:9pt">مكتب الوعاء الضريبي</div>
   </div>
   <div class="box-center">

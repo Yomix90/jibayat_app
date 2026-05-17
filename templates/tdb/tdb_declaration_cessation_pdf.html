@@ -7,38 +7,38 @@
 <style>
   @page { size: A4 portrait; margin: 15mm 18mm 20mm 18mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Cairo', sans-serif; font-size: 13pt; color: #111; direction: rtl; line-height: 2; background: #fff; }
+  body { font-family: 'Cairo', sans-serif; font-size: 11.5pt; color: #111; direction: rtl; line-height: 1.8; background: #fff; }
   .no-print { text-align: center; margin-bottom: 16px; }
   .btn-print { background: linear-gradient(135deg, #1e3a5f, #2a5298); color: #fff; border: none;
     border-radius: 8px; padding: 10px 28px; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
-  @media print { .no-print { display: none; } }
+  @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
   /* En-tête */
-  .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
-  .box-right { width: 33%; font-size: 12pt; font-weight: 700; color: #222; line-height: 1.8; }
-  .box-center { width: 34%; text-align: center; font-size: 15pt; font-weight: 900; color: #111; display:flex; align-items:center; justify-content:center; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 20px; border-bottom: 3px double #1e3a5f; padding-bottom: 14px; }
+  .box-right { width: 33%; font-size: 12pt; font-weight: 700; color: #1e3a5f; line-height: 1.8; }
+  .box-center { width: 34%; text-align: center; font-size: 15pt; font-weight: 900; color: #1e3a5f; display:flex; align-items:center; justify-content:center; }
   .box-left { width: 33%; font-size: 11pt; font-weight: 600; line-height: 1.8; }
 
   /* Titre */
   .main-title { text-align: center; margin: 30px 0 40px; }
-  .main-title h1 { font-size: 22pt; font-weight: 900; color: #111; display: inline-block; }
+  .main-title h1 { font-size: 22pt; font-weight: 900; color: #1e3a5f; display: inline-block; }
 
   /* Formulaire */
   .form-container { padding: 0 10px; }
   .form-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 20px; }
   .form-label { font-size: 13pt; font-weight: 600; white-space: nowrap; }
-  .form-line { flex: 1; border-bottom: 1px dotted #333; min-height: 24px; padding: 0 10px; font-weight: 700; font-size: 13pt; color: #1e3a5f; }
+  .form-line { flex: 1; border-bottom: 1.5px solid #333; min-height: 24px; padding: 0 10px; font-weight: 700; font-size: 13pt; color: #1e3a5f; }
   
   .checkbox-group { display: flex; gap: 40px; margin: 10px 0 5px 0; align-items: center; justify-content: center; }
   .checkbox-item { font-size: 13pt; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .checkbox-box { width: 22px; height: 22px; border: 2px solid #111; display: inline-block; }
+  .checkbox-box { width: 22px; height: 22px; border: 2px solid #1e3a5f; display: inline-block; }
 
   /* Declaration */
   .declaration-text { margin-top: 50px; font-size: 13pt; text-align: center; font-weight: 600; }
   .date-row { text-align: left; margin-top: 30px; font-size: 13pt; padding-left: 40px; }
   
   /* Footer */
-  .footer-note { border-top: 2px solid #333; margin-top: 60px; padding-top: 15px; font-size: 11pt; color: #333; text-align: justify; line-height: 1.8; font-weight: 600; }
+  .footer-note { border-top: 1.5px dashed #999; margin-top: 60px; padding-top: 15px; font-size: 11pt; color: #333; text-align: justify; line-height: 1.8; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -52,11 +52,11 @@
 <div class="header">
   <div class="box-right">
     <div style="font-size:13pt;font-weight:900">المملكة المغربية</div>
-    <hr style="border:none;border-top:1px solid #c8a84b;margin:4px auto;width:50%">
+    <hr style="border:none;border-top:1px solid #c8a84b;margin:6px auto;width:60%">
     <div>وزارة الداخلية</div>
-    <div style="font-size:9pt;color:#444">جهة {{ region_ar }}</div>
-    <div style="font-size:9pt;color:#444">عمالة/إقليم {{ province_ar or province or '..................' }}</div>
-    <div style="margin-top:3px">جماعة <strong style="color:#c8a84b;font-size:12pt">{{ commune_ar or commune }}</strong></div>
+    <div style="font-size:10pt;color:#444">جهة {{ region_ar }}</div>
+    <div style="font-size:10pt;color:#444">عمالة/إقليم {{ province_ar or province or '..................' }}</div>
+    <div style="margin-top:4px">جماعة <strong style="color:#c8a84b;font-size:12pt">{{ commune_ar or commune }}</strong></div>
   </div>
   <div class="box-center">
     الرسم على محال<br>بيع المشروبات

@@ -12,9 +12,9 @@
   .no-print { text-align: center; margin-bottom: 18px; display: flex; gap: 10px; justify-content: center; }
   .btn-print { background: linear-gradient(135deg, #1e3a5f, #2a5298); color: #fff; border: none; border-radius: 8px; padding: 10px 28px; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
   .btn-back { background: #6c757d; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
-  @media print { .no-print { display: none; } }
+  @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
-  .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #1e3a5f; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 3px double #1e3a5f; }
   .box-kingdom { width: 35%; font-size: 10.5pt; font-weight: 700; color: #1e3a5f; line-height: 1.9; text-align: right; }
   .box-kingdom .commune { font-size: 12pt; font-weight: 900; color: #c8a84b; margin-top: 4px; }
   .box-logo { width: 10%; text-align: center; }
@@ -42,7 +42,7 @@
   .module-header { background: #1e3a5f; color: #fff; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 10.5pt; }
   .module-header .mod-total { color: #ffc107; font-size: 12pt; }
   .detail-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
-  .detail-table th { background: #eef2ff; color: #1e3a5f; padding: 6px 10px; text-align: center; font-weight: 700; border: 1px solid #d1d5db; }
+  .detail-table th { background: #1e3a5f; color: #fff; padding: 6px 10px; text-align: center; font-weight: 700; border: 1px solid #d1d5db; }
   .detail-table td { border: 1px solid #d1d5db; padding: 6px 10px; text-align: center; }
   .detail-table tr:nth-child(even) td { background: #f8f9fc; }
 

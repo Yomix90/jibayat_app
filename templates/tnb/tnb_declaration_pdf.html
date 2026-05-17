@@ -37,7 +37,7 @@
     transition: transform .15s;
   }
   .btn-print:hover { transform: translateY(-1px); }
-  @media print { .no-print { display: none; } }
+  @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
   /* ── En-tête trois colonnes ── */
   .header {

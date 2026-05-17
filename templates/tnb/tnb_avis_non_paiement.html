@@ -14,12 +14,12 @@
   .btn-print { background: linear-gradient(135deg, #1e3a5f, #2a5298); color: #fff; border: none;
     border-radius: 8px; padding: 10px 28px; font-family: 'Cairo', sans-serif; font-size: 13px;
     font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(30,58,95,.3); }
-  @media print { .no-print { display: none; } }
+  @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
   /* ── EN-TÊTE ── */
   .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-            margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #1e3a5f; }
-  .box-kingdom { width: 35%; font-size: 10.5pt; font-weight: 700; color: #1e3a5f; line-height: 1.9; text-align: right; }
+            margin-bottom: 18px; padding-bottom: 14px; border-bottom: 3px double #1e3a5f; }
+  .box-kingdom { width: 32%; font-size: 10.5pt; font-weight: 700; color: #1e3a5f; line-height: 1.9; text-align: right; }
   .box-kingdom .commune { font-size: 12pt; font-weight: 900; color: #c8a84b; margin-top: 4px; }
   .box-logo { width: 12%; text-align: center; }
   .box-logo .seal { width: 72px; height: 72px; border: 3px double #1e3a5f; border-radius: 50%;
