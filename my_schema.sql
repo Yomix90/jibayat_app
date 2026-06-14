@@ -404,3 +404,14 @@ CREATE TABLE lettres_details (
     montant_du REAL,
     statut_envoi TEXT DEFAULT "inclus"
 );
+
+CREATE TABLE emission_config (
+    annee INTEGER PRIMARY KEY,
+    premiere_partie_mode TEXT DEFAULT 'auto',
+    premiere_partie_valeur REAL DEFAULT 0.0,
+    deuxieme_partie_mode TEXT DEFAULT 'vide',
+    deuxieme_partie_valeur REAL DEFAULT 0.0,
+    notes TEXT,
+    date_modification TEXT DEFAULT CURRENT_TIMESTAMP
+);
+

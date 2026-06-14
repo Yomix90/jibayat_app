@@ -20,7 +20,7 @@ def get_db():
     return conn
 
 # ── Système de versions de schéma ───────────────────────────
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 def _get_schema_version(conn):
     try:
@@ -564,6 +564,15 @@ CREATE TABLE IF NOT EXISTS bordereaux_emission (
     chemin_xlsx TEXT,
     date_generation DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS emission_config (
+    annee INTEGER PRIMARY KEY,
+    premiere_partie_mode TEXT DEFAULT 'auto',
+    premiere_partie_valeur REAL DEFAULT 0.0,
+    deuxieme_partie_mode TEXT DEFAULT 'vide',
+    deuxieme_partie_valeur REAL DEFAULT 0.0,
+    notes TEXT,
+    date_modification TEXT DEFAULT CURRENT_TIMESTAMP
+);
 
     ''')
         conn.commit()
@@ -607,6 +616,27 @@ CREATE TABLE IF NOT EXISTS bordereaux_emission (
             _logger.debug(f'Colonne bordereaux_emission.code_budgetaire existe déjà: {e}')
 
         _set_schema_version(conn, 2)
+
+    # -- Migrations version 2→3 : table emission_config
+    if current_ver < 3:
+        try:
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS emission_config (
+                    annee INTEGER PRIMARY KEY,
+                    premiere_partie_mode TEXT DEFAULT 'auto',
+                    premiere_partie_valeur REAL DEFAULT 0.0,
+                    deuxieme_partie_mode TEXT DEFAULT 'vide',
+                    deuxieme_partie_valeur REAL DEFAULT 0.0,
+                    notes TEXT,
+                    date_modification TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
+            _logger.info('Table emission_config créée')
+        except Exception as e:
+            _logger.error(f"Erreur lors de la création de la table emission_config: {e}")
+
+        _set_schema_version(conn, 3)
 
     # ── Données initiales (uniquement si version 0) ──────────────
     import hashlib as _h
