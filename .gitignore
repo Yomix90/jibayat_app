@@ -29,7 +29,6 @@ database.db
 *.sqlite3
 
 # ── Configuration locale (données sensibles) ─
-config.json
 last_update.txt
 
 # ── Distribution PyInstaller ─────────────────
