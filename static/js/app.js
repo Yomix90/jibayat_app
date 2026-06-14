@@ -112,9 +112,12 @@ function _confirmReject() {
   _confirmForm = null;
 }
 
-document.getElementById('confirm-overlay').addEventListener('click', function(e) {
-  if (e.target === this) _confirmReject();
-});
+const _confirmOverlay = document.getElementById('confirm-overlay');
+if (_confirmOverlay) {
+  _confirmOverlay.addEventListener('click', function(e) {
+    if (e.target === this) _confirmReject();
+  });
+}
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') _confirmReject();
 });

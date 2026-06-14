@@ -1,15 +1,42 @@
-COMMUNE_CONFIG = {
-    "nom": "Commune Ait Amira",
-    "nom_ar": "جماعة أيت عميرة",
-    "province": "Province de Ctouka Ait Baha",
-    "province_ar": "إقليم شتوكة آيت باها",
-    "region_ar": "جهة سوس ماسة",
-    "prefecture": "Préfecture de",
-    "pays": "ROYAUME DU MAROC",
-    "pays_ar": "المملكة المغربية",
-    "ministere": "MINISTERE DE L'INTERIEUR",
-    "ministere_ar": "وزارة الداخلية",
-}
+import os
+import json
+
+def _load_commune_config():
+    """Load commune info from config.json at project root, fall back to defaults."""
+    config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config.json')
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        c = data.get('commune', {})
+        return {
+            "nom": c.get('nom', 'COMMUNE'),
+            "nom_ar": c.get('nom_ar', ''),
+            "province": c.get('province', ''),
+            "province_ar": c.get('province_ar', ''),
+            "region": c.get('region', ''),
+            "region_ar": c.get('region_ar', ''),
+            "prefecture": "Province de",
+            "pays": "ROYAUME DU MAROC",
+            "pays_ar": "المملكة المغربية",
+            "ministere": "MINISTERE DE L'INTERIEUR",
+            "ministere_ar": "وزارة الداخلية",
+        }
+    except Exception:
+        return {
+            "nom": "Commune Ait Amira",
+            "nom_ar": "جماعة أيت عميرة",
+            "province": "Province de Ctouka Ait Baha",
+            "province_ar": "إقليم شتوكة آيت باها",
+            "region": "Sous Massa",
+            "region_ar": "جهة سوس ماسة",
+            "prefecture": "Province de",
+            "pays": "ROYAUME DU MAROC",
+            "pays_ar": "المملكة المغربية",
+            "ministere": "MINISTERE DE L'INTERIEUR",
+            "ministere_ar": "وزارة الداخلية",
+        }
+
+COMMUNE_CONFIG = _load_commune_config()
 
 MOIS_NOMS = {
     1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",

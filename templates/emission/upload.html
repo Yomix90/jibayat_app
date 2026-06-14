@@ -141,6 +141,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-8 col-md-10">
         <form method="post" action="{{ url_for('emission.upload') }}" enctype="multipart/form-data" id="uploadForm" onsubmit="document.getElementById('loadingOverlay').style.display='flex';">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
             
             <div class="file-upload-wrapper" id="dropZone">
                 <div class="file-upload-icon">📄</div>

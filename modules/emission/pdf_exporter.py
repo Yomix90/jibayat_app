@@ -12,6 +12,7 @@ from .config import COMMUNE_CONFIG
 _NAVY = colors.HexColor('#1e3a5f')
 _GOLD = colors.HexColor('#c8a84b')
 _LIGHT_GRAY = colors.HexColor('#f0f2f5')
+_GREEN = colors.HexColor('#1a7a4a')
 
 # Try to register an Arabic-capable font; fall back if unavailable
 _AR_FONT = 'Helvetica'
@@ -27,6 +28,8 @@ for _path, _name in [
             pass
 
 def format_dh(val):
+    if val is None:
+        return 'xxxxxxxxxx'
     return f"{val:,.2f}".replace(",", " ")
 
 def _colored_table(header_row, data_rows, col_widths, total_idx=None):
@@ -57,6 +60,7 @@ def _colored_table(header_row, data_rows, col_widths, total_idx=None):
     t.setStyle(TableStyle(style_cmds))
     return t
 
+
 def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     doc = SimpleDocTemplate(
         output_path,
@@ -77,13 +81,19 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     ps_left = ParagraphStyle('L', parent=styles['Normal'], alignment=TA_LEFT, fontName='Helvetica', fontSize=9)
     ps_left_bold = ParagraphStyle('LB', parent=ps_left, fontName='Helvetica-Bold')
     ps_left_sm = ParagraphStyle('LSm', parent=ps_left, fontSize=8, textColor=colors.HexColor('#555'))
+    ps_right = ParagraphStyle('R', parent=styles['Normal'], alignment=TA_RIGHT, fontName='Helvetica-Bold', fontSize=10)
 
-    # ── HEADER (French, all uppercase) ──
-    header_data = [
-        [Paragraph(f"<b>{COMMUNE_CONFIG['pays']}</b>", ps_left_bold),
-         Paragraph(f"<b>{COMMUNE_CONFIG['ministere']}</b>", ps_right := ParagraphStyle('R', parent=ps_left, alignment=TA_RIGHT, fontName='Helvetica-Bold', fontSize=10))],
+    # ═══════════════════════════════════════════════════════════════
+    # HEADER — Commune information from config
+    # ═══════════════════════════════════════════════════════════════
+    commune = COMMUNE_CONFIG
+
+    # Row 1: ROYAUME DU MAROC  |  MINISTERE DE L'INTERIEUR
+    hdr_row1 = [
+        Paragraph(f"<b>{commune['pays']}</b>", ps_left_bold),
+        Paragraph(f"<b>{commune['ministere']}</b>", ps_right),
     ]
-    hdr_table = Table(header_data, colWidths=[260, 260])
+    hdr_table = Table([hdr_row1], colWidths=[260, 260])
     hdr_table.setStyle(TableStyle([
         ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
@@ -91,16 +101,49 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     ]))
     elements.append(hdr_table)
 
-    # Gold line
-    elements.append(HRFlowable(width="100%", thickness=1, color=_GOLD, spaceBefore=4, spaceAfter=4))
+    # Gold separator
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=_GOLD, spaceBefore=4, spaceAfter=6))
 
-    # Province & Commune — each on its own line, all uppercase
-    prefecture_label = COMMUNE_CONFIG.get('prefecture', 'PRÉFECTURE DE').upper()
-    elements.append(Paragraph(f"{prefecture_label} ..........", ps_left))
-    elements.append(Paragraph(COMMUNE_CONFIG['province'].upper(), ps_left))
-    elements.append(Paragraph(COMMUNE_CONFIG['nom'].upper(), ps_left_bold))
+    # Province / Commune block (left column) + Region (right column)
+    province_label = commune.get('prefecture', 'Province de')
+    province_name = commune.get('province', '')
+    commune_nom = commune.get('nom', '')
+    region_name = commune.get('region', '')
 
-    elements.append(Spacer(1, 12))
+    commune_block_left = [
+        Paragraph(f"{province_label} : <b>{province_name.upper()}</b>", ps_left),
+        Paragraph(f"Commune de : <b>{commune_nom.upper()}</b>", ps_left_bold),
+    ]
+    commune_block_right = [
+        Paragraph(f"Région : <b>{region_name.upper()}</b>", ps_right),
+    ]
+
+    hdr_commune = Table(
+        [['\n'.join([f"{province_label} : {province_name.upper()}",
+                     f"Commune de : {commune_nom.upper()}",
+                    ]),
+          f"Région : {region_name.upper()}"]],
+        colWidths=[310, 210]
+    )
+    # Use Paragraphs for proper rendering
+    hdr_commune2 = Table(
+        [[
+            [Paragraph(f"{province_label} : <b>{province_name.upper()}</b>", ps_left),
+             Paragraph(f"Commune de : <b>{commune_nom.upper()}</b>", ps_left_bold)],
+            Paragraph(f"Région : <b>{region_name.upper()}</b>", ps_right),
+        ]],
+        colWidths=[310, 210]
+    )
+    hdr_commune2.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(hdr_commune2)
+
+    elements.append(Spacer(1, 10))
 
     # ── TITLE ──
     title_style = ParagraphStyle('Title', parent=ps_center_bold, fontSize=14, textColor=navy, spaceAfter=4)
@@ -150,7 +193,9 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     elements.append(Paragraph("(1) Titre D'annulation N° .........................................", ps_left))
     elements.append(Spacer(1, 14))
 
-    # ── FIRST TABLE ──
+    # ═══════════════════════════════════════════════════════════════
+    # TABLE 1 — Montants rubrique vs émissions collectives
+    # ═══════════════════════════════════════════════════════════════
     col_widths = [180, 100, 110, 110]
     t1_header = ['', 'Montant De La\nRubrique', 'Montant Total Des\nEmissions Collectives', '']
     t1_data = [
@@ -166,11 +211,37 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     elements.append(t1)
     elements.append(Spacer(1, 8))
 
-    # ── SECOND TABLE ──
+    # ═══════════════════════════════════════════════════════════════
+    # TABLE 2 — 1ère Partie / 2ème Partie
+    # ═══════════════════════════════════════════════════════════════
+    # Resolve display values
+    premiere_val = be.get('premiere_partie_global')
+    deuxieme_val = be.get('deuxieme_partie_global')  # None = vide
+
+    # For 1ère Partie column: per-rubrique cumul or override
+    premiere_mode = be.get('premiere_partie_mode', 'auto')
+    deuxieme_mode = be.get('deuxieme_partie_mode', 'vide')
+
+    # 1ère Partie: cumul antérieur global (all rubriques prior months)
+    p1_col3_report     = format_dh(premiere_val)         # report anterieurs collectif
+    p1_col4_report     = 'xxxxxxxxxx'                     # 2ème Partie report
+    p1_col3_net        = format_dh(premiere_val)          # Montant Net Antérieurs
+    p1_col4_net        = format_dh(deuxieme_val) if deuxieme_val is not None else 'xxxxxxxxxx'
+
+    # Total général admis
+    total_global = (premiere_val or 0.0) + be['total_present_global']
+    p1_total_global = format_dh(total_global)
+
     t2_header = ['Libellé', 'Montant', '1ère Partie', '2ème Partie']
     t2_data = [
-        ['Montant Brut Du Présent Bordereau', format_dh(be['total']), 'xxxxxxxxxxxx', 'xxxxxxxxxxxx'],
-        ['Montant Net Des Antérieurs', 'xxxxxxxxxxxx', format_dh(be['report_global']), ''],
+        ['Montant Brut Du Présent Bordereau',
+         format_dh(be['total']),
+         'xxxxxxxxxx',
+         'xxxxxxxxxx'],
+        ['Montant Net Des Antérieurs',
+         'xxxxxxxxxx',
+         p1_col3_report,
+         p1_col4_report],
         ['TITRE REJETS', '........................', '', ''],
         ['N° ....................................', '........................', '', ''],
         ['N° ....................................', '........................', '', ''],
@@ -178,8 +249,14 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
         ['N° ....................................', '........................', '', ''],
         ['N° ....................................', '........................', '', ''],
         ['Total Rejeté', '........................', '', ''],
-        ['Montant Net Admis', format_dh(be['total']), format_dh(be['total_present_global']), ''],
-        ['Total Général Admis', 'xxxxxxxxxxxx', format_dh(be['report_global'] + be['total_present_global']), ''],
+        ['Montant Net Admis',
+         format_dh(be['total']),
+         format_dh(be['total_present_global']),
+         format_dh(deuxieme_val) if deuxieme_val is not None else ''],
+        ['Total Général Admis',
+         'xxxxxxxxxx',
+         p1_total_global,
+         ''],
     ]
     t2 = _colored_table(t2_header, t2_data, col_widths, total_idx=None)
     elements.append(t2)
@@ -187,7 +264,7 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     elements.append(Spacer(1, 8))
 
     # ── TOTAL box ──
-    total_val = be['report_global'] + be['total_present_global']
+    total_val = total_global
     total_rows = [
         ['', 'TOTAL GÉNÉRAL ADMIS', format_dh(total_val), ''],
     ]
@@ -210,8 +287,9 @@ def export_bordereau_pdf(be: dict, date_str: str, output_path: str):
     # ── SIGNATURE ──
     elements.append(Spacer(1, 18))
 
+    commune_short = commune_nom.upper().replace('COMMUNE ', '').replace('AIT ', 'AÏT ')
     sig_data = [
-        [f"A {COMMUNE_CONFIG['nom'].replace('Commune ', '').upper()} LE ................",
+        [f"A {commune_short} LE ................",
          "",
          "Vu Pour Confirmation\nDe La Prise En Charge"],
         ["",

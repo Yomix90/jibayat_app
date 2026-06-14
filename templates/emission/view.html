@@ -39,6 +39,68 @@
 .kpi-icon { font-size: 1.5rem; margin-bottom: 8px; display: block; }
 .kpi-val { font-size: 1.9rem; font-weight: 900; color: var(--kpi-color, var(--primary)); line-height: 1; }
 .kpi-label { font-size: .7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 4px; }
+
+/* ── Config Modal Styles ── */
+.config-modal .modal { max-width: 600px; width: 95vw; }
+.config-section {
+  border: 1px solid var(--border, #dee2e6);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  background: var(--surface, #f8f9fa);
+}
+.config-section-title {
+  font-size: .8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.config-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.mode-radio-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.mode-radio-btn {
+  flex: 1; min-width: 110px;
+  padding: 8px 12px;
+  border: 2px solid var(--border, #dee2e6);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  font-size: .8rem;
+  font-weight: 600;
+  transition: all .2s;
+  background: white;
+  color: #666;
+}
+.mode-radio-btn:hover { border-color: var(--primary); color: var(--primary); }
+.mode-radio-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+.mode-radio-btn input[type=radio] { display: none; }
+
+.config-val-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.config-val-row label { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.config-val-row input { flex: 1; }
+
+.partie-info-box {
+  background: color-mix(in srgb, #3498db 8%, transparent);
+  border-left: 3px solid #3498db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: .78rem;
+  color: #34495e;
+  margin-top: 8px;
+}
 </style>
 {% endblock %}
 
@@ -56,6 +118,11 @@
     <a href="{{ url_for('emission.dashboard', annee=bv.annee) }}" class="btn btn-outline btn-sm">
       <i class="bi bi-arrow-left"></i> Retour
     </a>
+    <button type="button" class="btn btn-sm" id="btnOpenConfig"
+            style="background:#8e44ad; color:white; border-color:#7d3c98;"
+            onclick="openModal('configModal')">
+      ⚙️ Configuration
+    </button>
     <button type="button" class="btn btn-success btn-sm" onclick="openModal('addModal')" style="background:#27ae60; border-color:#219653;">
       <i class="bi bi-plus-circle"></i> Ajouter une Rubrique
     </button>
@@ -77,6 +144,35 @@
     <div class="kpi-label">Rubriques Traitées</div>
   </div>
   <div class="kpi-card" style="--kpi-color:#3498db">
+    <span class="kpi-icon">📊</span>
+    <div class="kpi-val" style="font-size:1.25rem; margin-top:4px;">{{ "%.2f"|format(premiere_partie_val) }} DH</div>
+    <div class="kpi-label">
+      1ère Partie
+      <span style="font-size:.65rem; background:#3498db; color:white; border-radius:10px; padding:1px 6px; margin-left:4px;">
+        {{ em_config.premiere_partie_mode|upper }}
+      </span>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#e67e22">
+    <span class="kpi-icon">📈</span>
+    {% if deuxieme_partie_val is not none %}
+    <div class="kpi-val" style="font-size:1.25rem; margin-top:4px;">{{ "%.2f"|format(deuxieme_partie_val) }} DH</div>
+    {% else %}
+    <div class="kpi-val" style="font-size:1.25rem; margin-top:4px;">—</div>
+    {% endif %}
+    <div class="kpi-label">
+      2ème Partie
+      <span style="font-size:.65rem; background:#e67e22; color:white; border-radius:10px; padding:1px 6px; margin-left:4px;">
+        {{ em_config.deuxieme_partie_mode|upper }}
+      </span>
+    </div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#16a085">
+    <span class="kpi-icon">🗓️</span>
+    <div class="kpi-val" style="font-size:1rem; margin-top:8px;">{{ "%.2f"|format(cumul_annee) }}</div>
+    <div class="kpi-label">Cumul Annuel (tous mois)</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#c0392b">
     <span class="kpi-icon">🕒</span>
     <div class="kpi-val" style="font-size:1.1rem; margin-top:8px;">{{ bv.date_import }}</div>
     <div class="kpi-label">Date d'importation</div>
@@ -116,6 +212,7 @@
                             
                             <!-- Annuler -->
                             <form action="{{ url_for('emission.edit_montant', annee=bv.annee, mois=bv.mois, code=l.code_budgetaire or 'default') }}" method="POST" style="display:inline;" data-confirm="warning" data-confirm-title="Annuler le montant" data-confirm-msg="Le montant de cette rubrique sera remis à zéro (0.00). Confirmez-vous ?">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                                 <input type="hidden" name="montant" value="0.0">
                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Annuler le montant (Mettre à zéro)">
                                     🚫
@@ -124,6 +221,7 @@
 
                             <!-- Supprimer -->
                             <form action="{{ url_for('emission.delete_montant', annee=bv.annee, mois=bv.mois, code=l.code_budgetaire or 'default') }}" method="POST" style="display:inline;" data-confirm="danger" data-confirm-title="Supprimer la ligne" data-confirm-msg="Cette ligne sera définitivement supprimée. Confirmez-vous ?">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la ligne">
                                     🗑️
                                 </button>
@@ -147,6 +245,139 @@
     </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODAL : Configuration 1ère / 2ème Partie
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay config-modal" id="configModal">
+  <div class="modal">
+    <div class="modal-header" style="background:linear-gradient(135deg,#8e44ad,#6c3483); color:white; border-radius:12px 12px 0 0;">
+      <h3 style="color:white; margin:0;">⚙️ Configuration Émission — {{ bv.annee }}</h3>
+      <button class="modal-close" onclick="closeModal('configModal')" style="color:white; font-size:1.4rem;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('emission.save_config', annee=bv.annee) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="mois_redirect" value="{{ bv.mois }}">
+      <div class="modal-body" style="max-height:70vh; overflow-y:auto; padding:20px;">
+
+        <!-- INFO BOX -->
+        <div style="background:#f0f7ff; border-left:4px solid #3498db; border-radius:6px; padding:10px 14px; margin-bottom:18px; font-size:.82rem; color:#2c3e50;">
+          <strong>ℹ️ Comment ça marche :</strong><br>
+          La <strong>1ère Partie</strong> correspond aux <em>émissions collectives cumulées des mois antérieurs</em>.<br>
+          La <strong>2ème Partie</strong> correspond aux <em>émissions du mois en cours</em>.<br>
+          Ces valeurs apparaissent dans le tableau du PDF de chaque bordereau d'émission.
+        </div>
+
+        <!-- 1ÈRE PARTIE -->
+        <div class="config-section">
+          <div class="config-section-title">
+            <span>📊</span> 1ère Partie
+            <span class="config-badge">Cumul antérieur</span>
+          </div>
+
+          <div class="mode-radio-group" id="p1ModeGroup">
+            <label class="mode-radio-btn {% if em_config.premiere_partie_mode == 'auto' %}active{% endif %}" id="p1-auto-lbl">
+              <input type="radio" name="premiere_partie_mode" value="auto"
+                     {% if em_config.premiere_partie_mode == 'auto' %}checked{% endif %}
+                     onchange="switchMode('p1', 'auto')">
+              🔄 Automatique
+            </label>
+            <label class="mode-radio-btn {% if em_config.premiere_partie_mode == 'manuel' %}active{% endif %}" id="p1-manuel-lbl">
+              <input type="radio" name="premiere_partie_mode" value="manuel"
+                     {% if em_config.premiere_partie_mode == 'manuel' %}checked{% endif %}
+                     onchange="switchMode('p1', 'manuel')">
+              ✏️ Manuel
+            </label>
+          </div>
+
+          <div class="partie-info-box" id="p1-auto-info"
+               style="{% if em_config.premiere_partie_mode != 'auto' %}display:none;{% endif %}">
+            Mode <strong>Automatique</strong> : la valeur est calculée automatiquement comme la somme de toutes
+            les émissions des mois antérieurs à <strong>{{ mois_nom }} {{ bv.annee }}</strong>.
+            <br><strong>Valeur actuelle : {{ "%.2f"|format(premiere_partie_val) }} DH</strong>
+          </div>
+
+          <div class="config-val-row" id="p1-manuel-row"
+               style="{% if em_config.premiere_partie_mode != 'manuel' %}display:none;{% endif %}">
+            <label>Montant (DH) :</label>
+            <input type="number" step="0.01" min="0" name="premiere_partie_valeur"
+                   id="p1ValInput"
+                   class="form-control"
+                   value="{{ em_config.premiere_partie_valeur or 0 }}"
+                   placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- 2ÈME PARTIE -->
+        <div class="config-section">
+          <div class="config-section-title">
+            <span>📈</span> 2ème Partie
+            <span class="config-badge">Mois courant</span>
+          </div>
+
+          <div class="mode-radio-group" id="p2ModeGroup">
+            <label class="mode-radio-btn {% if em_config.deuxieme_partie_mode == 'vide' %}active{% endif %}" id="p2-vide-lbl">
+              <input type="radio" name="deuxieme_partie_mode" value="vide"
+                     {% if em_config.deuxieme_partie_mode == 'vide' %}checked{% endif %}
+                     onchange="switchMode('p2', 'vide')">
+              — Vide
+            </label>
+            <label class="mode-radio-btn {% if em_config.deuxieme_partie_mode == 'auto' %}active{% endif %}" id="p2-auto-lbl">
+              <input type="radio" name="deuxieme_partie_mode" value="auto"
+                     {% if em_config.deuxieme_partie_mode == 'auto' %}checked{% endif %}
+                     onchange="switchMode('p2', 'auto')">
+              🔄 Automatique
+            </label>
+            <label class="mode-radio-btn {% if em_config.deuxieme_partie_mode == 'manuel' %}active{% endif %}" id="p2-manuel-lbl">
+              <input type="radio" name="deuxieme_partie_mode" value="manuel"
+                     {% if em_config.deuxieme_partie_mode == 'manuel' %}checked{% endif %}
+                     onchange="switchMode('p2', 'manuel')">
+              ✏️ Manuel
+            </label>
+          </div>
+
+          <div class="partie-info-box" id="p2-vide-info"
+               style="{% if em_config.deuxieme_partie_mode != 'vide' %}display:none;{% endif %}">
+            La colonne <strong>2ème Partie</strong> restera vide dans le PDF.
+          </div>
+
+          <div class="partie-info-box" id="p2-auto-info"
+               style="{% if em_config.deuxieme_partie_mode != 'auto' %}display:none;{% endif %}">
+            Mode <strong>Automatique</strong> : la valeur est le total général du mois courant
+            (<strong>{{ "%.2f"|format(bv.total_general) }} DH</strong>).
+          </div>
+
+          <div class="config-val-row" id="p2-manuel-row"
+               style="{% if em_config.deuxieme_partie_mode != 'manuel' %}display:none;{% endif %}">
+            <label>Montant (DH) :</label>
+            <input type="number" step="0.01" min="0" name="deuxieme_partie_valeur"
+                   id="p2ValInput"
+                   class="form-control"
+                   value="{{ em_config.deuxieme_partie_valeur or 0 }}"
+                   placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="form-group">
+          <label style="font-size:.82rem; font-weight:700;">Notes (optionnel)</label>
+          <textarea name="notes" class="form-control" rows="2"
+                    placeholder="Remarques sur cette configuration...">{{ em_config.notes or '' }}</textarea>
+        </div>
+
+        <div style="background:#fff8e1; border-left:4px solid #f39c12; border-radius:6px; padding:10px 14px; margin-top:14px; font-size:.8rem; color:#7d6608;">
+          ⚠️ <strong>Note :</strong> La sauvegarde régénère automatiquement <strong>tous les PDFs de l'année {{ bv.annee }}</strong>.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('configModal')">Annuler</button>
+        <button type="submit" class="btn" style="background:#8e44ad; color:white; border-color:#7d3c98;">
+          💾 Sauvegarder &amp; Régénérer PDFs
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal pour l'édition du montant -->
 <div class="modal-overlay" id="editModal">
     <div class="modal">
@@ -155,6 +386,7 @@
             <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
         </div>
         <form id="editForm" method="POST" action="">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
             <div class="modal-body">
                 <div class="form-group mb-3">
                     <label>Nouveau Montant (DH)</label>
@@ -180,6 +412,7 @@
             <button class="modal-close" onclick="closeModal('addModal')">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('emission.add_rubrique', annee=bv.annee, mois=bv.mois) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
             <div class="modal-body">
                 <div class="form-group mb-3">
                     <label>Code Budgétaire</label>
@@ -208,6 +441,27 @@ function editMontant(code, montantActuel) {
     const form = document.getElementById('editForm');
     form.action = `/emission/{{ bv.annee }}/{{ bv.mois }}/edit_montant/${code}`;
     openModal('editModal');
+}
+
+/* ── Config Modal — mode switching ── */
+function switchMode(partie, mode) {
+    const prefix = partie === 'p1' ? 'p1' : 'p2';
+
+    // Deactivate all labels for this partie
+    document.querySelectorAll(`[id^="${prefix}-"][id$="-lbl"]`).forEach(el => {
+        el.classList.remove('active');
+    });
+    // Activate selected
+    const lbl = document.getElementById(`${prefix}-${mode}-lbl`);
+    if (lbl) lbl.classList.add('active');
+
+    // Show/hide info boxes and inputs
+    ['auto', 'vide', 'manuel'].forEach(m => {
+        const info = document.getElementById(`${prefix}-${m}-info`);
+        const row  = document.getElementById(`${prefix}-${m}-row`);
+        if (info) info.style.display = m === mode ? '' : 'none';
+        if (row)  row.style.display  = m === mode ? '' : 'none';
+    });
 }
 </script>
 {% endblock %}

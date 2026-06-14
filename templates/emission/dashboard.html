@@ -70,18 +70,8 @@
 </style>
 {% endblock %}
 
-{% block content %}
 
-{% set total_annee = 0 %}
-{% set nb_mois_importes = 0 %}
-{% set total_rubriques = 0 %}
-{% for m in mois_data %}
-  {% if m.statut == 'importe' %}
-    {% set total_annee = total_annee + m.total %}
-    {% set nb_mois_importes = nb_mois_importes + 1 %}
-    {% set total_rubriques = total_rubriques + m.nb_rubriques %}
-  {% endif %}
-{% endfor %}
+{% block content %}
 
 <div class="mod-header">
   <div class="mod-header-left">
@@ -110,7 +100,7 @@
 <div class="kpi-grid">
   <div class="kpi-card" style="--kpi-color:#27ae60">
     <span class="kpi-icon">💰</span>
-    <div class="kpi-val">{{ "%.2f"|format(total_annee) }}</div>
+    <div class="kpi-val" style="font-size:1.5rem;">{{ "{:,.2f}".format(total_annee).replace(",", " ") }}</div>
     <div class="kpi-label">Total Général {{ annee }} (DH)</div>
   </div>
   
@@ -122,10 +112,11 @@
 
   <div class="kpi-card" style="--kpi-color:#8e44ad">
     <span class="kpi-icon">📋</span>
-    <div class="kpi-val">{{ total_rubriques }}</div>
+    <div class="kpi-val">{{ nb_bordereaux }}</div>
     <div class="kpi-label">Bordereaux Générés</div>
   </div>
 </div>
+
 
 <h4 style="margin-bottom: 16px; font-weight: 800; color: var(--primary);">Vue Mensuelle — {{ annee }}</h4>
 
