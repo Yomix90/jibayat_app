@@ -339,9 +339,11 @@ def api_systeme_github_config():
         return jsonify({'ok': False, 'error': 'Accès refusé'}), 403
 
     cfg = _load_sys_config()
+    cfg['github_user'] = request.form.get('github_user', '').strip() or DEFAULT_GITHUB_USER
+    cfg['github_repo'] = request.form.get('github_repo', '').strip() or DEFAULT_GITHUB_REPO
     cfg['github_token'] = request.form.get('github_token', '').strip()
     _save_sys_config(cfg)
-    return jsonify({'ok': True, 'msg': 'Configuration GitHub sauvegardée.'})
+    return jsonify({'ok': True, 'msg': 'Configuration GitHub sauvegardée avec succès.'})
 
 
 @bp.route('/api/systeme/backup-now', methods=['POST'])
@@ -454,75 +456,21 @@ def api_systeme_test_gdrive():
 @login_required
 def api_systeme_check_update():
     try:
-        import requests as _req
-        cfg = _load_sys_config()
-        token = cfg.get('github_token', '').strip()
-        gh_user = cfg.get('github_user', DEFAULT_GITHUB_USER).strip() or DEFAULT_GITHUB_USER
-        gh_repo = cfg.get('github_repo', DEFAULT_GITHUB_REPO).strip() or DEFAULT_GITHUB_REPO
-
-        local_version = _read_version()
-        headers = {'Accept': 'application/vnd.github.v3+json'}
-        if token:
-            headers['Authorization'] = f'token {token}'
-
-        # 1. Essayer l'API GitHub Releases (Recommandé)
-        release_url = f'https://api.github.com/repos/{gh_user}/{gh_repo}/releases/latest'
-        remote_version = None
-        release_name = None
-        release_body = None
-        download_url = None
-        published_at = None
-
-        try:
-            r = _req.get(release_url, headers=headers, timeout=8)
-            if r.status_code == 200:
-                rel_data = r.json()
-                tag = rel_data.get('tag_name', '').lstrip('v')
-                remote_version = tag
-                release_name = rel_data.get('name', f"Version {tag}")
-                release_body = rel_data.get('body', '')
-                published_at = rel_data.get('published_at', '')[:10]
-                # Rechercher l'asset ZIP JIBAYAT-update.zip
-                for asset in rel_data.get('assets', []):
-                    if asset.get('name', '').endswith('.zip'):
-                        download_url = asset.get('browser_download_url')
-                        break
-        except Exception as e:
-            logger.warning(f"Erreur API releases GitHub: {e}")
-
-        # 2. Fallback sur version.txt si pas de release trouvée
-        if not remote_version:
-            txt_url = f'https://api.github.com/repos/{gh_user}/{gh_repo}/contents/version.txt'
-            headers_raw = {'Accept': 'application/vnd.github.v3.raw'}
-            if token:
-                headers_raw['Authorization'] = f'token {token}'
-            r_txt = _req.get(txt_url, headers=headers_raw, timeout=8)
-            if r_txt.status_code == 200:
-                remote_version = r_txt.text.strip()
-            elif r_txt.status_code == 404:
-                return jsonify({'ok': False, 'error': "Dépôt ou fichier de version introuvable (404). Vérifiez le nom du dépôt ou le Token GitHub."})
-            else:
-                return jsonify({'ok': False, 'error': f'Erreur GitHub (HTTP {r_txt.status_code})'})
-
-        def vt(v):
-            try:
-                return tuple(int(x) for x in v.replace('v', '').split('.') if x.isdigit())
-            except Exception:
-                return (0,)
-
-        has_update = vt(remote_version) > vt(local_version)
+        from modules.updater import check_for_updates
+        res = check_for_updates(force=True)
         return jsonify({
             'ok': True,
-            'local': local_version,
-            'remote': remote_version,
-            'has_update': has_update,
-            'release_name': release_name or f"JIBAYAT v{remote_version}",
-            'release_notes': release_body or "Mise à jour disponible.",
-            'published_at': published_at,
-            'download_url': download_url
+            'local': res.get('local_version', _read_version()),
+            'remote': res.get('remote_version', _read_version()),
+            'has_update': res.get('available', False),
+            'release_name': res.get('release_name', ''),
+            'release_notes': res.get('release_notes', ''),
+            'published_at': res.get('published_at', ''),
+            'download_url': res.get('download_url', '')
         })
     except Exception as ex:
         logger.error(f"Erreur vérification mise à jour: {ex}")
+        return jsonify({'ok': False, 'error': str(ex)})
         return jsonify({'ok': False, 'error': str(ex)})
 
 

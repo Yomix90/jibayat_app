@@ -166,13 +166,31 @@ def _is_protected(relative_path: str) -> bool:
     return False
 
 
+def get_secure_github_token() -> str:
+    """Récupère le token GitHub de manière sécurisée (config, env, ou token chiffré/obfusqué)."""
+    cfg = _load_config()
+    token = cfg.get('github_token', '').strip()
+    if token:
+        return token
+    env_token = os.environ.get('GITHUB_TOKEN') or os.environ.get('JIBAYAT_GH_TOKEN')
+    if env_token and env_token.strip():
+        return env_token.strip()
+    embedded_enc = cfg.get('embedded_gh_token', '')
+    if embedded_enc:
+        try:
+            return base64.b64decode(embedded_enc).decode('utf-8')
+        except Exception:
+            pass
+    return ""
+
+
 # ─────────────────────────────────────────────
 # 3. VÉRIFICATION DES MISES À JOUR
 # ─────────────────────────────────────────────
 def check_for_updates(force: bool = False) -> Dict[str, Any]:
     """
     Vérifie si une nouvelle version est disponible sur GitHub Releases.
-    Retourne l'état de la mise à jour.
+    Supporte les dépôts privés avec token sécurisé et les redirections/alias de dépôts.
     """
     global _state
 
@@ -180,7 +198,6 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
         return _state.to_dict()
 
     try:
-        # Éviter les vérifications trop fréquentes (sauf si forcé)
         if not force and _state.last_check:
             elapsed = datetime.now() - _state.last_check
             if elapsed < timedelta(hours=1):
@@ -193,7 +210,7 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
             _req = None
 
         cfg = _load_config()
-        token = cfg.get('github_token', '').strip()
+        token = get_secure_github_token()
         gh_user = cfg.get('github_user', DEFAULT_GITHUB_USER).strip() or DEFAULT_GITHUB_USER
         gh_repo = cfg.get('github_repo', DEFAULT_GITHUB_REPO).strip() or DEFAULT_GITHUB_REPO
         local_version = _read_version()
@@ -201,11 +218,20 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
         _state.local_version = local_version
         _state.last_check = datetime.now()
 
-        headers = {'Accept': 'application/vnd.github.v3+json'}
+        headers = {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': f'JIBAYAT-Updater/{local_version}'
+        }
         if token:
-            headers['Authorization'] = f'token {token}'
+            headers['Authorization'] = f'Bearer {token}'
 
-        release_url = f'https://api.github.com/repos/{gh_user}/{gh_repo}/releases/latest'
+        # Liste des dépôts candidats à interroger en cascade
+        candidate_repos = []
+        if (gh_user, gh_repo) not in candidate_repos:
+            candidate_repos.append((gh_user, gh_repo))
+        for u, r in [('USFOU', 'JIBAYAT'), ('Yomix90', 'JIBAYAT'), ('Yomix90', 'jibayat_app')]:
+            if (u, r) not in candidate_repos:
+                candidate_repos.append((u, r))
 
         remote_version = None
         release_name = None
@@ -215,59 +241,59 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
         checksum = None
 
         if _req:
-            try:
-                r = _req.get(release_url, headers=headers, timeout=10)
-                if r.status_code == 200:
-                    rel_data = r.json()
-                    tag = rel_data.get('tag_name', '').lstrip('v')
-                    remote_version = tag
-                    release_name = rel_data.get('name', f"Version {tag}")
-                    release_body = rel_data.get('body', '')
-                    published_at = rel_data.get('published_at', '')[:10]
+            for u, r in candidate_repos:
+                release_url = f'https://api.github.com/repos/{u}/{r}/releases/latest'
+                try:
+                    res = _req.get(release_url, headers=headers, timeout=8)
+                    if res.status_code == 200:
+                        rel_data = res.json()
+                        tag = rel_data.get('tag_name', '').lstrip('v')
+                        remote_version = tag
+                        release_name = rel_data.get('name', f"Version {tag}")
+                        release_body = rel_data.get('body', '')
+                        published_at = rel_data.get('published_at', '')[:10]
 
-                    for asset in rel_data.get('assets', []):
-                        name = asset.get('name', '')
-                        if name.endswith('.zip') and 'update' in name.lower():
-                            download_url = asset.get('browser_download_url')
-                        elif name.endswith('.sha256'):
-                            # Télécharger le checksum
-                            try:
-                                cs_url = asset.get('browser_download_url')
-                                cs_headers = {}
-                                if token:
-                                    cs_headers['Authorization'] = f'token {token}'
-                                cs_r = _req.get(cs_url, headers=cs_headers, timeout=5)
-                                if cs_r.status_code == 200:
-                                    checksum = cs_r.text.strip().split()[0]
-                            except Exception:
-                                pass
-
-                    # Si pas de ZIP spécifique update, chercher n'importe quel ZIP
-                    if not download_url:
                         for asset in rel_data.get('assets', []):
-                            if asset.get('name', '').endswith('.zip'):
+                            name = asset.get('name', '')
+                            if name.endswith('.zip') and 'update' in name.lower():
                                 download_url = asset.get('browser_download_url')
-                                break
-            except Exception as e:
-                logger.warning(f"Erreur vérification releases GitHub: {e}")
+                            elif name.endswith('.sha256'):
+                                try:
+                                    cs_url = asset.get('browser_download_url')
+                                    cs_r = _req.get(cs_url, headers=headers, timeout=5)
+                                    if cs_r.status_code == 200:
+                                        checksum = cs_r.text.strip().split()[0]
+                                except Exception:
+                                    pass
+
+                        if not download_url:
+                            for asset in rel_data.get('assets', []):
+                                if asset.get('name', '').endswith('.zip'):
+                                    download_url = asset.get('browser_download_url')
+                                    break
+                        break
+                except Exception as e:
+                    logger.debug(f"Test release {u}/{r}: {e}")
 
         # Fallback sur version.txt si pas de release
         if not remote_version:
-            try:
-                txt_url = f'https://api.github.com/repos/{gh_user}/{gh_repo}/contents/version.txt'
-                hdr = {'Accept': 'application/vnd.github.v3.raw'}
-                if token:
-                    hdr['Authorization'] = f'token {token}'
-                if _req:
-                    r = _req.get(txt_url, headers=hdr, timeout=8)
-                    if r.status_code == 200:
-                        remote_version = r.text.strip()
-                else:
-                    req = urllib.request.Request(txt_url, headers=hdr)
-                    with urllib.request.urlopen(req, timeout=8) as resp:
-                        remote_version = resp.read().decode('utf-8').strip()
-            except Exception as e:
-                logger.debug(f"Fallback version.txt: {e}")
+            for u, r in candidate_repos:
+                txt_url = f'https://api.github.com/repos/{u}/{r}/contents/version.txt'
+                hdr_raw = dict(headers)
+                hdr_raw['Accept'] = 'application/vnd.github.v3.raw'
+                try:
+                    if _req:
+                        r_txt = _req.get(txt_url, headers=hdr_raw, timeout=8)
+                        if r_txt.status_code == 200:
+                            remote_version = r_txt.text.strip()
+                            break
+                    else:
+                        req = urllib.request.Request(txt_url, headers=hdr_raw)
+                        with urllib.request.urlopen(req, timeout=8) as resp:
+                            remote_version = resp.read().decode('utf-8').strip()
+                            break
+                except Exception as e:
+                    logger.debug(f"Test version.txt {u}/{r}: {e}")
 
         if remote_version:
             has_update = _version_tuple(remote_version) > _version_tuple(local_version)
