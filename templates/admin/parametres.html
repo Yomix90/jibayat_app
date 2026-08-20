@@ -171,7 +171,7 @@
     {% for mod, params in grouped.items() %}
     {% set info = mod_map.get(mod, {'icon':'📋','cls':'other','label':mod[:14]}) %}
     <a class="nav-item {% if loop.first %}active{% endif %}"
-       data-mod="{{ mod }}" href="#" onclick="return switchParam('{{ mod }}',this)">
+       data-mod="{{ mod }}" href="javascript:void(0);" onclick="return switchParam('{{ mod }}',this)">
       <span class="ni-icon">{{ info.icon }}</span>
       <span class="ni-lbl">{{ info.label }}</span>
       <span class="ni-count">{{ params|length }}</span>

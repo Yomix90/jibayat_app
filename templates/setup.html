@@ -3,57 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏛️ Installation — JIBAYAT</title>
+<title>🏛️ Initialisation du Système — JIBAYAT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Changa:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --primary:#1e3a5f;--primary-l:#2a5298;--accent:#e8a020;
   --ok:#22c55e;--danger:#ef4444;--warn:#f59e0b;
-  --bg:#0b1628;--card:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.1);
-  --text:#e2e8f0;--muted:rgba(255,255,255,0.5);
+  --bg:#0b1628;--card:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.12);
+  --text:#e2e8f0;--muted:rgba(255,255,255,0.55);
 }
 body{
   font-family:'Inter',system-ui,sans-serif;
   background:var(--bg);color:var(--text);
   min-height:100vh;
   background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(42,82,152,0.4) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(232,160,32,0.15) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 0%, rgba(42,82,152,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(232,160,32,0.18) 0%, transparent 55%);
   display:flex;align-items:center;justify-content:center;
-  padding:20px;
+  padding:30px 20px;
 }
 
-.page-wrapper{width:100%;max-width:860px;}
+.page-wrapper{width:100%;max-width:920px;}
 
 /* ── Header ── */
-.page-header{text-align:center;margin-bottom:40px;}
+.page-header{text-align:center;margin-bottom:30px;}
 .step-badge{
   display:inline-flex;align-items:center;gap:8px;
   background:rgba(232,160,32,0.15);border:1px solid rgba(232,160,32,0.3);
   color:var(--accent);border-radius:30px;padding:6px 18px;
-  font-size:.78rem;font-weight:600;letter-spacing:.5px;
-  text-transform:uppercase;margin-bottom:16px;
+  font-size:.78rem;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;margin-bottom:14px;
 }
 h1{
-  font-size:2.4rem;font-weight:900;
-  background:linear-gradient(135deg,#fff 0%,#e8a020 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  font-size:2.3rem;font-weight:900;
+  background:linear-gradient(135deg,#ffffff 0%,#e8a020 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
   margin-bottom:8px;
 }
 .subtitle{color:var(--muted);font-size:1rem;font-weight:400;}
 
-/* ── Steps ── */
+/* ── Steps Nav ── */
 .steps-nav{
   display:flex;align-items:center;justify-content:center;
-  gap:0;margin-bottom:40px;
+  margin-bottom:32px;
 }
-.step-item{
-  display:flex;align-items:center;gap:0;
-}
+.step-item{display:flex;align-items:center;gap:8px;}
 .step-dot{
-  width:36px;height:36px;border-radius:50%;
+  width:34px;height:34px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-weight:700;font-size:.85rem;
   background:rgba(255,255,255,0.08);
@@ -62,141 +62,121 @@ h1{
 }
 .step-dot.active{
   background:var(--accent);border-color:var(--accent);
-  color:#fff;box-shadow:0 0 20px rgba(232,160,32,0.4);
+  color:#fff;box-shadow:0 0 16px rgba(232,160,32,0.4);
 }
-.step-dot.done{
-  background:var(--ok);border-color:var(--ok);color:#fff;
-}
-.step-label{
-  font-size:.72rem;font-weight:600;color:var(--muted);
-  margin-left:8px;margin-right:8px;white-space:nowrap;
-}
+.step-label{font-size:.8rem;font-weight:600;color:var(--muted);}
 .step-label.active{color:var(--accent);}
-.step-line{width:50px;height:2px;background:rgba(255,255,255,0.1);}
+.step-line{width:40px;height:2px;background:rgba(255,255,255,0.1);margin:0 12px;}
 
 /* ── Card ── */
 .card{
-  background:rgba(255,255,255,0.05);
+  background:rgba(255,255,255,0.04);
   backdrop-filter:blur(20px);
   border:1px solid var(--border);
   border-radius:20px;
-  padding:32px;
-  margin-bottom:20px;
+  padding:28px 32px;
+  margin-bottom:24px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 .card-title{
-  font-size:1rem;font-weight:700;
+  font-size:1.1rem;font-weight:700;
   color:#fff;margin-bottom:4px;
   display:flex;align-items:center;gap:10px;
 }
-.card-subtitle{font-size:.82rem;color:var(--muted);margin-bottom:24px;}
+.card-subtitle{font-size:.82rem;color:var(--muted);margin-bottom:20px;}
 
 /* ── Form ── */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-group.full{grid-column:1/-1;}
-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
-input[type=text]{
+label{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+input[type=text], input[type=email], input[type=password]{
   background:rgba(255,255,255,0.07);
   border:1.5px solid rgba(255,255,255,0.12);
-  border-radius:10px;padding:11px 14px;
-  font-size:.9rem;color:#fff;font-family:inherit;
-  transition:border-color .2s,box-shadow .2s;
+  border-radius:10px;padding:12px 14px;
+  color:#fff;font-size:.92rem;
+  transition:all .2s;
 }
-input[type=text]:focus{
+input[type=text]:focus, input[type=email]:focus, input[type=password]:focus{
   outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(232,160,32,0.15);
-  background:rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.11);
+  box-shadow:0 0 0 3px rgba(232,160,32,0.2);
 }
-input[type=text]::placeholder{color:rgba(255,255,255,0.25);}
 
-input[dir=rtl]{text-align:right;font-family:'Cairo',system-ui,sans-serif;}
-
-/* ── Modules grid ── */
-.modules-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  gap:10px;
+/* ── Logo Upload Box ── */
+.logo-upload-box{
+  display:flex;align-items:center;gap:20px;
+  background:rgba(255,255,255,0.03);border:1.5px dashed rgba(255,255,255,0.2);
+  border-radius:14px;padding:16px;margin-top:6px;
 }
+.logo-preview-wrapper{
+  width:72px;height:72px;border-radius:12px;
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;flex-shrink:0;
+}
+.logo-preview-img{width:100%;height:100%;object-fit:contain;}
+
+/* ── Modules Grid ── */
+.modules-ctrl{display:flex;gap:10px;margin-bottom:14px;}
+.btn-sm-ctrl{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  color:var(--text);padding:6px 14px;border-radius:8px;font-size:.78rem;cursor:pointer;
+  font-weight:600;transition:all .2s;
+}
+.btn-sm-ctrl:hover{background:rgba(255,255,255,0.14);}
+.modules-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .module-item{
   display:flex;align-items:center;gap:12px;
-  padding:12px 16px;
-  background:rgba(255,255,255,0.05);
-  border:1.5px solid rgba(255,255,255,0.1);
-  border-radius:12px;cursor:pointer;
-  transition:all .2s;
+  background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:12px;padding:12px 14px;cursor:pointer;
+  transition:all .2s;user-select:none;
 }
-.module-item:hover{
-  background:rgba(232,160,32,0.1);
-  border-color:rgba(232,160,32,0.3);
+.module-item:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);}
+.module-item.checked{
+  background:rgba(30,58,95,0.4);border-color:rgba(232,160,32,0.6);
 }
 .module-item input[type=checkbox]{display:none;}
-.module-item.checked{
-  background:rgba(232,160,32,0.12);
-  border-color:rgba(232,160,32,0.4);
-}
 .module-check{
-  width:20px;height:20px;border-radius:6px;
-  background:rgba(255,255,255,0.08);
-  border:2px solid rgba(255,255,255,0.2);
+  width:22px;height:22px;border-radius:6px;
+  border:2px solid rgba(255,255,255,0.25);
   display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;font-size:.7rem;transition:all .2s;
+  font-size:.8rem;font-weight:800;color:#fff;
+  transition:all .2s;
 }
 .module-item.checked .module-check{
-  background:var(--accent);border-color:var(--accent);color:#fff;
+  background:var(--accent);border-color:var(--accent);
 }
-.module-text{font-size:.83rem;font-weight:500;color:var(--text);}
+.module-text{font-size:.84rem;font-weight:600;color:#fff;}
 
-/* ── Alert ── */
-.alert-danger{
-  background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
-  border-radius:12px;padding:12px 16px;color:#fca5a5;
-  font-size:.85rem;margin-bottom:20px;
-  display:flex;align-items:center;gap:10px;
-}
-
-/* ── Submit button ── */
+/* ── Submit ── */
 .btn-submit{
   width:100%;padding:16px;
-  background:linear-gradient(135deg,var(--accent),#c87d0e);
+  background:linear-gradient(135deg,#e8a020 0%,#d97706 100%);
   border:none;border-radius:14px;
-  font-size:1rem;font-weight:700;color:#fff;
-  cursor:pointer;font-family:inherit;
-  transition:all .2s;
-  box-shadow:0 8px 24px rgba(232,160,32,0.3);
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  margin-top:24px;
+  color:#fff;font-size:1.05rem;font-weight:800;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;
+  box-shadow:0 8px 25px rgba(232,160,32,0.35);
+  transition:all .3s;
 }
 .btn-submit:hover{
   transform:translateY(-2px);
-  box-shadow:0 12px 32px rgba(232,160,32,0.4);
-}
-.btn-submit:active{transform:translateY(0);}
-
-/* ── Divider ── */
-hr.section-divider{
-  border:none;border-top:1px solid var(--border);margin:28px 0;
+  box-shadow:0 12px 30px rgba(232,160,32,0.5);
 }
 
-/* ── Modules select-all ── */
-.modules-ctrl{
-  display:flex;gap:10px;margin-bottom:14px;
+.alert-danger{
+  background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);
+  color:#fca5a5;padding:14px 18px;border-radius:12px;margin-bottom:20px;
+  font-size:.88rem;font-weight:600;display:flex;align-items:center;gap:10px;
 }
-.btn-sm-ctrl{
-  padding:5px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);
-  background:rgba(255,255,255,0.06);color:var(--muted);
-  font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;
-  transition:all .15s;
+
+.page-footer{
+  text-align:center;margin-top:24px;color:var(--muted);font-size:.8rem;
 }
-.btn-sm-ctrl:hover{background:rgba(255,255,255,0.12);color:#fff;}
+.page-footer a{color:var(--accent);text-decoration:none;font-weight:600;}
 
-/* ── Footer ── */
-.page-footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:24px;}
-.page-footer a{color:var(--accent);text-decoration:none;}
-
-/* ── Responsive ── */
-@media(max-width:600px){
-  .form-grid{grid-template-columns:1fr;}
-  h1{font-size:1.8rem;}
-  .steps-nav{gap:4px;}
+@media(max-width:680px){
+  .form-grid, .modules-grid{grid-template-columns:1fr;}
   .step-label{display:none;}
   .step-line{width:20px;}
 }
@@ -207,26 +187,26 @@ hr.section-divider{
 
   <!-- Header -->
   <div class="page-header">
-    <div class="step-badge">🏛️ Première Installation</div>
-    <h1>Bienvenue dans JIBAYAT</h1>
-    <p class="subtitle">Gestion Fiscale Communale — Configuration initiale</p>
+    <div class="step-badge">🏛️ Configuration Initiale</div>
+    <h1>Initialisation de JIBAYAT</h1>
+    <p class="subtitle">Gestion Fiscale Communale — Veuillez renseigner les informations de base pour démarrer</p>
   </div>
 
   <!-- Steps -->
   <div class="steps-nav">
     <div class="step-item">
       <div class="step-dot active" id="dot1">1</div>
-      <span class="step-label active">Commune</span>
+      <span class="step-label active">Commune & Logo</span>
     </div>
     <div class="step-line"></div>
     <div class="step-item">
       <div class="step-dot" id="dot2">2</div>
-      <span class="step-label">Modules</span>
+      <span class="step-label">Administrateur</span>
     </div>
     <div class="step-line"></div>
     <div class="step-item">
       <div class="step-dot" id="dot3">3</div>
-      <span class="step-label">Finaliser</span>
+      <span class="step-label">Modules Fiscaux</span>
     </div>
   </div>
 
@@ -240,57 +220,100 @@ hr.section-divider{
 
     <!-- ── SECTION 1: Informations Commune ── -->
     <div class="card" id="section-commune">
-      <div class="card-title">🏛️ Informations de la Commune</div>
-      <div class="card-subtitle">Ces informations apparaîtront sur tous les documents fiscaux générés par JIBAYAT.</div>
+      <div class="card-title">🏛️ 1. Informations de la Commune</div>
+      <div class="card-subtitle">Ces éléments figureront sur tous les avis d'imposition, quittances et rapports fiscaux.</div>
 
       <div class="form-grid">
         <div class="form-group">
           <label>Nom de la commune (Français) *</label>
           <input type="text" name="nom" required
-                 placeholder="Ex: Commune de Marrakech"
+                 placeholder="Ex: Commune Urbaine de ..."
                  value="{{ request.form.get('nom', '') }}">
         </div>
         <div class="form-group">
           <label>اسم الجماعة (بالعربية)</label>
           <input type="text" name="nom_ar" dir="rtl"
-                 placeholder="مثال: جماعة مراكش"
+                 placeholder="مثال: جماعة ..."
                  value="{{ request.form.get('nom_ar', '') }}">
+        </div>
+        <div class="form-group">
+          <label>Province / Préfecture (Français)</label>
+          <input type="text" name="province"
+                 placeholder="Ex: Province de ..."
+                 value="{{ request.form.get('province', '') }}">
+        </div>
+        <div class="form-group">
+          <label>الإقليم / العمالة (بالعربية)</label>
+          <input type="text" name="province_ar" dir="rtl"
+                 placeholder="مثال: إقليم ..."
+                 value="{{ request.form.get('province_ar', '') }}">
         </div>
         <div class="form-group">
           <label>Région (Français)</label>
           <input type="text" name="region"
-                 placeholder="Ex: Marrakech-Safi"
+                 placeholder="Ex: Région ..."
                  value="{{ request.form.get('region', '') }}">
         </div>
         <div class="form-group">
           <label>الجهة (بالعربية)</label>
           <input type="text" name="region_ar" dir="rtl"
-                 placeholder="مثال: مراكش آسفي"
+                 placeholder="مثال: جهة ..."
                  value="{{ request.form.get('region_ar', '') }}">
         </div>
-        <div class="form-group">
-          <label>Province (Français)</label>
-          <input type="text" name="province"
-                 placeholder="Ex: Marrakech"
-                 value="{{ request.form.get('province', '') }}">
-        </div>
-        <div class="form-group">
-          <label>الإقليم (بالعربية)</label>
-          <input type="text" name="province_ar" dir="rtl"
-                 placeholder="مثال: مراكش"
-                 value="{{ request.form.get('province_ar', '') }}">
-        </div>
+
         <div class="form-group full">
-          <label>Logo de la commune (Optionnel)</label>
-          <input type="file" name="logo" accept="image/png, image/jpeg, image/webp" style="background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 14px; font-size: 0.9rem; color: #fff; width: 100%;">
+          <label>Logo Officiel de la Commune</label>
+          <div class="logo-upload-box">
+            <div class="logo-preview-wrapper" id="logo-preview-box">
+              <span id="logo-placeholder" style="font-size: 1.8rem;">🏛️</span>
+              <img id="logo-img" class="logo-preview-img" style="display:none;" alt="Logo Commune">
+            </div>
+            <div style="flex: 1;">
+              <input type="file" name="logo" id="logo-input" accept="image/png, image/jpeg, image/webp"
+                     style="background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; font-size: 0.85rem; color: #fff; width: 100%;">
+              <div style="font-size: 0.72rem; color: var(--muted); margin-top: 5px;">Format recommandé : PNG ou JPG transparent (max 2 Mo)</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ── SECTION 2: Modules ── -->
+    <!-- ── SECTION 2: Compte Administrateur ── -->
+    <div class="card" id="section-admin">
+      <div class="card-title">👤 2. Compte Super Administrateur</div>
+      <div class="card-subtitle">Créez votre compte maître avec tous les privilèges de gestion et de configuration.</div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nom de l'administrateur</label>
+          <input type="text" name="admin_nom" placeholder="Ex: Bennani"
+                 value="{{ request.form.get('admin_nom', '') }}">
+        </div>
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" name="admin_prenom" placeholder="Ex: Youssef"
+                 value="{{ request.form.get('admin_prenom', '') }}">
+        </div>
+        <div class="form-group full">
+          <label>Email / Identifiant de Connexion *</label>
+          <input type="email" name="admin_email" required placeholder="admin@commune.ma"
+                 value="{{ request.form.get('admin_email', 'admin@commune.ma') }}">
+        </div>
+        <div class="form-group">
+          <label>Mot de Passe *</label>
+          <input type="password" name="admin_password" required placeholder="••••••••" minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Confirmer le Mot de Passe *</label>
+          <input type="password" name="admin_password_confirm" required placeholder="••••••••" minlength="6">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: Modules Fiscaux ── -->
     <div class="card" id="section-modules">
-      <div class="card-title">🧩 Modules Fiscaux à Activer</div>
-      <div class="card-subtitle">Sélectionnez les modules correspondant aux activités fiscales de votre commune.</div>
+      <div class="card-title">🧩 3. Modules Fiscaux à Activer</div>
+      <div class="card-subtitle">Sélectionnez les taxes et redevances communales à gérer dans l'application.</div>
 
       <div class="modules-ctrl">
         <button type="button" class="btn-sm-ctrl" onclick="toggleAllModules(true)">✅ Tout activer</button>
@@ -311,16 +334,13 @@ hr.section-divider{
     <!-- ── SUBMIT ── -->
     <button type="submit" class="btn-submit">
       <span>🚀</span>
-      <span>Terminer l'installation et démarrer JIBAYAT</span>
+      <span>Finaliser l'Initialisation & Ouvrir JIBAYAT</span>
     </button>
 
   </form>
 
   <div class="page-footer">
-    JIBAYAT v{{ version }} &nbsp;•&nbsp; Développé pour les communes marocaines
-    {% if config.get('commune') %}
-      &nbsp;•&nbsp; <a href="{{ url_for('login') }}">Se connecter</a>
-    {% endif %}
+    JIBAYAT v{{ version }} &nbsp;•&nbsp; Plateforme Fiscale Communale Sécurisée
   </div>
 
 </div>
@@ -356,13 +376,19 @@ function toggleAllModules(state) {
   });
 }
 
-// Progressive steps indicator
-document.getElementById('setup-form').addEventListener('input', function() {
-  const nomOk = document.querySelector('input[name=nom]').value.trim().length > 0;
-  if (nomOk) {
-    document.getElementById('dot1').classList.add('done');
-    document.getElementById('dot1').textContent = '✓';
-    document.getElementById('dot2').classList.add('active');
+// Logo preview
+document.getElementById('logo-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = document.getElementById('logo-img');
+      const placeholder = document.getElementById('logo-placeholder');
+      img.src = evt.target.result;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
   }
 });
 
@@ -370,10 +396,7 @@ document.getElementById('setup-form').addEventListener('input', function() {
 document.getElementById('setup-form').addEventListener('submit', function(e) {
   const btn = this.querySelector('.btn-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span><span>Installation en cours...</span>';
-  document.getElementById('dot2').classList.add('done');
-  document.getElementById('dot2').textContent = '✓';
-  document.getElementById('dot3').classList.add('active');
+  btn.innerHTML = '<span>⏳</span><span>Configuration en cours...</span>';
 });
 </script>
 </body>

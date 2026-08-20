@@ -5,32 +5,33 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
-.kpi{background:var(--card);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;border-left:5px solid var(--primary);transition:transform .2s,box-shadow .2s}
-.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.13)}
-.kpi-icon{font-size:2rem;line-height:1}
-.kpi-val{font-size:1.5rem;font-weight:900;color:var(--primary);line-height:1}
-.kpi-lbl{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
-.kpi-sub{font-size:.72rem;font-weight:700;margin-top:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px}
+.kpi{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);padding:20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;border-left:4px solid var(--accent);transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden}
+.kpi:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(16,24,40,.12)}
+.kpi-icon{width:48px;height:48px;border-radius:13px;background:var(--amber-soft);color:var(--accent-strong);display:grid;place-items:center;font-size:1.5rem;flex:none}
+.kpi-val{font-family:var(--font-display);font-size:1.8rem;font-weight:800;color:var(--ink-900);line-height:1.1}
+.kpi-lbl{font-size:.78rem;color:var(--muted);font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.kpi-sub{font-size:.75rem;font-weight:800;margin-top:4px}
 
-.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:22px}
-.mod-card{background:var(--card);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-top:4px solid #ccc;transition:transform .2s,box-shadow .2s;text-decoration:none;color:var(--text);display:block}
-.mod-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.13)}
-.mod-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.mod-icon{font-size:1.6rem}
-.mod-title{font-size:.85rem;font-weight:800;color:var(--primary)}
-.mod-count{font-size:.7rem;color:var(--muted)}
-.mod-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.mod-row-lbl{font-size:.7rem;color:var(--muted)}
-.mod-row-val{font-size:.82rem;font-weight:700}
-.mod-bar-bg{background:#f0f4f8;border-radius:99px;height:6px;margin-top:10px;overflow:hidden}
-.mod-bar-fill{height:6px;border-radius:99px;transition:width .8s ease}
-.mod-taux{font-size:.68rem;font-weight:700;text-align:right;margin-top:3px}
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin-bottom:10px}
+.mod-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);padding:18px;box-shadow:var(--shadow);border-top:4px solid #ccc;transition:transform .2s,box-shadow .2s;text-decoration:none;color:var(--text);display:block}
+.mod-card:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(16,24,40,.12)}
+.mod-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.mod-icon{font-size:1.8rem}
+.mod-title{font-family:var(--font-display);font-size:.95rem;font-weight:800;color:var(--ink-900)}
+.mod-count{font-size:.72rem;color:var(--muted);font-weight:600}
+.mod-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mod-row-lbl{font-size:.75rem;color:var(--muted);font-weight:600}
+.mod-row-val{font-size:.85rem;font-weight:800}
+.mod-bar-bg{background:var(--paper);border-radius:99px;height:7px;margin-top:12px;overflow:hidden}
+.mod-bar-fill{height:7px;border-radius:99px;transition:width .8s ease}
+.mod-taux{font-size:.72rem;font-weight:800;text-align:right;margin-top:4px;color:var(--muted)}
 
 .charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:22px}
-.chart-wrap{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px}
-.chart-title{font-size:.88rem;font-weight:800;color:var(--primary);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-canvas{max-height:260px}
+.chart-wrap{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow);padding:20px}
+.chart-title{font-family:var(--font-display);font-size:1rem;font-weight:800;color:var(--ink-900);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-box { position: relative; height: 210px; width: 100%; }
+.chart-box-sm { position: relative; height: 185px; width: 100%; }
 
 @media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
 </style>
@@ -85,11 +86,15 @@ canvas{max-height:260px}
 <div class="charts-grid">
   <div class="chart-wrap">
     <div class="chart-title">📈 Recouvrement mensuel {{ annee_cur }}</div>
-    <canvas id="chartMois"></canvas>
+    <div class="chart-box">
+      <canvas id="chartMois"></canvas>
+    </div>
   </div>
   <div class="chart-wrap">
     <div class="chart-title">🥧 Répartition recettes par module</div>
-    <canvas id="chartModules"></canvas>
+    <div class="chart-box-sm">
+      <canvas id="chartModules"></canvas>
+    </div>
   </div>
 </div>
 
@@ -195,7 +200,7 @@ new Chart(ctxMois, {
   },
   options: {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { position: 'top', labels: { font: { size: 11 } } },
       tooltip: {
@@ -236,7 +241,7 @@ new Chart(ctxMod, {
   },
   options: {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     cutout: '60%',
     plugins: {
       legend: {

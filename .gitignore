@@ -29,7 +29,10 @@ database.db
 *.sqlite3
 
 # ── Configuration locale (données sensibles) ─
+config.json
 last_update.txt
+keygen_app.py
+generate_license.py
 
 # ── Distribution PyInstaller ─────────────────
 build/

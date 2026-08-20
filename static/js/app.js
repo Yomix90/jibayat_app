@@ -15,6 +15,22 @@ if (localStorage.getItem('sidebarCollapsed') === '1') {
    document.documentElement.style.setProperty('--sw', '72px');
 }
 
+// ── User Dropdown Menu ──────────────────────────────────────
+function toggleUserMenu() {
+    const menu = document.getElementById('user-dropdown-menu');
+    if (menu) {
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+}
+
+document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.user-dropdown-wrap');
+    const menu = document.getElementById('user-dropdown-menu');
+    if (wrap && menu && !wrap.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
 // ── Sub-menu toggle ──────────────────────────────────────
 function toggleSubMenu(id) {
     const item = document.getElementById(id);
@@ -132,6 +148,28 @@ document.addEventListener('submit', function(e) {
     form.appendChild(input);
   }
 }, false);
+
+// Intercepteur Fetch global pour X-CSRF-Token
+(function() {
+  const _origFetch = window.fetch;
+  window.fetch = function(resource, init) {
+    init = init || {};
+    const method = (init.method || 'GET').toUpperCase();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (csrfToken) {
+        if (!init.headers) {
+          init.headers = { 'X-CSRF-Token': csrfToken };
+        } else if (init.headers instanceof Headers) {
+          if (!init.headers.has('X-CSRF-Token')) init.headers.append('X-CSRF-Token', csrfToken);
+        } else if (typeof init.headers === 'object' && !init.headers['X-CSRF-Token']) {
+          init.headers['X-CSRF-Token'] = csrfToken;
+        }
+      }
+    }
+    return _origFetch.call(this, resource, init);
+  };
+})();
 
 // ── Auto-confirm forms ───────────────────────────────────
 document.addEventListener('submit', function(e) {

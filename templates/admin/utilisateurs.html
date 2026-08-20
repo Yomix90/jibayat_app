@@ -23,8 +23,8 @@
 
 /* ── Page layout ── */
 .rbac-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1e293b 100%);
-  border-radius: 16px;
+  background: linear-gradient(135deg, #152238 0%, #0e1626 100%);
+  border-radius: var(--radius);
   padding: 24px 28px;
   margin-bottom: 24px;
   color: #fff;
@@ -33,9 +33,9 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: var(--shadow);
 }
-.rbac-header h2 { font-size: 1.25rem; font-weight: 900; margin-bottom: 4px; }
+.rbac-header h2 { font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; margin-bottom: 4px; }
 .rbac-header p  { font-size: .82rem; color: rgba(255,255,255,.6); }
 
 .legend-pill {
@@ -52,13 +52,13 @@
   display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
 }
 .role-tab {
-  padding: 9px 18px; border-radius: 10px; border: 2px solid var(--border);
-  background: var(--card); cursor: pointer; font-size: .82rem; font-weight: 700;
+  padding: 9px 18px; border-radius: 10px; border: 1.5px solid var(--line);
+  background: var(--card); cursor: pointer; font-size: .82rem; font-weight: 800;
   color: var(--text); transition: all .2s;
 }
 .role-tab:hover, .role-tab.active {
-  background: var(--primary); color: #fff; border-color: var(--primary);
-  transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,58,95,.25);
+  background: var(--ink-800); color: #fff; border-color: var(--ink-800);
+  transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,23,42,.25);
 }
 .role-tab.active { box-shadow: 0 4px 16px rgba(30,58,95,.35); }
 
@@ -230,6 +230,7 @@
       <div class="card-header"><h3>➕ Nouvel Utilisateur</h3></div>
       <div class="card-body">
         <form method="post" action="{{ url_for('ajouter_utilisateur') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
           <div class="form-grid mb-3">
             <div class="form-group"><label>Nom *</label><input name="nom" required></div>
             <div class="form-group"><label>Prénom *</label><input name="prenom" required></div>
@@ -240,13 +241,6 @@
             <label>Rôle *</label>
             <select name="role_id" required>
               {% for r in roles %}<option value="{{ r.id }}">{{ r.nom }}</option>{% endfor %}
-            </select>
-          </div>
-          <div class="form-group mb-3">
-            <label>Commune</label>
-            <select name="commune_id">
-              <option value="">— Toutes —</option>
-              {% for c in communes %}<option value="{{ c.id }}">{{ c.nom }}</option>{% endfor %}
             </select>
           </div>
           <div class="form-actions"><button type="submit" class="btn btn-primary">💾 Créer</button></div>
@@ -272,20 +266,20 @@
             <div style="font-size:.72rem;color:var(--muted)">{{ u.email }}</div>
             <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
               <span class="badge b-primary" style="font-size:.6rem">{{ u.role_nom }}</span>
-              {% if u.commune_nom %}<span class="badge b-sec" style="font-size:.6rem">{{ u.commune_nom }}</span>{% endif %}
               <span class="badge b-ok" style="font-size:.6rem">Actif</span>
             </div>
           </div>
           {% if user.peut_config %}
           <div style="display:flex;gap:6px;flex-shrink:0">
             <a href="{{ url_for('user_permissions', user_id=u.id) }}" class="btn btn-outline btn-sm" title="Voir les droits">🔍</a>
-            <button class="btn btn-outline btn-sm" onclick="openModalModifUser({{ u.id }},'{{ u.nom }}','{{ u.prenom }}','{{ u.email }}',{{ u.role_id }},{{ u.commune_id or 'null' }})">✏️</button>
+            <button class="btn btn-outline btn-sm" onclick="openModalModifUser({{ u.id }},'{{ u.nom }}','{{ u.prenom }}','{{ u.email }}',{{ u.role_id }})">✏️</button>
             {% if u.id != user.id %}
             <form method="post" action="{{ url_for('supprimer_utilisateur', id=u.id) }}"
               data-confirm="danger"
               data-confirm-title="Désactiver l'utilisateur"
               data-confirm-msg="Confirmer la désactivation de {{ u.prenom }} {{ u.nom }} ?"
               data-confirm-detail="Cet utilisateur ne pourra plus se connecter.">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
               <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
             </form>
             {% else %}
@@ -455,6 +449,7 @@
     {# Formulaire éditable #}
     <form method="post" action="{{ url_for('sauvegarder_permissions_role', role_id=role.id) }}"
           id="form-role-{{ role.id }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="mod-perm-grid" id="grid-{{ role.id }}">
         {% for mod in modules %}
         {% set p = perms.get(role.id, {}).get(mod.code, {}) %}
@@ -499,7 +494,7 @@
                      name="{{ mod.code }}_ajouter"
                      id="cb-ajouter-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_ajouter',0) %}checked{% endif %}
-                     onchange="updateChips('{{ role.id }}', '{{ mod.code }}')">
+                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'ajouter', this.checked)">
               <span class="perm-label">➕ Ajouter</span>
             </label>
             <label class="perm-check-item perm-modifier">
@@ -507,7 +502,7 @@
                      name="{{ mod.code }}_modifier"
                      id="cb-modifier-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_modifier',0) %}checked{% endif %}
-                     onchange="updateChips('{{ role.id }}', '{{ mod.code }}')">
+                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'modifier', this.checked)">
               <span class="perm-label">✏️ Modifier</span>
             </label>
             <label class="perm-check-item perm-suppr">
@@ -515,7 +510,7 @@
                      name="{{ mod.code }}_supprimer"
                      id="cb-suppr-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_supprimer',0) %}checked{% endif %}
-                     onchange="updateChips('{{ role.id }}', '{{ mod.code }}')">
+                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'suppr', this.checked)">
               <span class="perm-label">🗑️ Supprimer</span>
             </label>
           </div>
@@ -550,6 +545,7 @@
       <button class="modal-close" onclick="closeModal('modal-modif-user')">✕</button>
     </div>
     <form method="post" id="form-modif-user">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="modal-body">
         <div class="form-grid mb-3">
           <div class="form-group"><label>Nom *</label><input name="nom" id="mu-nom" required></div>
@@ -564,13 +560,6 @@
           <label>Rôle *</label>
           <select name="role_id" id="mu-role" required>
             {% for r in roles %}<option value="{{ r.id }}">{{ r.nom }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="form-group mb-3">
-          <label>Commune</label>
-          <select name="commune_id" id="mu-commune">
-            <option value="">— Toutes —</option>
-            {% for c in communes %}<option value="{{ c.id }}">{{ c.nom }}</option>{% endfor %}
           </select>
         </div>
       </div>
@@ -590,6 +579,7 @@
       <button class="modal-close" onclick="closeModal('modal-add-role')">✕</button>
     </div>
     <form method="post" action="{{ url_for('ajouter_role') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="modal-body">
         <div class="form-group mb-3"><label>Nom du rôle *</label><input name="nom" required placeholder="ex: superviseur"></div>
         <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Permissions</label>
@@ -619,6 +609,7 @@
       <button class="modal-close" onclick="closeModal('modal-modif-role')">✕</button>
     </div>
     <form method="post" id="form-modif-role">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="modal-body">
         <div class="form-group mb-3"><label>Nom du rôle *</label><input name="nom" id="mr-nom" required></div>
         <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Permissions</label>
@@ -644,7 +635,7 @@
 
 {% block extra_js %}
 <script>
-function openModalModifUser(id, nom, prenom, email, roleId, communeId) {
+function openModalModifUser(id, nom, prenom, email, roleId) {
   document.getElementById('form-modif-user').action = '/utilisateurs/' + id + '/modifier';
   document.getElementById('mu-nom').value     = nom;
   document.getElementById('mu-prenom').value  = prenom;

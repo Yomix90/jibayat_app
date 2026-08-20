@@ -12,7 +12,7 @@ from typing import Optional
 from PIL import Image, ImageDraw, ImageFont
 import pystray
 import sys, traceback
-sys.stdout = open('jibayat_debug.log', 'w')
+sys.stdout = open('jibayat_debug.log', 'a', encoding='utf-8')
 sys.stderr = sys.stdout
 
 from app import app, init_db
@@ -85,7 +85,18 @@ def make_tray_icon() -> Image.Image:
 
 
 def is_first_run() -> bool:
-    return not os.path.exists(CONFIG_FILE)
+    try:
+        import sqlite3
+        if not os.path.exists("fiscalite.db"):
+            return True
+        conn = sqlite3.connect("fiscalite.db")
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM utilisateurs")
+        row = c.fetchone()
+        conn.close()
+        return row is None or row[0] == 0
+    except Exception:
+        return True
 
 
 def wait_for_server(host: str, port: int, timeout: float = 10.0) -> bool:

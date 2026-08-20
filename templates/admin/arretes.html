@@ -5,29 +5,29 @@
 {% block page_title %}📜 Arrêtés Fiscaux{% endblock %}
 {% block extra_head %}
 <style>
-.arrete-card{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;
-  box-shadow:var(--shadow);transition:box-shadow .2s}
-.arrete-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.10)}
-.arrete-header{padding:14px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
+.arrete-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);overflow:hidden;
+  box-shadow:var(--shadow);transition:transform .2s, box-shadow .2s}
+.arrete-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(16,24,40,.12)}
+.arrete-header{padding:16px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line)}
 .arrete-num{font-family:monospace;font-size:.8rem;color:var(--muted)}
-.arrete-title{font-size:.95rem;font-weight:800;color:var(--primary)}
-.arrete-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
-.arrete-badge-actif{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:20px;padding:2px 10px;font-size:.65rem;font-weight:800}
-.arrete-badge-old{background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;border-radius:20px;padding:2px 10px;font-size:.65rem;font-weight:700}
+.arrete-title{font-family:var(--font-display);font-size:1.05rem;font-weight:800;color:var(--ink-900)}
+.arrete-meta{font-size:.78rem;color:var(--muted);margin-top:2px}
+.arrete-badge-actif{background:var(--green-soft);color:var(--green);border:1px solid rgba(15,157,106,.25);border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:800}
+.arrete-badge-old{background:var(--paper);color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:700}
 .timeline-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.tl-actif{background:#10b981}.tl-old{background:#d1d5db}
-.timeline-line{position:absolute;left:4px;top:14px;bottom:0;width:2px;background:var(--border)}
+.tl-actif{background:var(--green)}.tl-old{background:var(--muted)}
+.timeline-line{position:absolute;left:4px;top:14px;bottom:0;width:2px;background:var(--line)}
 
-.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
-.stat-kpi{background:var(--card);border-radius:10px;padding:12px 14px;border-left:4px solid var(--primary);
-  box-shadow:var(--shadow);display:flex;align-items:center;gap:10px}
-.stat-kpi.ok{border-left-color:var(--ok)}.stat-kpi.warn{border-left-color:#fd7e14}
-.kv{font-size:1.2rem;font-weight:900;color:var(--primary)}
-.kl{font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase}
-.stat-kpi.ok .kv{color:var(--ok)}.stat-kpi.warn .kv{color:#fd7e14}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px}
+.stat-kpi{background:var(--card);border-radius:var(--radius);padding:16px 18px;border-left:4px solid var(--accent);
+  box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;border:1px solid var(--line)}
+.stat-kpi.ok{border-left-color:var(--green)}.stat-kpi.warn{border-left-color:var(--amber)}
+.kv{font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--ink-900)}
+.kl{font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.stat-kpi.ok .kv{color:var(--green)}.stat-kpi.warn .kv{color:var(--amber)}
 
 /* formulaire inline propre */
-.form-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-inline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 </style>
 {% endblock %}
 {% block content %}
@@ -114,8 +114,8 @@
           <a href="{{ url_for('config.arretes_detail', id=a.id) }}"
              class="btn btn-primary btn-xs">📋 Tarifs</a>
           {% if user.peut_config %}
-          <button onclick="ouvrirSuppressionArrete({{ a.id }},'{{ a.numero }}','{{ a.titre }}')" 
-                  class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+          <button data-id="{{ a.id }}" data-numero="{{ a.numero }}" data-titre="{{ a.titre }}" onclick="ouvrirSuppressionArreteBtn(this)"
+                  class="btn btn-xs" style="background:var(--red-soft);color:var(--red);border:1px solid rgba(225,75,75,.3)">
             🗑️
           </button>
           {% endif %}
@@ -175,6 +175,12 @@
 </div>
 
 <script>
+function ouvrirSuppressionArreteBtn(btn) {
+  const id = btn.getAttribute('data-id');
+  const numero = btn.getAttribute('data-numero');
+  const titre = btn.getAttribute('data-titre');
+  ouvrirSuppressionArrete(id, numero, titre);
+}
 function ouvrirSuppressionArrete(id, numero, titre){
   const a = Math.floor(Math.random()*20)+5;
   const b = Math.floor(Math.random()*15)+2;

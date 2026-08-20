@@ -152,6 +152,7 @@
   <button class="sys-tab" onclick="showSysPanel('sauvegarde',this)">💾 Sauvegarde</button>
   <button class="sys-tab" onclick="showSysPanel('mises-a-jour',this)">🔄 Mises à jour</button>
   <button class="sys-tab" onclick="showSysPanel('base-donnees',this)">🗄️ Base de données</button>
+  <button class="sys-tab" onclick="showSysPanel('licence',this)">🔑 Licence & Activation</button>
   <button class="sys-tab" onclick="showSysPanel('feedback',this)">✉️ Support & Avis</button>
   <button class="sys-tab" onclick="showSysPanel('apropos',this)">ℹ️ À propos</button>
 </div>
@@ -178,6 +179,7 @@
       {% endif %}
 
       <form method="post" action="{{ url_for('modifier_commune') }}" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
 
         <div class="form-group" style="margin-bottom:16px;text-align:center;">
           <label>Changer le Logo de la Commune</label>
@@ -434,7 +436,7 @@
 {# ──────────────────────────────────────────── ONGLET MISES À JOUR ── #}
 <div id="panel-mises-a-jour" class="sys-panel">
   <div class="card">
-    <div class="card-header"><h3>🔄 Gestion des Mises à Jour</h3></div>
+    <div class="card-header"><h3>🔄 Gestion des Mises à Jour (GitHub)</h3></div>
     <div class="card-body">
       <div class="info-chips">
         <div class="info-chip accent">
@@ -446,8 +448,8 @@
           <span class="ic-val" id="ver-remote">—</span>
         </div>
         <div class="info-chip">
-          <span class="ic-label">Dépôt</span>
-          <span class="ic-val" style="font-size:.75rem;">Yomix90/JIBAYAT</span>
+          <span class="ic-label">Dépôt configuré</span>
+          <span class="ic-val" style="font-size:.75rem;">{{ cfg.github_user or 'Yomix90' }}/{{ cfg.github_repo or 'JIBAYAT' }}</span>
         </div>
         <div class="info-chip">
           <span class="ic-label">Branche</span>
@@ -457,28 +459,45 @@
 
       <div id="update-status" class="feedback" style="margin-bottom:16px;"></div>
 
+      <div id="release-notes-box" style="display:none;margin-bottom:20px;padding:16px;background:var(--bg);border:1.5px solid var(--primary-l);border-radius:12px;">
+        <h4 style="margin-top:0;margin-bottom:8px;color:var(--primary);display:flex;align-items:center;gap:8px;">
+          <span>📋</span> <span id="rel-title">Notes de mise à jour</span>
+        </h4>
+        <div id="rel-body" style="font-size:.85rem;color:var(--text);white-space:pre-wrap;max-height:220px;overflow-y:auto;line-height:1.5;background:#fff;padding:12px;border-radius:8px;border:1px solid var(--border);"></div>
+      </div>
+
       <div class="df gap-2" style="flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="checkUpdate()">🔍 Vérifier les mises à jour</button>
-        <button class="btn btn-success" id="btn-do-update" style="display:none;" onclick="doUpdate()">⬇️ Installer la mise à jour et redémarrer</button>
-        <a href="https://github.com/Yomix90/JIBAYAT" target="_blank" class="btn btn-outline">
+        <button class="btn btn-success" id="btn-do-update" style="display:none;" onclick="doUpdate()">⬇️ Installer la mise à jour & Sauvegarder</button>
+        <a href="https://github.com/{{ cfg.github_user or 'Yomix90' }}/{{ cfg.github_repo or 'JIBAYAT' }}" target="_blank" class="btn btn-outline">
           🌐 Voir sur GitHub
         </a>
       </div>
 
-      <div style="margin-top:24px;padding:14px;background:var(--bg);border-radius:10px;font-size:.8rem;color:var(--muted);">
-        💡 <strong>Comment mettre à jour :</strong> Cliquez "Vérifier", puis si une mise à jour est disponible, utilisez le script <code>git_pull.bat</code> ou copiez la nouvelle version depuis GitHub.
+      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:10px;font-size:.8rem;color:var(--muted);">
+        💡 <strong>Sécurité de mise à jour :</strong> Avant chaque installation, le système génère automatiquement une copie de sauvegarde de votre base de données locale.
       </div>
       
-      <hr>
-      <div class="sys-section-title">🔑 Accès Dépôt Privé</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Si votre dépôt GitHub est privé, vous devez configurer un <strong>Token d'accès personnel (PAT)</strong> pour pouvoir vérifier les mises à jour.</p>
+      <hr style="margin:24px 0;">
+      <div class="sys-section-title">⚙️ Configuration du Dépôt GitHub & Token PAT</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Si votre dépôt GitHub est privé, configurez un <strong>Token d'accès personnel (PAT)</strong> pour permettre la vérification et le téléchargement des releases.</p>
       
       <form id="form-github-config" onsubmit="event.preventDefault(); saveSection('github-config');">
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Utilisateur / Organisation GitHub</label>
+            <input type="text" name="github_user" class="form-input" placeholder="Yomix90" value="{{ cfg.github_user or 'Yomix90' }}">
+          </div>
+          <div class="form-group">
+            <label>Nom du Dépôt</label>
+            <input type="text" name="github_repo" class="form-input" placeholder="JIBAYAT" value="{{ cfg.github_repo or 'JIBAYAT' }}">
+          </div>
+        </div>
         <div class="form-group">
           <label>Token GitHub (Classic ou Fine-grained)</label>
-          <input type="password" name="github_token" class="form-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxx" value="{{ cfg.github_token }}">
+          <input type="password" name="github_token" class="form-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxx" value="{{ cfg.github_token or '' }}">
         </div>
-        <button type="submit" class="btn btn-success">💾 Sauvegarder Token</button>
+        <button type="submit" class="btn btn-success">💾 Sauvegarder Configuration GitHub</button>
         <div id="fb-github-config" class="feedback" style="margin-top:10px;display:none;"></div>
       </form>
     </div>
@@ -488,12 +507,12 @@
 
 {# ──────────────────────────────────────────── ONGLET BASE DE DONNÉES ── #}
 <div id="panel-base-donnees" class="sys-panel">
-  <div class="card">
-    <div class="card-header"><h3>🗄️ État de la Base de Données</h3></div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>🗄️ État & Intégrité de la Base de Données</h3></div>
     <div class="card-body">
       <div class="info-chips">
         <div class="info-chip {{ 'ok' if db_exists else 'warn' }}">
-          <span class="ic-label">Statut</span>
+          <span class="ic-label">Statut du fichier</span>
           <span class="ic-val">{{ '✅ Présente' if db_exists else '⚠️ Absente' }}</span>
         </div>
         {% if db_exists %}
@@ -501,10 +520,14 @@
           <span class="ic-label">Taille</span>
           <span class="ic-val">{{ db_size }} Mo</span>
         </div>
+        <div class="info-chip {{ 'ok' if db_integrity else 'err' }}">
+          <span class="ic-label">Intégrité SQLite</span>
+          <span class="ic-val">{{ '✅ Valide' if db_integrity else '❌ Problème détecté' }}</span>
+        </div>
         {% endif %}
-        <div class="info-chip">
-          <span class="ic-label">Fichier</span>
-          <span class="ic-val" style="font-size:.75rem;">fiscalite.db</span>
+        <div class="info-chip {{ 'ok' if db_security.has_password else 'accent' }}">
+          <span class="ic-label">Protection par mot de passe</span>
+          <span class="ic-val">{{ '🔒 Activée' if db_security.has_password else '🔓 Non configurée' }}</span>
         </div>
       </div>
 
@@ -515,6 +538,196 @@
       </p>
       <button class="btn btn-warn" onclick="initDb()">🔧 Initialiser / Mettre à jour la DB</button>
       <div class="feedback" id="fb-initdb"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+      <h3>🔐 Sécurité & Mot de Passe de la Base de Données</h3>
+    </div>
+    <div class="card-body">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:16px;">
+        Le mot de passe de protection sécurise l'accès aux opérations sensibles, au verrouillage des exports et au chiffrement des données de sauvegarde.
+      </p>
+
+      {% if db_security.has_password %}
+      <div class="feedback ok" style="display:block;margin-bottom:16px;">
+        🔒 <strong>Protection active</strong> — Mot de passe configuré{% if db_security.last_password_change %} (dernière modification : {{ db_security.last_password_change }}){% endif %}.
+      </div>
+      {% endif %}
+
+      <div class="sys-section-title">{{ 'Modifier le mot de passe' if db_security.has_password else 'Définir un mot de passe' }}</div>
+      <form id="form-db-password" onsubmit="event.preventDefault(); saveDbPassword();" style="max-width:500px;">
+        {% if db_security.has_password %}
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Mot de passe actuel *</label>
+          <input type="password" name="current_password" class="form-input" required placeholder="Mot de passe actuel">
+        </div>
+        {% endif %}
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Nouveau mot de passe *</label>
+          <input type="password" name="new_password" class="form-input" required placeholder="Minimum 4 caractères">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>Confirmer le nouveau mot de passe *</label>
+          <input type="password" name="confirm_password" class="form-input" required placeholder="Répéter le mot de passe">
+        </div>
+        <div class="df gap-2">
+          <button type="submit" class="btn btn-primary">💾 Sauvegarder le mot de passe</button>
+          {% if db_security.has_password %}
+          <button type="button" class="btn btn-danger" onclick="removeDbPassword()">🔓 Supprimer la protection</button>
+          {% endif %}
+        </div>
+        <div id="fb-db-pwd" class="feedback" style="margin-top:12px;display:none;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>🛡️ Sauvegardes Chiffrées & Exportations Sécurisées (AES-256)</h3>
+    </div>
+    <div class="card-body">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:16px;">
+        Exportez la base sous format chiffré <code>.jibenc</code> (AES-256 PBKDF2) pour empêcher toute lecture non autorisée en cas de vol du fichier.
+      </p>
+      
+      <div class="df gap-2" style="flex-wrap:wrap;margin-bottom:20px;">
+        <button class="btn btn-primary" onclick="exportEncryptedDb()">🔒 Exporter Sauvegarde Chiffrée (.jibenc)</button>
+        <a href="/api/systeme/export-db" class="btn btn-outline">📄 Exporter Fichier DB Brut (.db)</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{# ──────────────────────────────────────────── ONGLET LICENCE & ACTIVATION ── #}
+<div id="panel-licence" class="sys-panel">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>🔑 Statut de la Licence & Période d'Essai</h3></div>
+    <div class="card-body">
+      <div class="info-chips">
+        <div class="info-chip {{ 'ok' if license_status.is_activated else ('warn' if license_status.in_trial else 'err') }}">
+          <span class="ic-label">État du logiciel</span>
+          <span class="ic-val">{{ '✅ Activé' if license_status.is_activated else ('⏳ Période d\'essai' if license_status.in_trial else '❌ Expiré') }}</span>
+        </div>
+        <div class="info-chip accent">
+          <span class="ic-label">Validité</span>
+          <span class="ic-val">{{ license_status.expiry_date }}</span>
+        </div>
+        <div class="info-chip">
+          <span class="ic-label">Jours restants</span>
+          <span class="ic-val">{{ 'Illimité' if license_status.is_lifetime else (license_status.days_left ~ ' j') }}</span>
+        </div>
+        <div class="info-chip">
+          <span class="ic-label">Date 1ère installation</span>
+          <span class="ic-val" style="font-size:.8rem;">{{ license_status.install_date }}</span>
+        </div>
+      </div>
+
+      {% if license_status.is_activated %}
+      <div class="feedback ok" style="display:block;margin-bottom:18px;">
+        🔒 <strong>Licence active :</strong> Votre installation de JIBAYAT est enregistrée et validée.
+      </div>
+      {% elif license_status.in_trial %}
+      <div class="feedback ok" style="display:block;margin-bottom:18px;background:#fffbeb;color:#92400e;border-left:4px solid #f59e0b;">
+        ⏳ <strong>Période d'essai en cours :</strong> Il vous reste <strong>{{ license_status.trial_days_left }} jour(s)</strong>. L'activation est totalement optionnelle durant cette période.
+      </div>
+      {% else %}
+      <div class="feedback err" style="display:block;margin-bottom:18px;">
+        ⚠️ <strong>Période d'essai terminée :</strong> Veuillez saisir une clé d'activation pour continuer à utiliser toutes les fonctionnalités du logiciel.
+      </div>
+      {% endif %}
+
+      <div class="sys-section-title">Activer / Renouveler une Clé de Produit</div>
+      <form id="form-activate-key" onsubmit="event.preventDefault(); activateKeyFromSettings();" style="max-width:550px;">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Clé d'activation (Format: JBYT-XXXX-XXXX-XXXX-XXXX)</label>
+          <input type="text"
+                 name="license_key"
+                 id="inp-settings-lic-key"
+                 class="form-input"
+                 style="font-family:'Courier New',Courier,monospace;font-weight:700;letter-spacing:1px;"
+                 placeholder="JBYT-XXXX-XXXX-XXXX-XXXX"
+                 value="{{ license_status.license_key or '' }}"
+                 required>
+        </div>
+        <button type="submit" class="btn btn-primary">🔐 Valider la Clé d'Activation</button>
+        <div id="fb-activate-key" class="feedback" style="margin-top:12px;display:none;"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+{# ──────────────────────────────────────────── ONGLET FEEDBACK & SUGGESTIONS ── #}
+<div id="panel-feedback" class="sys-panel">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>✉️ Support & Avis (Bugs / Suggestions)</h3></div>
+    <div class="card-body">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:16px;">
+        Vos retours et suggestions d'amélioration sont directement transmis à l'équipe technique pour enrichir les prochaines mises à jour.
+      </p>
+
+      <form id="form-send-feedback" onsubmit="event.preventDefault(); sendFeedbackFromSettings();" style="max-width:650px;">
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Votre Nom / Fonction</label>
+            <input type="text" name="nom" class="form-input" value="{{ user.prenom ~ ' ' ~ user.nom if user else '' }}" placeholder="Ex: Agent fiscalité">
+          </div>
+          <div class="form-group">
+            <label>Email de contact (Optionnel)</label>
+            <input type="email" name="email" class="form-input" value="{{ user.email if user else '' }}" placeholder="agent@commune.ma">
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Type de retour *</label>
+            <select name="type_feedback" class="form-input" required>
+              <option value="Suggestion" selected>💡 Suggestion d'amélioration</option>
+              <option value="Nouvelle Fonctionnalité">✨ Demande de fonctionnalité</option>
+              <option value="Bug">🐛 Signalement de bug / Anomalie</option>
+              <option value="Question">❓ Question ou Assistance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Satisfaction globale</label>
+            <select name="note" class="form-input">
+              <option value="⭐⭐⭐⭐⭐ Excellent">⭐⭐⭐⭐⭐ Excellent</option>
+              <option value="⭐⭐⭐⭐ Très bien" selected>⭐⭐⭐⭐ Très bien</option>
+              <option value="⭐⭐⭐ Moyen">⭐⭐⭐ Moyen</option>
+              <option value="⭐⭐ Insatisfaisant">⭐⭐ Insatisfaisant</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Votre Message / Suggestion détaillée *</label>
+          <textarea name="message" class="form-input" rows="5" required placeholder="Décrivez votre suggestion, le besoin métier ou le problème rencontré..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">✉️ Envoyer mon message</button>
+        <div id="fb-send-feedback" class="feedback" style="margin-top:12px;display:none;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>⚙️ Liaison Google Sheets (Télémétrie & Retours)</h3></div>
+    <div class="card-body">
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px;">
+        URL du Webhook Google Apps Script pour centraliser les installations de communes et les suggestions dans votre classeur <strong>Google Sheets</strong>.
+      </p>
+      
+      <form id="form-webhook-config" onsubmit="event.preventDefault(); saveWebhookConfig();" style="max-width:650px;">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>URL Webhook Google Apps Script</label>
+          <input type="url" name="webhook_url" id="inp-webhook-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" value="{{ cfg.telemetry_webhook_url or '' }}">
+        </div>
+        <button type="submit" class="btn btn-success">💾 Enregistrer & Tester le Webhook</button>
+        <div id="fb-webhook-config" class="feedback" style="margin-top:12px;display:none;"></div>
+      </form>
     </div>
   </div>
 </div>
@@ -531,66 +744,20 @@
               <td>JIBAYAT — Gestion Fiscale Communale</td></tr>
           <tr><td class="fw-bold" style="color:var(--muted);">📦 Version</td>
               <td><span class="badge b-primary">v{{ version }}</span></td></tr>
-          <tr><td class="fw-bold" style="color:var(--muted);">📧 Support</td>
+          <tr><td class="fw-bold" style="color:var(--muted);">👨‍💻 Développeur</td>
+              <td><strong>YOUSSEF</strong></td></tr>
+          <tr><td class="fw-bold" style="color:var(--muted);">📞 Contact / WhatsApp</td>
+              <td><a href="https://wa.me/212662082795" target="_blank" style="font-weight:700;color:var(--primary);">+212 662-082795</a></td></tr>
+          <tr><td class="fw-bold" style="color:var(--muted);">📧 Support & Email</td>
               <td><a href="mailto:yomix90@gmail.com">yomix90@gmail.com</a></td></tr>
           <tr><td class="fw-bold" style="color:var(--muted);">📄 Licence</td>
-              <td>Usage dédié aux communes marocaines</td></tr>
-          <tr><td class="fw-bold" style="color:var(--muted);">🔗 Dépôt</td>
+              <td>Licence Propriétaire — Édition dédiée aux Communes Marocaines</td></tr>
+          <tr><td class="fw-bold" style="color:var(--muted);">🔗 Dépôt & Mises à jour</td>
               <td><a href="https://github.com/Yomix90/JIBAYAT" target="_blank">github.com/Yomix90/JIBAYAT</a></td></tr>
         </tbody>
       </table>
       <hr>
       <a href="{{ url_for('index') }}" class="btn btn-primary">🏠 Retour au tableau de bord</a>
-    </div>
-  </div>
-</div>
-
-{# ──────────────────────────────────────────── ONGLET FEEDBACK ── #}
-<div id="panel-feedback" class="sys-panel">
-  <div class="card">
-    <div class="card-header"><h3>✉️ Support & Avis (Bugs / Suggestions)</h3></div>
-    <div class="card-body">
-      
-      <div class="sys-section-title">⚙️ Configuration Admin</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Configurez le Webhook Google Apps Script pour recevoir les avis sur <strong>Google Sheets</strong>.</p>
-      
-      <form id="form-feedback-config" onsubmit="event.preventDefault(); saveSection('feedback-config');">
-        <div class="form-group">
-          <label>URL Webhook Apps Script (Google Sheets)</label>
-          <input type="text" name="feedback_webhook" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" value="{{ cfg.feedback_webhook }}">
-        </div>
-        <button type="submit" class="btn btn-success">💾 Sauvegarder Webhook</button>
-        <div id="fb-feedback-config" class="feedback" style="margin-top:10px;display:none;"></div>
-      </form>
-
-      <hr>
-
-      <div class="sys-section-title">📝 Envoyer un Avis / Bug</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Votre retour sera enregistré et analysé par l'administrateur.</p>
-      
-      <form id="form-send-feedback" onsubmit="event.preventDefault(); sendFeedback();">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Type de retour *</label>
-            <select name="type" class="form-input" required>
-              <option value="Suggestion">💡 Suggestion ou Amélioration</option>
-              <option value="Bug">🐛 Signaler un bug / Erreur</option>
-              <option value="Autre">📌 Autre demande</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Module ou Page concernée</label>
-            <input type="text" name="page" class="form-input" placeholder="Ex: Débits de boissons, Quittance, etc.">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Explications / Détails du problème *</label>
-          <textarea name="message" class="form-input" rows="4" required placeholder="Décrivez le plus précisément possible votre idée ou le problème rencontré..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">✉️ Envoyer mon message</button>
-        <div id="fb-send-feedback" class="feedback" style="margin-top:10px;display:none;"></div>
-      </form>
-      
     </div>
   </div>
 </div>
@@ -729,7 +896,7 @@ function updateLogTable(logs) {
     </tr>`).join('');
 }
 
-// ── Import DB ────────────────────────────────────────────────
+// ── Import DB (avec support chiffré .jibenc) ─────────────────
 let selectedFile = null;
 function handleFileSelect(input) {
   selectedFile = input.files[0];
@@ -740,15 +907,27 @@ function handleFileSelect(input) {
   }
 }
 async function importDb() {
-  if (!selectedFile) { showFeedback('import', '⚠️ Veuillez d\'abord sélectionner un fichier .db', 'err'); return; }
-  if (!confirm('⚠️ ATTENTION : Cette opération remplace complètement la base actuelle.\nÊtes-vous certain de vouloir continuer ?')) return;
-  showFeedback('import', '⏳ Restauration en cours...', 'loading');
+  if (!selectedFile) { showFeedback('import', '⚠️ Veuillez d\'abord sélectionner un fichier .db ou .jibenc', 'err'); return; }
+  const isEnc = selectedFile.name.endsWith('.jibenc') || selectedFile.name.endsWith('.enc');
+  let pwd = '';
+  if (isEnc) {
+    pwd = prompt("Ce fichier est chiffré. Veuillez saisir le mot de passe de déchiffrement :");
+    if (!pwd) {
+      showFeedback('import', '⚠️ Mot de passe requis pour déchiffrer la sauvegarde.', 'err');
+      return;
+    }
+  }
+  if (!confirm('⚠️ ATTENTION : Cette opération remplace la base actuelle (une sauvegarde automatique sera créée).\nContinuer ?')) return;
+  showFeedback('import', '⏳ Restauration et vérification en cours...', 'loading');
   const fd = new FormData();
   fd.append('db_file', selectedFile);
+  if (pwd) fd.append('password', pwd);
   try {
     const res = await apiPost('/api/systeme/import-db', fd);
-    if (res.ok) showFeedback('import', '✅ ' + res.msg, 'ok');
-    else showFeedback('import', '❌ ' + res.error, 'err');
+    if (res.ok) {
+      showFeedback('import', '✅ ' + res.msg, 'ok');
+      setTimeout(() => window.location.reload(), 3000);
+    } else showFeedback('import', '❌ ' + res.error, 'err');
   } catch(e) {
     showFeedback('import', '❌ Erreur : ' + e, 'err');
   }
@@ -763,7 +942,7 @@ if (dz) {
     e.preventDefault();
     dz.classList.remove('drag-over');
     const f = e.dataTransfer.files[0];
-    if (f && f.name.endsWith('.db')) {
+    if (f && (f.name.endsWith('.db') || f.name.endsWith('.jibenc') || f.name.endsWith('.enc'))) {
       selectedFile = f;
       document.getElementById('dz-text').innerHTML =
         `<strong>📄 ${f.name}</strong> (${(f.size/1024/1024).toFixed(2)} Mo)`;
@@ -771,14 +950,77 @@ if (dz) {
   });
 }
 
-// ── Vérifier mises à jour ────────────────────────────────────
+// ── Gestion Mot de Passe DB & Export Chiffré ─────────────────
+async function saveDbPassword() {
+  const form = document.getElementById('form-db-password');
+  const fd = new FormData(form);
+  const fb = document.getElementById('fb-db-pwd');
+  fb.textContent = '⏳ Enregistrement...';
+  fb.className = 'feedback loading';
+  fb.style.display = 'block';
+
+  try {
+    const res = await apiPost('/api/systeme/db-password/set', fd);
+    if (res.ok) {
+      fb.textContent = '✅ ' + res.msg;
+      fb.className = 'feedback ok';
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      fb.textContent = '❌ ' + res.error;
+      fb.className = 'feedback err';
+    }
+  } catch(e) {
+    fb.textContent = '❌ Erreur : ' + e;
+    fb.className = 'feedback err';
+  }
+}
+
+async function removeDbPassword() {
+  const currentPwd = prompt("Veuillez saisir votre mot de passe actuel pour désactiver la protection :");
+  if (!currentPwd) return;
+  const fd = new FormData();
+  fd.append('current_password', currentPwd);
+  const fb = document.getElementById('fb-db-pwd');
+  fb.textContent = '⏳ Suppression de la protection...';
+  fb.className = 'feedback loading';
+  fb.style.display = 'block';
+
+  try {
+    const res = await apiPost('/api/systeme/db-password/remove', fd);
+    if (res.ok) {
+      fb.textContent = '✅ ' + res.msg;
+      fb.className = 'feedback ok';
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      fb.textContent = '❌ ' + res.error;
+      fb.className = 'feedback err';
+    }
+  } catch(e) {
+    fb.textContent = '❌ Erreur : ' + e;
+    fb.className = 'feedback err';
+  }
+}
+
+function exportEncryptedDb() {
+  const pwd = prompt("Définir un mot de passe de chiffrement pour cet export (ou laisser vide pour utiliser le mot de passe système) :") || '';
+  window.location.href = `/api/systeme/export-db?encrypted=1&password=${encodeURIComponent(pwd)}`;
+}
+
+// ── Vérifier mises à jour GitHub & Changelog ─────────────────
 async function checkUpdate() {
   const status = document.getElementById('update-status');
   const btnUpdate = document.getElementById('btn-do-update');
+  const notesBox = document.getElementById('release-notes-box');
+  const relTitle = document.getElementById('rel-title');
+  const relBody = document.getElementById('rel-body');
+
   if (btnUpdate) btnUpdate.style.display = 'none';
-  status.textContent = '⏳ Vérification en cours...';
+  if (notesBox) notesBox.style.display = 'none';
+
+  status.textContent = '⏳ Recherche des versions sur GitHub...';
   status.className = 'feedback loading';
   status.style.display = 'block';
+
   try {
     const r = await fetch('/api/systeme/check-update');
     const res = await r.json();
@@ -788,27 +1030,33 @@ async function checkUpdate() {
         status.textContent = `🆕 Nouvelle version ${res.remote} disponible ! (actuelle: ${res.local})`;
         status.className = 'feedback err';
         if (btnUpdate) btnUpdate.style.display = 'inline-block';
+
+        if (res.release_notes && notesBox) {
+          relTitle.textContent = res.release_name || `Nouveautés de la version ${res.remote}`;
+          relBody.textContent = res.release_notes;
+          notesBox.style.display = 'block';
+        }
       } else {
-        status.textContent = `✅ Vous utilisez la dernière version (${res.local}).`;
+        status.textContent = `✅ Vous disposez de la version la plus récente (${res.local}).`;
         status.className = 'feedback ok';
-        setTimeout(() => status.style.display = 'none', 5000);
+        setTimeout(() => status.style.display = 'none', 6000);
       }
     } else {
       status.textContent = '❌ ' + res.error;
       status.className = 'feedback err';
     }
   } catch(e) {
-    status.textContent = '❌ Connexion impossible';
+    status.textContent = '❌ Connexion à GitHub impossible';
     status.className = 'feedback err';
   }
 }
 
 async function doUpdate() {
-  if (!confirm("Voulez-vous vraiment installer la mise à jour ? L'application va redémarrer.")) return;
+  if (!confirm("Voulez-vous vraiment installer la mise à jour ?\nUne sauvegarde de votre base de données sera créée automatiquement et l'application va redémarrer.")) return;
   const status = document.getElementById('update-status');
   const btnUpdate = document.getElementById('btn-do-update');
   if (btnUpdate) btnUpdate.style.display = 'none';
-  status.textContent = '⏳ Téléchargement et installation en cours... (Veuillez patienter)';
+  status.textContent = '⏳ Téléchargement du package, sauvegarde DB et application en cours... (Veuillez patienter)';
   status.className = 'feedback loading';
   status.style.display = 'block';
   
@@ -845,11 +1093,86 @@ async function initDb() {
   }
 }
 
+// ── Activation & Générateur de Licences ──────────────────────
+async function activateKeyFromSettings() {
+  const form = document.getElementById('form-activate-key');
+  const fd = new FormData(form);
+  const fb = document.getElementById('fb-activate-key');
+  fb.textContent = '⏳ Vérification de la clé en cours...';
+  fb.className = 'feedback loading';
+  fb.style.display = 'block';
+
+  try {
+    const res = await apiPost('/api/systeme/activate', fd);
+    if (res.ok) {
+      fb.textContent = '✅ ' + res.msg;
+      fb.className = 'feedback ok';
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      fb.textContent = '❌ ' + res.error;
+      fb.className = 'feedback err';
+    }
+  } catch(e) {
+    fb.textContent = '❌ Erreur réseau : ' + e;
+    fb.className = 'feedback err';
+  }
+}
+
+// ── Feedback & Suggestions ──────────────────────────────────
+async function sendFeedbackFromSettings() {
+  const form = document.getElementById('form-send-feedback');
+  const fd = new FormData(form);
+  const fb = document.getElementById('fb-send-feedback');
+  fb.textContent = '⏳ Envoi de votre retour en cours...';
+  fb.className = 'feedback loading';
+  fb.style.display = 'block';
+
+  try {
+    const res = await apiPost('/api/systeme/feedback', fd);
+    if (res.ok) {
+      fb.textContent = '✅ ' + res.msg;
+      fb.className = 'feedback ok';
+      form.reset();
+      setTimeout(() => fb.style.display = 'none', 6000);
+    } else {
+      fb.textContent = '❌ ' + res.error;
+      fb.className = 'feedback err';
+    }
+  } catch(e) {
+    fb.textContent = '❌ Erreur : ' + e;
+    fb.className = 'feedback err';
+  }
+}
+
+// ── Webhook Télémétrie Google Sheets ────────────────────────
+async function saveWebhookConfig() {
+  const form = document.getElementById('form-webhook-config');
+  const fd = new FormData(form);
+  const fb = document.getElementById('fb-webhook-config');
+  fb.textContent = '⏳ Enregistrement et test du webhook...';
+  fb.className = 'feedback loading';
+  fb.style.display = 'block';
+
+  try {
+    const res = await apiPost('/api/systeme/webhook/set', fd);
+    if (res.ok) {
+      fb.textContent = '✅ ' + res.msg;
+      fb.className = 'feedback ok';
+      setTimeout(() => fb.style.display = 'none', 5000);
+    } else {
+      fb.textContent = '❌ ' + res.error;
+      fb.className = 'feedback err';
+    }
+  } catch(e) {
+    fb.textContent = '❌ Erreur réseau : ' + e;
+    fb.className = 'feedback err';
+  }
+}
+
 // Ouvrir automatiquement l'onglet si mentionné dans le hash (#mises-a-jour, etc)
 window.addEventListener('DOMContentLoaded', () => {
     if (window.location.hash) {
-        const hash = window.location.hash.substring(1); // Enleve le '#'
-        // Trouver le bouton avec onclick contenant "showSysPanel('hash'"
+        const hash = window.location.hash.substring(1);
         const tabBtns = document.querySelectorAll('.sys-tab');
         for (let btn of tabBtns) {
             if (btn.getAttribute('onclick').includes("showSysPanel('" + hash + "'")) {

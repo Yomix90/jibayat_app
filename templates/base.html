@@ -6,7 +6,7 @@
 <title>{% block title %}GFC — Fiscalité Communale{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Changa:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <meta name="csrf-token" content="{{ csrf_token }}">
 {% block extra_head %}{% endblock %}
@@ -15,31 +15,20 @@
 <aside class="sidebar" id="sidebar">
   <div class="sb-brand">
     <div class="sb-brand-row">
-      <h1 style="display:flex; align-items:center; gap:7px;">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="width:26px; height:26px; object-fit:contain; border-radius:50%;">
-        <span class="txt">JIBAYAT</span>
-      </h1>
-      <button onclick="toggleSidebarMenu()" class="collapse-btn" title="Réduire le menu">◀</button>
-    </div>
-    <div class="txt" style="display:flex; align-items:center; gap:6px; margin-top:4px;">
-      <p style="margin:0;">Gestion Fiscale</p>
-      <span style="background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.8); padding:2px 5px; border-radius:4px; font-size:0.6rem; font-weight:bold;">v{{ sys_version }}</span>
-      <a href="{{ url_for('parametres_systeme') }}#mises-a-jour" id="sb-update-badge" style="display: {{ 'inline-block' if sys_has_update else 'none' }}; background:var(--warn-bd); color:#000; padding:2px 5px; border-radius:4px; font-size:0.6rem; text-decoration:none; font-weight:800; box-shadow:0 0 5px rgba(255,193,7,0.5);" title="Nouvelle mise à jour disponible !">🆕 MAJ!</a>
+      <div style="display:flex; align-items:center; gap:10px; overflow:hidden; flex:1;">
+        <div class="brand-icon" style="width:36px; height:36px; flex:none; border-radius:10px; display:grid; place-items:center; color:var(--accent-ink); background:linear-gradient(135deg,#ffc14d,#f29d0c); box-shadow:0 4px 12px rgba(246,162,30,.25);">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="width:22px; height:22px; object-fit:contain; border-radius:50%;">
+        </div>
+        <div class="sb-brand-text" style="overflow:hidden; flex:1; min-width:0;">
+          <h1 style="font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:#fff; margin:0; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">JIBAYAT</h1>
+          <div style="font-size:0.68rem; color:#8b98b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">Fiscalité Communale <span style="background:rgba(255,255,255,0.12); color:var(--accent); padding:1px 5px; border-radius:4px; font-size:0.58rem; font-weight:800;">v{{ sys_version }}</span></div>
+        </div>
+      </div>
+      <button onclick="toggleSidebarMenu()" class="collapse-btn" title="Réduire/Agrandir le menu">◀</button>
     </div>
   </div>
 
-  {% if user %}
-  <div class="sb-user">
-    <div class="sb-avatar">{{ user.nom[0]|upper }}{% if user.prenom %}{{ user.prenom[0]|upper }}{% endif %}</div>
-    <div class="sb-user-infos" style="overflow:hidden;flex:1;min-width:0;">
-      <div class="name">{{ user.prenom }} {{ user.nom }}</div>
-      <div class="role">{{ user.role_nom }} · {{ user.commune_nom or 'Global' }}</div>
-    </div>
-    <div class="sb-user-actions">
-      <a href="{{ url_for('logout') }}" title="Déconnexion" class="sb-logout-btn">🔓</a>
-    </div>
-  </div>
-  {% endif %}
+
 
   <nav id="sidebar-nav">
     <!-- ═══ TABLEAU DE BORD ═══════════════════════════════ -->
@@ -77,7 +66,7 @@
     <!-- TNB -->
     {% if not user or user_modules.get('tnb', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'tnb' in (request.endpoint or '') %}open{% endif %}" id="menu-tnb">
-      <a href="#" onclick="toggleSubMenu('menu-tnb');return false;" class="{{ 'active' if 'tnb' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-tnb');" class="{{ 'active' if 'tnb' in (request.endpoint or '') else '' }}">
         <span class="ic">🏗️</span><span class="txt">TNB — Terrains</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -95,7 +84,7 @@
     <!-- Débits de Boissons -->
     {% if not user or user_modules.get('tdb', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'tdb' in (request.endpoint or '') %}open{% endif %}" id="menu-tdb">
-      <a href="#" onclick="toggleSubMenu('menu-tdb');return false;" class="{{ 'active' if 'tdb' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-tdb');" class="{{ 'active' if 'tdb' in (request.endpoint or '') else '' }}">
         <span class="ic">🍺</span><span class="txt">Débits de Boissons</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -113,7 +102,7 @@
     <!-- Stationnement -->
     {% if not user or user_modules.get('sta', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'sta' in (request.endpoint or '') %}open{% endif %}" id="menu-sta">
-      <a href="#" onclick="toggleSubMenu('menu-sta');return false;" class="{{ 'active' if 'sta' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-sta');" class="{{ 'active' if 'sta' in (request.endpoint or '') else '' }}">
         <span class="ic">🚗</span><span class="txt">Stationnement TPV</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -131,7 +120,7 @@
     <!-- Fourrière -->
     {% if not user or user_modules.get('fou', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'fou' in (request.endpoint or '') %}open{% endif %}" id="menu-fou">
-      <a href="#" onclick="toggleSubMenu('menu-fou');return false;" class="{{ 'active' if 'fou' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-fou');" class="{{ 'active' if 'fou' in (request.endpoint or '') else '' }}">
         <span class="ic">🔑</span><span class="txt">Fourrière</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -149,7 +138,7 @@
     <!-- Domaine Public -->
     {% if not user or user_modules.get('odp', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'odp' in (request.endpoint or '') %}open{% endif %}" id="menu-odp">
-      <a href="#" onclick="toggleSubMenu('menu-odp');return false;" class="{{ 'active' if 'odp' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-odp');" class="{{ 'active' if 'odp' in (request.endpoint or '') else '' }}">
         <span class="ic">🎪</span><span class="txt">Domaine Public</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -167,7 +156,7 @@
     <!-- Location Locaux -->
     {% if not user or user_modules.get('loc', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'loc' in (request.endpoint or '') %}open{% endif %}" id="menu-loc">
-      <a href="#" onclick="toggleSubMenu('menu-loc');return false;" class="{{ 'active' if 'loc' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-loc');" class="{{ 'active' if 'loc' in (request.endpoint or '') else '' }}">
         <span class="ic">🏢</span><span class="txt">Location Locaux</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -190,7 +179,7 @@
     <!-- Souks Communaux -->
     {% if not user or user_modules.get('sou', {}).get('peut_voir', 1) %}
     <div class="nav-item {% if 'sou' in (request.endpoint or '') %}open{% endif %}" id="menu-sou">
-      <a href="#" onclick="toggleSubMenu('menu-sou');return false;" class="{{ 'active' if 'sou' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-sou');" class="{{ 'active' if 'sou' in (request.endpoint or '') else '' }}">
         <span class="ic">🛒</span><span class="txt">Souks Communaux</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -210,7 +199,7 @@
     <div class="nav-sec">Régie des Recettes</div>
 
     <div class="nav-item {% if 'regie' in (request.endpoint or '') %}open{% endif %}" id="menu-regie">
-      <a href="#" onclick="toggleSubMenu('menu-regie');return false;" class="{{ 'active' if 'regie' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-regie');" class="{{ 'active' if 'regie' in (request.endpoint or '') else '' }}">
         <span class="ic">🏷️</span><span class="txt">Timbres &amp; Tickets</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -242,7 +231,7 @@
     </div>
     
     <div class="nav-item">
-      <a href="{{ url_for('emission.dashboard') }}" class="{{ 'active' if 'emission' in request.endpoint else '' }}">
+      <a href="{{ url_for('emission.dashboard') }}" class="{{ 'active' if 'emission' in (request.endpoint or '') else '' }}">
         <span class="ic">📄</span><span class="txt">Bordereaux d'Émission</span>
       </a>
     </div>
@@ -252,7 +241,7 @@
     <div class="nav-sec">Registres &amp; Archives</div>
     
     <div class="nav-item {% if 'registre' in (request.endpoint or '') %}open{% endif %}" id="menu-registres">
-      <a href="#" onclick="toggleSubMenu('menu-registres');return false;" class="{{ 'active' if 'registre' in (request.endpoint or '') else '' }}">
+      <a href="javascript:void(0);" onclick="toggleSubMenu('menu-registres');" class="{{ 'active' if 'registre' in (request.endpoint or '') else '' }}">
         <span class="ic">🗃️</span><span class="txt">Registres &amp; Archives</span>
         <span class="menu-arrow">▶</span>
       </a>
@@ -312,8 +301,7 @@
     <div class="nav-sec">Système</div>
     <div class="nav-item">
       <a href="{{ url_for('parametres_systeme') }}"
-         class="{{ 'active' if request.endpoint=='parametres_systeme' else '' }}"
-         style="{% if request.endpoint=='parametres_systeme' %}{% endif %}">
+         class="{{ 'active' if request.endpoint=='parametres_systeme' else '' }}">
         <span class="ic">🛠️</span><span class="txt">Paramètres Système</span>
       </a>
     </div>
@@ -326,13 +314,69 @@
 
 <main class="main">
   <div class="topbar">
-    <div class="df" style="align-items:center;gap:10px">
-      <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="display:none;background:none;border:none;font-size:1.3rem;cursor:pointer" id="mBtn">☰</button>
-      <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+    <div class="df" style="align-items:center;gap:14px;">
+      <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="display:none;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--ink-900);" id="mBtn">☰</button>
+      <h1 class="topbar-title">{% block page_title %}{% endblock %}</h1>
     </div>
-    <div class="df gap-2" style="align-items:center">
-      <span id="topbar-clock" style="font-size:.78rem;color:rgba(255,255,255,0.8);background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);display:inline-flex;align-items:center;gap:6px">🕒 --:--</span>
-      {% if user %}<span style="font-size:.9rem;color:#eab308;font-weight:900;">{{ user.commune_nom }}</span>{% endif %}
+    <div class="df gap-2" style="align-items:center;">
+      <div class="date-chip" style="display:inline-flex; align-items:center; gap:7px; background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:5px 14px; font-size:.78rem; font-weight:800; color:var(--muted);">
+        <span></span> <span id="topbar-clock">--:--</span>
+      </div>
+      {% if license_status and license_status.in_trial and not license_status.is_activated %}
+      <a href="{{ url_for('licensing.activation_page') }}" title="Période d'essai active — Cliquez pour activer"
+         style="display:inline-flex; align-items:center; gap:6px; background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:5px 12px; border-radius:99px; font-size:.75rem; font-weight:800; text-decoration:none; transition:transform .15s;">
+        <span>⏳</span> <span>Essai : {{ license_status.trial_days_left }}j</span>
+      </a>
+      {% elif license_status and license_status.is_activated %}
+      <span title="Licence active : {{ license_status.expiry_date }}"
+            style="display:inline-flex; align-items:center; gap:6px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:5px 12px; border-radius:99px; font-size:.75rem; font-weight:800;">
+        <span>🔒</span> <span>Activé</span>
+      </span>
+      {% endif %}
+
+      {% if user %}
+      <span style="font-size:.82rem; color:var(--accent-strong); font-weight:800; background:var(--amber-soft); padding:5px 14px; border-radius:99px; border:1px solid rgba(246,162,30,.2);">🏛️ {{ user.commune_nom }}</span>
+
+      <!-- COMPTE & DROPDOWN PROFIL -->
+      <div class="user-dropdown-wrap" style="position:relative; margin-left:6px;">
+        <button type="button" class="user-dropdown-btn" onclick="toggleUserMenu()" style="display:flex; align-items:center; gap:8px; background:var(--card); border:1.5px solid var(--line); border-radius:99px; padding:4px 12px 4px 5px; cursor:pointer; transition:all .18s;">
+          <div class="user-avatar-top" style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#ffc14d,#f29d0c); display:grid; place-items:center; font-weight:800; color:var(--accent-ink); font-size:.8rem; box-shadow:0 3px 8px rgba(246,162,30,.3);">
+            {{ user.nom[0]|upper }}{% if user.prenom %}{{ user.prenom[0]|upper }}{% endif %}
+          </div>
+          <div style="text-align:left; line-height:1.2;">
+            <div style="font-size:.82rem; font-weight:800; color:var(--ink-900);">{{ user.prenom }} {{ user.nom }}</div>
+            <div style="font-size:.68rem; color:var(--muted); font-weight:600;">{{ user.role_nom }}</div>
+          </div>
+          <span style="font-size:.65rem; color:var(--muted); margin-left:2px;">▼</span>
+        </button>
+
+        <div id="user-dropdown-menu" class="user-dropdown-menu" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:240px; background:#ffffff; border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 40px rgba(15,23,42,.15); z-index:1000; padding:8px;">
+          <div style="padding:10px 12px; border-bottom:1px solid var(--line); margin-bottom:6px;">
+            <div style="font-weight:800; font-size:.88rem; color:var(--ink-900);">{{ user.prenom }} {{ user.nom }}</div>
+            <div style="font-size:.72rem; color:var(--muted); word-break:break-all;">{{ user.email }}</div>
+            <div style="font-size:.7rem; color:var(--accent-strong); font-weight:700; margin-top:4px;">🏛️ {{ user.commune_nom or 'Administration Globale' }}</div>
+          </div>
+
+          <a href="{{ url_for('users.utilisateurs') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
+            <span>👥</span> <span>Gestion des Profils</span>
+          </a>
+
+          <a href="{{ url_for('licensing.activation_page') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
+            <span>🔑</span> <span>Licence & Activation</span>
+          </a>
+
+          <a href="{{ url_for('parametres_systeme') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
+            <span>⚙️</span> <span>Paramètres Système</span>
+          </a>
+
+          <hr style="margin:6px 0; border:none; border-top:1px solid var(--line);">
+
+          <a href="{{ url_for('logout') }}" class="user-menu-item danger" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--red); text-decoration:none; font-size:.85rem; font-weight:800; transition:background .15s;">
+            <span>🔓</span> <span>Se Déconnecter</span>
+          </a>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
   {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -342,6 +386,73 @@
   </div>
   {% endif %}
   {% endwith %}
+
+  <!-- ═══ BARRE DE NOTIFICATION MISE À JOUR OTA ═══ -->
+  {% if updater is defined and updater.available and user is defined and user and user.peut_config %}
+  <div id="ota-update-bar" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #3b82f6;flex-wrap:wrap;">
+    <span style="font-size:1.3rem;">🔄</span>
+    <div style="flex:1;min-width:200px;">
+      <strong style="color:#fbbf24;">Mise à jour {{ updater.remote_version }} disponible !</strong>
+      <span style="color:#cbd5e1;font-size:0.85rem;margin-left:8px;">{{ updater.release_name }}</span>
+    </div>
+    <div id="ota-progress-wrap" style="display:none;flex:1;min-width:200px;">
+      <div style="background:rgba(255,255,255,0.15);border-radius:6px;height:6px;overflow:hidden;">
+        <div id="ota-progress-bar" style="background:#4ade80;height:100%;width:0%;transition:width 0.5s ease;border-radius:6px;"></div>
+      </div>
+      <div id="ota-status-text" style="color:#94a3b8;font-size:0.75rem;margin-top:3px;"></div>
+    </div>
+    <button id="ota-update-btn" onclick="otaApplyUpdate()" style="background:#fbbf24;color:#0f172a;border:none;padding:6px 16px;border-radius:6px;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;">
+      ⬆ Mettre à jour
+    </button>
+    <button onclick="document.getElementById('ota-update-bar').style.display='none'" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;padding:4px 8px;" title="Fermer">✕</button>
+  </div>
+  <script>
+  function otaApplyUpdate() {
+    if (!confirm('Lancer la mise à jour maintenant ?\n\nVos données (base de données, configuration, uploads) seront automatiquement sauvegardées.\nL\'application va redémarrer après la mise à jour.')) return;
+    const btn = document.getElementById('ota-update-btn');
+    const wrap = document.getElementById('ota-progress-wrap');
+    const bar = document.getElementById('ota-progress-bar');
+    const txt = document.getElementById('ota-status-text');
+    btn.disabled = true;
+    btn.textContent = '⏳ En cours...';
+    wrap.style.display = 'block';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    fetch('/api/updater/apply', {
+      method: 'POST',
+      headers: {'X-CSRF-Token': csrfToken}
+    }).then(r => r.json()).then(data => {
+      if (data.ok) {
+        // Polling de progression
+        const poll = setInterval(() => {
+          fetch('/api/updater/status').then(r => r.json()).then(s => {
+            bar.style.width = s.update_progress + '%';
+            txt.textContent = s.update_status || '';
+            if (s.update_progress >= 100 || !s.updating) {
+              clearInterval(poll);
+              btn.textContent = '✅ Terminé !';
+              txt.textContent = 'Redémarrage en cours...';
+              setTimeout(() => { window.location.reload(); }, 5000);
+            }
+          }).catch(() => {
+            clearInterval(poll);
+            setTimeout(() => { window.location.reload(); }, 3000);
+          });
+        }, 1500);
+      } else {
+        btn.disabled = false;
+        btn.textContent = '⬆ Réessayer';
+        txt.textContent = '❌ ' + (data.error || 'Erreur');
+      }
+    }).catch(e => {
+      btn.disabled = false;
+      btn.textContent = '⬆ Réessayer';
+      txt.textContent = '❌ Erreur réseau';
+    });
+  }
+  </script>
+  {% endif %}
+
   <div class="content">{% block content %}{% endblock %}</div>
 </main>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
@@ -453,13 +564,93 @@ document.getElementById('global-ctb-modal').addEventListener('click', function(e
   if (e.target === this) closeCtbModal();
 });
 
-// Compat: ancienne fonction showCtb() utilisée dans les listes existantes
-// Détecte si on a déjà un id contribuable et appelle la nouvelle modale
+// Compat: ancienne fonction showCtb()
 function showCtb(id, nom, cin, rc, adresse, tel, email) {
   if (id) {
     showCtbInfo(id);
   }
 }
+
+// ── Gestion du Menu Latéral & Sous-menus ──
+function toggleSubMenu(id) {
+  const item = document.getElementById(id);
+  if (!item) return;
+  const wasOpen = item.classList.contains('open');
+  item.classList.toggle('open', !wasOpen);
+  try {
+    const openMenus = Array.from(document.querySelectorAll('.nav-item.open')).map(i => i.id);
+    localStorage.setItem('openMenus', JSON.stringify(openMenus));
+  } catch(e) {}
+}
+
+function toggleSidebarMenu() {
+  const sb = document.getElementById('sidebar');
+  if (!sb) return;
+  sb.classList.toggle('collapsed');
+  if (sb.classList.contains('collapsed')) {
+    document.documentElement.style.setProperty('--sw', '72px');
+    localStorage.setItem('sidebarCollapsed', '1');
+  } else {
+    document.documentElement.style.setProperty('--sw', '272px');
+    localStorage.setItem('sidebarCollapsed', '0');
+  }
+}
+
+function toggleUserMenu() {
+  const menu = document.getElementById('user-dropdown-menu');
+  if (menu) {
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Restaurer l'état ouvert des sous-menus
+  try {
+    const openMenus = JSON.parse(localStorage.getItem('openMenus') || '[]');
+    openMenus.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('open');
+    });
+  } catch(e) {}
+
+  // ── Injection CSRF Automatique et Universelle ──
+  const metaCsrf = document.querySelector('meta[name="csrf-token"]');
+  if (metaCsrf && metaCsrf.content) {
+    const token = metaCsrf.content;
+    document.querySelectorAll('form').forEach(function(form) {
+      const method = (form.getAttribute('method') || 'GET').toUpperCase();
+      if (method === 'POST') {
+        if (!form.querySelector('input[name="_csrf_token"]')) {
+          const inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.name = '_csrf_token';
+          inp.value = token;
+          form.appendChild(inp);
+        }
+      }
+    });
+
+    // Interception Fetch pour ajouter X-CSRF-Token
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options) {
+      options = options || {};
+      const method = (options.method || 'GET').toUpperCase();
+      if (method !== 'GET' && method !== 'HEAD') {
+        options.headers = options.headers || {};
+        if (options.headers instanceof Headers) {
+          if (!options.headers.has('X-CSRF-Token')) options.headers.append('X-CSRF-Token', token);
+        } else if (Array.isArray(options.headers)) {
+          options.headers.push(['X-CSRF-Token', token]);
+        } else {
+          options.headers['X-CSRF-Token'] = token;
+        }
+      }
+      return originalFetch(url, options);
+    };
+  }
+});
 </script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
+

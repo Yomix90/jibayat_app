@@ -1,0 +1,30 @@
+======================================================================
+     JIBAYAT — GUIDE D'INSTALLATION & LICENCE DÉVELOPPEUR
+======================================================================
+  Développeur       : YOUSSEF
+  Contact / WhatsApp: +212 662-082795
+  Email Support     : yomix90@gmail.com
+  Dépôt GitHub      : https://github.com/Yomix90/JIBAYAT
+  Licence Master    : JBYT-LFFF-FF0D-B795-5F03 (Illimitée / À vie)
+======================================================================
+
+1. INSTALLATION RAPIDE :
+   - Double-cliquez sur "INSTALLER.bat"
+   - Le script installe toutes les dépendances et crée le raccourci sur le Bureau.
+
+2. DÉMARRAGE DE L'APPLICATION :
+   - Double-cliquez sur l'icône "JIBAYAT" sur le Bureau
+   - Ou lancez "DEMARRER.bat"
+
+3. ACTIVATION DE LA LICENCE :
+   - Ouvrez votre navigateur sur : http://localhost:5050/activation
+   - Saisissez la clé Master Développeur :
+     JBYT-LFFF-FF0D-B795-5F03
+
+4. GÉNÉRATEUR DE CLÉS CLIENTS (ÉDITEUR UNIQUEMENT) :
+   - Lancez l'application : "dist\JIBAYAT_Keygen.exe"
+   - Choisissez la durée souhaitée (30j, 90j, 365j, À vie) et générez la clé.
+
+5. ASSISTANCE & SUPPORT :
+   - Youssef : +212 662-082795 / yomix90@gmail.com
+======================================================================

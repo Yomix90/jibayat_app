@@ -8,16 +8,59 @@ _logger = logging.getLogger('jibayat.db')
 
 DB = 'fiscalite.db'
 
+from flask import g, has_request_context
+
+class SafeConnection(sqlite3.Connection):
+    def close(self):
+        if has_request_context():
+            return
+        super().close()
+
+    def force_close(self):
+        super().close()
+
 def get_db():
-    conn = sqlite3.connect(DB, timeout=30, check_same_thread=False)
+    if has_request_context():
+        if 'db' not in g or g.db is None:
+            conn = sqlite3.connect(DB, timeout=30, check_same_thread=False, factory=SafeConnection)
+            conn.row_factory = sqlite3.Row
+            try:
+                conn.execute('PRAGMA journal_mode=WAL')
+                conn.execute('PRAGMA busy_timeout=30000')
+            except Exception:
+                pass
+            g.db = conn
+        else:
+            try:
+                g.db.execute("SELECT 1")
+            except (sqlite3.ProgrammingError, sqlite3.OperationalError):
+                conn = sqlite3.connect(DB, timeout=30, check_same_thread=False, factory=SafeConnection)
+                conn.row_factory = sqlite3.Row
+                try:
+                    conn.execute('PRAGMA journal_mode=WAL')
+                    conn.execute('PRAGMA busy_timeout=30000')
+                except Exception:
+                    pass
+                g.db = conn
+        return g.db
+
+    conn = sqlite3.connect(DB, timeout=30, check_same_thread=False, factory=SafeConnection)
     conn.row_factory = sqlite3.Row
-    # WAL mode: permet lectures concurrentes pendant une ecriture
     try:
         conn.execute('PRAGMA journal_mode=WAL')
         conn.execute('PRAGMA busy_timeout=30000')
     except Exception:
         pass
     return conn
+
+def close_db(e=None):
+    if has_request_context():
+        db = g.pop('db', None)
+        if db is not None:
+            try:
+                db.force_close()
+            except Exception:
+                pass
 
 # ── Système de versions de schéma ───────────────────────────
 SCHEMA_VERSION = 3
@@ -674,26 +717,37 @@ CREATE TABLE IF NOT EXISTS emission_config (
         c.execute('INSERT OR IGNORE INTO app_modules (code, nom, description, actif, ordre) VALUES (?,?,?,?,?)', m)
     conn.commit()
 
-    # Commune depuis config.json
+    # Commune depuis config.json (enregistrement unique ID=1)
     if cfg and cfg.get('commune'):
         cm = cfg['commune']
-        c.execute('''INSERT OR IGNORE INTO communes (nom,nom_ar,region,region_ar,province,province_ar,logo)
-            VALUES (?,?,?,?,?,?,?)''',
+        c.execute('''INSERT INTO communes (id, nom, nom_ar, region, region_ar, province, province_ar, logo)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                nom=excluded.nom, nom_ar=excluded.nom_ar,
+                region=excluded.region, region_ar=excluded.region_ar,
+                province=excluded.province, province_ar=excluded.province_ar,
+                logo=excluded.logo''',
             (cm.get('nom','Commune'), cm.get('nom_ar',''), cm.get('region',''),
              cm.get('region_ar',''), cm.get('province',''), cm.get('province_ar',''),
-             cm.get('logo', '')))
+             cm.get('logo', 'img/logo.png')))
         conn.commit()
     else:
-        c.execute("INSERT OR IGNORE INTO communes (nom) VALUES ('Ma Commune')")
+        c.execute("INSERT OR IGNORE INTO communes (id, nom) VALUES (1, 'Ma Commune')")
         conn.commit()
 
-    # Admin par défaut
-    pwd = _h.sha256('admin123'.encode()).hexdigest()
+    # Admin par défaut (mot de passe aléatoire généré au premier démarrage)
+    from werkzeug.security import generate_password_hash
+    import secrets as _sec
+    _default_admin_pwd = _sec.token_urlsafe(12)
+    pwd = generate_password_hash(_default_admin_pwd)
     admin_role = c.execute("SELECT id FROM roles WHERE nom='super_admin'").fetchone()
     if admin_role:
-        c.execute('''INSERT OR IGNORE INTO utilisateurs (nom,prenom,email,mot_de_passe,role_id,commune_id)
-            VALUES (?,?,?,?,?,1)''', ('Admin','Super','admin@commune.ma',pwd,admin_role[0]))
-        conn.commit()
+        existing_admin = c.execute("SELECT id FROM utilisateurs WHERE email='admin@commune.ma'").fetchone()
+        if not existing_admin:
+            c.execute('''INSERT OR IGNORE INTO utilisateurs (nom,prenom,email,mot_de_passe,role_id,commune_id)
+                VALUES (?,?,?,?,?,1)''', ('Admin','Super','admin@commune.ma',pwd,admin_role[0]))
+            conn.commit()
+            _logger.info(f"Admin par défaut créé : admin@commune.ma (configurer le mot de passe via /setup)")
 
     # Rubriques avec codes budgétaires officiels
     rubriques_default = [
@@ -846,7 +900,6 @@ def get_tarif_at_date(rubrique_id: int, query_date: str) -> dict | None:
         ORDER BY date_debut DESC
         LIMIT 1
     ''', (rubrique_id, query_date, query_date)).fetchone()
-    conn.close()
     return dict(row) if row else None
 
 
@@ -864,5 +917,16 @@ def get_tarifs_for_period(rubrique_id: int, date_debut: str, date_fin: str) -> l
           AND actif = 1
         ORDER BY date_debut ASC
     ''', (rubrique_id, date_fin, date_debut)).fetchall()
-    conn.close()
     return [dict(r) for r in rows]
+
+
+def check_db_integrity() -> bool:
+    """Vérifie l'intégrité structurelle de la base SQLite."""
+    try:
+        conn = sqlite3.connect(DB, timeout=5)
+        res = conn.execute('PRAGMA integrity_check').fetchone()
+        conn.close()
+        return res[0] == 'ok' if res else False
+    except Exception as e:
+        _logger.error(f"Erreur vérification intégrité DB: {e}")
+        return False

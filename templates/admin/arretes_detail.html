@@ -4,46 +4,46 @@
 {% block extra_head %}
 <style>
 /* ── Hero ── */
-.hero-arrete{background:linear-gradient(135deg,#1e3a5f,#2d6a9f);color:#fff;border-radius:14px;
-  padding:22px 28px;margin-bottom:18px;display:flex;align-items:flex-start;gap:18px}
-.hero-arrete .ha-icon{font-size:2.4rem;flex-shrink:0;margin-top:2px}
-.hero-arrete h2{margin:0;font-size:1.2rem;font-weight:900}
-.hero-arrete .sub{font-size:.78rem;opacity:.75;margin-top:4px}
-.ha-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.ha-pill{background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px;font-size:.68rem;display:flex;align-items:center;gap:4px}
+.hero-arrete{background:linear-gradient(135deg,#152238 0%,#0e1626 100%);color:#fff;border-radius:var(--radius);
+  padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;gap:18px;box-shadow:var(--shadow)}
+.hero-arrete .ha-icon{font-size:2.5rem;flex-shrink:0;margin-top:2px}
+.hero-arrete h2{margin:0;font-family:var(--font-display);font-size:1.35rem;font-weight:800}
+.hero-arrete .sub{font-size:.82rem;color:rgba(255,255,255,.7);margin-top:4px}
+.ha-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ha-pill{background:rgba(255,255,255,.12);border-radius:99px;padding:4px 12px;font-size:.72rem;display:flex;align-items:center;gap:6px;font-weight:700}
 
 /* ── KPIs ── */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px;margin-bottom:16px}
-.kpi{background:var(--card);border-radius:10px;padding:12px;text-align:center;border-top:4px solid var(--primary);box-shadow:var(--shadow)}
-.kpi.ok{border-top-color:var(--ok)}.kpi.warn{border-top-color:#fd7e14}.kpi.purple{border-top-color:#6f42c1}
-.kv{font-size:1.3rem;font-weight:900;color:var(--primary)}.kl{font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:2px}
-.kpi.ok .kv{color:var(--ok)}.kpi.warn .kv{color:#fd7e14}.kpi.purple .kv{color:#6f42c1}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:14px 16px;text-align:center;border-top:4px solid var(--accent);border:1px solid var(--line);box-shadow:var(--shadow)}
+.kpi.ok{border-top-color:var(--green)}.kpi.warn{border-top-color:var(--amber)}.kpi.purple{border-top-color:#7c3aed}
+.kv{font-family:var(--font-display);font-size:1.4rem;font-weight:800;color:var(--ink-900)}.kl{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.kpi.ok .kv{color:var(--green)}.kpi.warn .kv{color:var(--amber)}.kpi.purple .kv{color:#7c3aed}
 
 /* ── Onglets modules ── */
-.mod-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg)}
-.mod-tab{padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);
-  background:var(--card);color:var(--muted);transition:all .15s;display:flex;align-items:center;gap:5px}
-.mod-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.mod-tab:hover:not(.active){border-color:var(--primary);color:var(--primary)}
-.mod-tab .ct{background:rgba(0,0,0,.15);border-radius:10px;padding:0 5px;font-size:.6rem}
+.mod-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+.mod-tab{padding:6px 14px;border-radius:99px;font-size:.78rem;font-weight:800;cursor:pointer;border:1.5px solid var(--line);
+  background:#fff;color:var(--muted);transition:all .15s;display:flex;align-items:center;gap:6px}
+.mod-tab.active{background:var(--ink-800);color:#fff;border-color:var(--ink-800)}
+.mod-tab:hover:not(.active){border-color:#cbd5e1;color:var(--text)}
+.mod-tab .ct{background:rgba(0,0,0,.12);border-radius:99px;padding:1px 6px;font-size:.65rem}
 .mod-tab.active .ct{background:rgba(255,255,255,.25)}
 
 /* ── Sections modules ── */
 .mod-section{display:none}.mod-section.active{display:block}
-.tarif-table td{padding:8px 12px;font-size:.82rem;vertical-align:middle;border-bottom:1px solid var(--border)}
-.tarif-table th{padding:7px 12px;font-size:.7rem;font-weight:800;text-transform:uppercase;color:var(--muted);
-  background:var(--bg);border-bottom:1px solid var(--border)}
-.tarif-val{font-size:1.05rem;font-weight:900;color:var(--primary)}
+.tarif-table td{padding:12px 16px;font-size:.88rem;vertical-align:middle;border-bottom:1px solid var(--line)}
+.tarif-table th{padding:12px 16px;font-size:.73rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
+  background:#f8fafc;border-bottom:2px solid var(--line)}
+.tarif-val{font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--ink-900)}
 .tarif-expire{opacity:.5}
 .mod-icon{font-size:1.3rem}
 
 /* ── Panel d'ajout ── */
-.add-panel{background:var(--bg);border-radius:10px;border:1.5px dashed var(--border);padding:14px 16px;margin-top:14px}
-.add-panel.open{border-color:var(--accent);border-style:solid}
+.add-panel{background:var(--paper);border-radius:var(--radius);border:1.5px dashed var(--line);padding:18px 20px;margin-top:16px}
+.add-panel.open{border-color:var(--accent);border-style:solid;background:#fff}
 
 /* ── Badges ── */
-.badge-actif{background:#d1fae5;color:#065f46;border-radius:10px;padding:2px 8px;font-size:.62rem;font-weight:700}
-.badge-expire{background:#fee2e2;color:#991b1b;border-radius:10px;padding:2px 8px;font-size:.62rem;font-weight:700}
+.badge-actif{background:var(--green-soft);color:var(--green);border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:800}
+.badge-expire{background:var(--red-soft);color:var(--red);border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:800}
 
 /* ── Histo ── */
 .histo-row{font-size:.78rem;padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center}
@@ -97,7 +97,7 @@
       📋 + Rubrique ({{ rubriques_manquantes|length }})
     </button>
     {% endif %}
-    <button onclick="ouvrirSuppressionArrete({{ arrete.id }},'{{ arrete.numero }}','{{ arrete.titre }}')" 
+    <button data-id="{{ arrete.id }}" data-numero="{{ arrete.numero }}" data-titre="{{ arrete.titre }}" onclick="ouvrirSuppressionArreteBtn(this)" 
             class="btn btn-sm" style="background:rgba(220,38,38,.25);color:#fff;border:1px solid rgba(220,38,38,.5)">
       🗑️ Supprimer l'Arrêté
     </button>
@@ -503,8 +503,10 @@
 {% endfor %}
 {% endif %}
 
+<script type="application/json" id="rubriques-data">{{ rubriques | tojson | safe }}</script>
 <script>
-// ─── Onglets modules ───────────────────────────────────────────────
+const RUBRIQUES = JSON.parse(document.getElementById('rubriques-data').textContent || '[]');
+
 function switchMod(target, btn) {
   document.querySelectorAll('.mod-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.mod-section').forEach(s => s.classList.remove('active'));
@@ -513,8 +515,12 @@ function switchMod(target, btn) {
   if (sec) sec.classList.add('active');
 }
 
-// ─── Modal Ajouter tarif ───────────────────────────────────────────
-const RUBRIQUES = {{ rubriques | tojson | safe }};
+function ouvrirSuppressionArreteBtn(btn) {
+  const id = btn.getAttribute('data-id');
+  const numero = btn.getAttribute('data-numero');
+  const titre = btn.getAttribute('data-titre');
+  ouvrirSuppressionArrete(id, numero, titre);
+}
 
 function openAddModal(modName, rubId) {
   const rub = RUBRIQUES.find(r => r.id == rubId);

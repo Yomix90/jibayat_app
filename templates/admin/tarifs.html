@@ -9,6 +9,8 @@
   <div class="card-header"><h3>➕ Nouveau Tarif</h3></div>
   <div class="card-body">
     <form method="post" action="{{ url_for('config.ajouter_tarif') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="commune_id" value="1">
       <div class="form-grid">
         <div class="form-group">
           <label>Module / Rubrique *</label>
@@ -30,10 +32,6 @@
         </div>
         <div class="form-group"><label>Min légal</label><input type="number" name="min_legal" step="0.01" value="0" placeholder="Min fourchette loi"></div>
         <div class="form-group"><label>Max légal</label><input type="number" name="max_legal" step="0.01" value="0" placeholder="Max fourchette loi"></div>
-        <div class="form-group">
-          <label>Commune</label>
-          <select name="commune_id">{% for c in communes %}<option value="{{ c.id }}">{{ c.nom }}</option>{% endfor %}</select>
-        </div>
       </div>
       <div class="form-actions"><button type="submit" class="btn btn-primary">💾 Ajouter Tarif</button></div>
     </form>
@@ -52,7 +50,7 @@
         <h3>{% if t.module=='TNB' %}🏗️{% elif t.module=='DEBITS_BOISSONS' %}🍺{% elif t.module=='STATIONNEMENT' %}🚗{% elif t.module=='FOURRIERE' %}🔑{% elif t.module=='OCCUPATION_DOMAINE' %}🏪{% elif t.module=='LOCATION_LOCAUX' %}🏢{% elif t.module=='AFFERMAGE_SOUKS' %}🛒{% else %}📋{% endif %} {{ t.rub_libelle }}</h3>
         <span class="badge b-primary">{{ t.module }}</span>
       </div>
-      <div class="table-responsive"><table><thead><tr><th>Code</th><th>Libellé</th><th>Année</th><th>Valeur</th><th>Fourchette légale</th><th>Commune</th>{% if user.peut_config %}<th>Action</th>{% endif %}</tr></thead><tbody>
+      <div class="table-responsive"><table><thead><tr><th>Code</th><th>Libellé</th><th>Année</th><th>Valeur</th><th>Fourchette légale</th>{% if user.peut_config %}<th>Action</th>{% endif %}</tr></thead><tbody>
   {% endif %}
   <tr>
     <td><strong style="color:var(--primary)">{{ t.code_tarif }}</strong></td>
@@ -69,10 +67,10 @@
       {% endif %}
     </td>
     <td style="font-size:.78rem;color:var(--muted)">{% if t.min_legal > 0 %}{{ t.min_legal }} — {{ t.max_legal }} {{ t.unite }}{% else %}—{% endif %}</td>
-    <td style="font-size:.78rem">{{ t.commune_nom }}</td>
     {% if user.peut_config %}<td>
       {% if user.peut_supprimer %}
       <form method="post" action="{{ url_for('config.supprimer_tarif', id=t.id) }}" data-confirm="danger" data-confirm-title="Confirmer la suppression" data-confirm-msg="Cette action est irréversible. Voulez-vous vraiment supprimer cet élément ?">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="btn btn-danger btn-xs">🗑️</button>
       </form>{% endif %}
     </td>{% endif %}

@@ -3,276 +3,493 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connexion — JIBAYAT</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Cairo:wght@600;800&display=swap" rel="stylesheet">
+<title>Connexion — JIBAYAT | Gestion Fiscale Communale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Changa:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --ink-950: #070d18;
+  --ink-900: #0e1626;
+  --ink-800: #152238;
+  --card-bg: rgba(255, 255, 255, 0.96);
+
+  --accent: #f6a21e;
+  --accent-light: #ffbe58;
+  --accent-dark: #d97706;
+  --accent-ink: #1f1402;
+
+  --green: #0f9d6a;
+  --red: #e14b4b;
+  --red-soft: #fdeaea;
+
+  --font-body: 'Cairo', 'Inter', system-ui, sans-serif;
+  --font-display: 'Changa', 'Cairo', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-    font-family: 'Outfit', system-ui, sans-serif;
-    background: #0f172a;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-    color: #fff;
+  font-family: var(--font-body);
+  background: var(--ink-950);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  color: #fff;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Background Animated Gradient & Orbs */
-body::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at 50% 0%, #1e3a8a 0%, transparent 60%),
-                radial-gradient(circle at 100% 100%, #854d0e 0%, transparent 50%),
-                radial-gradient(circle at 0% 100%, #0f172a 0%, #020617 100%);
-    z-index: 0;
+/* Background animated gradient mesh & light orbs */
+.bg-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 50% 0%, rgba(246, 162, 30, 0.16) 0%, transparent 65%),
+    radial-gradient(circle at 10% 80%, rgba(21, 34, 56, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 90% 90%, rgba(246, 162, 30, 0.08) 0%, transparent 45%);
 }
+
 .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(90px);
-    z-index: 1;
-    animation: floatOrb 25s infinite alternate ease-in-out;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
 }
-.orb-1 { width: 500px; height: 500px; background: rgba(59, 130, 246, 0.18); top: -150px; left: -150px; }
-.orb-2 { width: 600px; height: 600px; background: rgba(234, 179, 8, 0.12); bottom: -250px; right: -150px; animation-delay: -5s; }
+.orb-1 {
+  width: 420px; height: 420px;
+  background: rgba(246, 162, 30, 0.12);
+  top: -120px; left: -100px;
+  animation: floatOrb 18s ease-in-out infinite alternate;
+}
+.orb-2 {
+  width: 500px; height: 500px;
+  background: rgba(30, 58, 95, 0.35);
+  bottom: -160px; right: -120px;
+  animation: floatOrb 22s ease-in-out infinite alternate-reverse;
+}
 @keyframes floatOrb {
-    100% { transform: translate(150px, 100px); }
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(60px, 40px) scale(1.1); }
 }
 
-/* Glassmorphism Card */
-.login-box {
-    position: relative;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 100%;
-    max-width: 440px;
-    border-radius: 28px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
-    padding: 45px 40px;
-    transform: translateY(30px);
-    opacity: 0;
-    animation: fadeUp 0.9s forwards cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes fadeUp {
-    to { transform: translateY(0); opacity: 1; }
+/* Outer layout container */
+.login-container {
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  z-index: 10;
 }
 
-/* Header */
-.login-header {
-    text-align: center;
-    margin-bottom: 35px;
+/* Official Kingdom Emblem Header */
+.official-header {
+  text-align: center;
+  margin-bottom: 24px;
+  animation: fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.logo-icon {
-    font-size: 4rem;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
-    animation: floatIcon 6s ease-in-out infinite;
-    display: inline-block;
+.official-header .royaume-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 2px;
 }
-@keyframes floatIcon {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-}
-.login-header h1 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-    background: linear-gradient(135deg, #ffffff 0%, #eab308 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.login-header p {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.6);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 600;
+.official-header .ministere-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
 }
 
-/* Form */
-.form-group {
-    margin-bottom: 22px;
-    position: relative;
-}
-.form-group label {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: rgba(255,255,255,0.8);
-    margin-bottom: 8px;
-    transition: color 0.3s;
-}
-.form-group:focus-within label {
-    color: #eab308;
-}
-.input-wrapper {
-    position: relative;
-}
-.input-wrapper svg {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    fill: none;
-    stroke: rgba(255,255,255,0.4);
-    stroke-width: 2;
-    transition: stroke 0.3s;
-}
-.form-group:focus-within .input-wrapper svg {
-    stroke: #eab308;
-}
-.form-group input {
-    width: 100%;
-    padding: 15px 16px 15px 46px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    font-size: 0.95rem;
-    color: #fff;
-    font-family: inherit;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.form-group input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-}
-.form-group input:focus {
-    outline: none;
-    border-color: rgba(234, 179, 8, 0.5);
-    background: rgba(0, 0, 0, 0.35);
-    box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.15);
+/* Main Card */
+.login-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 26px;
+  padding: 40px 36px 36px;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 0 60px rgba(246, 162, 30, 0.12),
+    0 30px 80px rgba(0, 0, 0, 0.65);
+  animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #1b2437;
 }
 
-/* Button */
-.btn-login {
-    width: 100%;
-    background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
-    color: #000;
-    border: none;
-    padding: 16px;
-    border-radius: 14px;
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-top: 10px;
-    box-shadow: 0 10px 25px rgba(202, 138, 4, 0.25);
-    position: relative;
-    overflow: hidden;
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.btn-login::after {
-    content: "";
-    position: absolute;
-    top: 0; left: -100%; width: 50%; height: 100%;
-    background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
-    transform: skewX(-25deg);
-    transition: none;
-}
-.btn-login:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 35px rgba(202, 138, 4, 0.4);
-}
-.btn-login:hover::after {
-    animation: shine 0.7s forwards;
-}
-@keyframes shine {
-    100% { left: 200%; }
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Alert */
-.alert {
-    background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
-    padding: 14px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    margin-bottom: 24px;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+/* Logo & Brand */
+.brand-wrap {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.logo-halo {
+  width: 82px;
+  height: 82px;
+  margin: 0 auto 16px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #152238 0%, #0e1626 100%);
+  padding: 3px;
+  box-shadow: 0 12px 30px rgba(14, 22, 38, 0.35);
+  position: relative;
+}
+.logo-halo::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--accent), transparent);
+  z-index: -1;
+  opacity: 0.6;
+}
+.logo-inner {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.logo-inner img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.brand-wrap h1 {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #0e1626;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.brand-wrap p.desc {
+  font-size: 0.84rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Alert error */
+.alert-error {
+  background: var(--red-soft);
+  color: var(--red);
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  border-left: 4px solid var(--red);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: shake 0.4s ease-in-out;
 }
 @keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 
-/* Decoration */
-.commune-badge {
-    position: absolute;
-    bottom: 25px;
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.4);
-    letter-spacing: 2px;
-    z-index: 1;
+/* Form controls */
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-icon {
+  position: absolute;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+.input-box input {
+  width: 100%;
+  padding: 13px 16px 13px 44px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.input-box input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+.input-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(246, 162, 30, 0.18);
+}
+.form-group:focus-within label {
+  color: var(--accent-dark);
+}
+.form-group:focus-within .input-icon {
+  color: var(--accent-dark);
+}
+
+/* Toggle password button */
+.btn-toggle-pwd {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.btn-toggle-pwd:hover {
+  color: #334155;
+}
+
+/* Options row */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  font-size: 0.82rem;
+}
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #475569;
+  user-select: none;
+}
+.remember-me input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent-dark);
+  cursor: pointer;
+}
+.sec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
+/* Submit button */
+.btn-submit {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(246, 162, 30, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-submit::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  transition: none;
+}
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(246, 162, 30, 0.45);
+}
+.btn-submit:hover::after {
+  animation: shine 0.75s ease-in-out;
+}
+@keyframes shine {
+  100% { left: 180%; }
+}
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+/* Footer & Security Chips */
+.login-footer {
+  margin-top: 32px;
+  text-align: center;
+}
+.commune-name-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  padding: 8px 20px;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  margin-bottom: 16px;
+}
+.chips-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.5);
+  flex-wrap: wrap;
+}
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 </style>
 </head>
 <body>
 
+<div class="bg-glow"></div>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
-<div class="login-box">
-  <div class="login-header">
-    <div class="logo-icon">
-      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Commune" style="width: 100px; height: 100px; object-fit: contain; border-radius: 50%; border: 3px solid rgba(255,255,255,0.2); padding: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
-    </div>
-    <h1>JIBAYAT</h1>
-    <p>Système Intégré de Gestion Fiscale</p>
+<div class="login-container">
+
+  <!-- En-tête Officiel -->
+  <div class="official-header">
+    <div class="royaume-title">Royaume du Maroc — المملكة المغربية</div>
+    <div class="ministere-title">Ministère de l'Intérieur — وزارة الداخلية</div>
   </div>
-  
-  <div class="login-body">
+
+  <!-- Carte de Connexion -->
+  <div class="login-card">
+    
+    <div class="brand-wrap">
+      <div class="logo-halo">
+        <div class="logo-inner">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Commune">
+        </div>
+      </div>
+      <h1>JIBAYAT</h1>
+      <p class="desc">Gestion Fiscale &amp; Recettes Communales</p>
+    </div>
+
     {% if error %}
-    <div class="alert">
-      <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-      {{ error }}
+    <div class="alert-error">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span>{{ error }}</span>
     </div>
     {% endif %}
-    
+
     <form method="POST">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-      <div class="form-group">
-        <label>Identifiant / Email</label>
-        <div class="input-wrapper">
-          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <input type="email" name="email" required autofocus placeholder="admin@commune.ma" value="admin@commune.ma">
-        </div>
-      </div>
       
       <div class="form-group">
-        <label>Mot de passe</label>
-        <div class="input-wrapper">
-          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-          <input type="password" name="password" required placeholder="••••••••" value="admin123">
+        <label for="email">Identifiant / Email</label>
+        <div class="input-box">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <input type="email" id="email" name="email" required autofocus placeholder="admin@commune.ma" value="admin@commune.ma">
         </div>
       </div>
-      
-      <button type="submit" class="btn-login">Accéder à l'espace sécurisé</button>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <div class="input-box">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <input type="password" id="password" name="password" required placeholder="••••••••">
+          <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility()" title="Afficher/Masquer le mot de passe">
+            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <label class="remember-me">
+          <input type="checkbox" name="remember" checked>
+          <span>Se souvenir de moi</span>
+        </label>
+        <div class="sec-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Session SSL</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">Accéder à l'Espace Sécurisé ➔</button>
     </form>
   </div>
+
+  <!-- Pied de page officiel -->
+  <div class="login-footer">
+    <div class="commune-name-badge">
+      🏛️ {{ commune_nom if commune_nom else 'COMMUNE URBAINE' }}
+    </div>
+
+    <div class="chips-row">
+      <span class="chip">🔒 Chiffrement 256-Bit</span>
+      <span>•</span>
+      <span class="chip">📜 Loi 47-06</span>
+      <span>•</span>
+      <span class="chip">⚡ JIBAYAT v2.5</span>
+    </div>
+  </div>
+
 </div>
 
-<div class="commune-badge">
-    ROYAUME DU MAROC — MINISTÈRE DE L'INTÉRIEUR<br>
-    <strong style="color: #eab308; font-size: 0.95rem; margin-top: 6px; display: inline-block; letter-spacing: 3px;">
-      {{ commune_nom|upper if commune_nom else 'COMMUNE' }}
-    </strong>
-</div>
+<script>
+function togglePasswordVisibility() {
+  const pwdInput = document.getElementById('password');
+  const eyeIcon = document.getElementById('eye-icon');
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+  } else {
+    pwdInput.type = 'password';
+    eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+  }
+}
+</script>
 
 </body>
 </html>

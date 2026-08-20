@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activation & Licence — JIBAYAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+  body {
+    background: linear-gradient(135deg, #0b1528 0%, #15294b 100%);
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #1e293b;
+    margin: 0;
+  }
+  .act-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+    animation: popIn .3s cubic-bezier(.34,1.56,.64,1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .act-header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+    padding: 32px 28px 24px;
+    text-align: center;
+    color: #fff;
+    position: relative;
+  }
+  .act-badge-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ffc14d, #f29d0c);
+    display: grid;
+    place-items: center;
+    font-size: 1.8rem;
+    margin: 0 auto 14px;
+    box-shadow: 0 8px 20px rgba(242, 157, 12, 0.35);
+  }
+  .act-title {
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin: 0 0 4px;
+    letter-spacing: .5px;
+  }
+  .act-subtitle {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .act-body {
+    padding: 28px;
+  }
+  .status-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 22px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .status-chip.trial {
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    color: #92400e;
+  }
+  .status-chip.expired {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #991b1b;
+  }
+  .status-chip.active {
+    background: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    color: #166534;
+  }
+  .key-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all .2s;
+    background: #f8fafc;
+  }
+  .key-input:focus {
+    outline: none;
+    border-color: #2a5298;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.12);
+  }
+  .act-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 14px;
+    box-shadow: 0 4px 14px rgba(42, 82, 152, 0.25);
+  }
+  .act-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(42, 82, 152, 0.35);
+  }
+  .act-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 16px 28px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+  .act-footer a {
+    color: #2a5298;
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="act-card">
+  <div class="act-header">
+    <div class="act-badge-logo">🏛️</div>
+    <h1 class="act-title">Activation de JIBAYAT</h1>
+    <div class="act-subtitle">{{ commune_nom }} — Fiscalité Communale (v{{ sys_version }})</div>
+  </div>
+
+  <div class="act-body">
+    <!-- Statut de la licence -->
+    {% if status.is_activated %}
+      <div class="status-chip active">
+        <span>✅ <strong>Licence Active</strong></span>
+        <span>{{ status.expiry_date }}</span>
+      </div>
+    {% elif status.in_trial %}
+      <div class="status-chip trial">
+        <span>⏳ <strong>Période d'essai</strong> (Optionnelle)</span>
+        <span>{{ status.trial_days_left }} jour(s) restants</span>
+      </div>
+      <p style="font-size:.82rem;color:#64748b;margin-bottom:18px;line-height:1.4;">
+        Vous profitez actuellement de la période d'essai gratuite. L'activation est optionnelle pendant cette période.
+      </p>
+    {% else %}
+      <div class="status-chip expired">
+        <span>⚠️ <strong>Période d'essai expirée</strong></span>
+        <span>Activation requise</span>
+      </div>
+      <p style="font-size:.82rem;color:#64748b;margin-bottom:18px;line-height:1.4;">
+        Votre période d'essai de 30 jours est arrivée à échéance. Veuillez renseigner une clé d'activation pour continuer à utiliser JIBAYAT.
+      </p>
+    {% endif %}
+
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% if msgs %}
+        {% for cat, msg in msgs %}
+          <div style="padding:10px 14px;border-radius:10px;font-size:.82rem;margin-bottom:16px;font-weight:600;{% if cat=='success' %}background:#dcfce7;color:#15803d;border:1px solid #86efac;{% else %}background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;{% endif %}">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('licensing.activation_page') }}">
+      <div style="margin-bottom:8px;">
+        <label style="display:block;font-size:.75rem;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+          Clé d'activation du produit
+        </label>
+        <input type="text"
+               name="license_key"
+               id="license-key-input"
+               class="key-input"
+               placeholder="JBYT-XXXX-XXXX-XXXX-XXXX"
+               maxlength="24"
+               required
+               autocomplete="off"
+               spellcheck="false">
+      </div>
+
+      <button type="submit" class="act-btn">
+        🔐 Activer le Logiciel
+      </button>
+    </form>
+
+    {% if not status.requires_activation %}
+      <div style="text-align:center;margin-top:16px;">
+        <a href="{{ url_for('index') }}" style="font-size:.82rem;color:#2a5298;text-decoration:none;font-weight:700;">
+          ← Retourner au Tableau de Bord
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="act-footer">
+    Besoin d'une licence ou d'une clé d'activation ?<br>
+    <strong>Développeur :</strong> Youssef &bull; <strong>Tél / WhatsApp :</strong> <a href="https://wa.me/212662082795" target="_blank" style="color:#2a5298;font-weight:700;">+212 662-082795</a><br>
+    <strong>Email :</strong> <a href="mailto:yomix90@gmail.com">yomix90@gmail.com</a>
+  </div>
+</div>
+
+<script>
+// Formatage automatique JBYT-XXXX-XXXX-XXXX-XXXX
+const keyInput = document.getElementById('license-key-input');
+keyInput.addEventListener('input', (e) => {
+  let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!val.startsWith('JBYT') && val.length > 0) {
+    if ('JBYT'.startsWith(val)) {
+      // utilisateur commence à taper JBYT
+    } else {
+      val = 'JBYT' + val;
+    }
+  }
+  let parts = [];
+  if (val.length > 0) parts.push(val.substring(0, 4));
+  if (val.length > 4) parts.push(val.substring(4, 8));
+  if (val.length > 8) parts.push(val.substring(8, 12));
+  if (val.length > 12) parts.push(val.substring(12, 16));
+  if (val.length > 16) parts.push(val.substring(16, 20));
+
+  e.target.value = parts.join('-');
+});
+</script>
+
+</body>
+</html>

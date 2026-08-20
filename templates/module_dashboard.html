@@ -7,70 +7,65 @@
 <style>
 /* couleur du module injectée via --mod-color sur #mod-root */
 .mod-header{
-  background: color-mix(in srgb, var(--mod-color) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--mod-color) 25%, transparent);
+  background: color-mix(in srgb, var(--mod-color) 8%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--mod-color) 20%, var(--line));
   border-left: 5px solid var(--mod-color);
-  border-radius: 14px;
-  padding: 20px 24px;
+  border-radius: var(--radius);
+  padding: 22px 26px;
   margin-bottom: 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 16px;
+  box-shadow: var(--shadow);
 }
-.mod-header-left { display: flex; align-items: center; gap: 14px; }
+.mod-header-left { display: flex; align-items: center; gap: 16px; }
 .mod-header-icon {
-  width: 54px; height: 54px; border-radius: 14px;
+  width: 58px; height: 58px; border-radius: 14px;
   background: color-mix(in srgb, var(--mod-color) 15%, transparent);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.8rem;
+  font-size: 2rem;
   border: 1px solid color-mix(in srgb, var(--mod-color) 30%, transparent);
 }
-.mod-header-title { font-size: 1.35rem; font-weight: 900; color: var(--primary); }
-.mod-header-sub { font-size: .8rem; color: var(--muted); margin-top: 2px; }
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.mod-header-title { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; color: var(--ink-900); }
+.mod-header-sub { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 22px; }
 .kpi-card {
   background: var(--card);
-  border-radius: 13px;
-  padding: 18px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  padding: 20px;
   box-shadow: var(--shadow);
   border-top: 4px solid var(--kpi-color, var(--primary));
   transition: transform .2s, box-shadow .2s;
   position: relative;
   overflow: hidden;
 }
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  top: -20px; right: -20px;
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: var(--kpi-color, var(--primary));
-  opacity: .05;
-}
-.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
-.kpi-icon { font-size: 1.5rem; margin-bottom: 8px; display: block; }
-.kpi-val { font-size: 1.9rem; font-weight: 900; color: var(--kpi-color, var(--primary)); line-height: 1; }
-.kpi-label { font-size: .7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 4px; }
-.kpi-sub { font-size: .72rem; color: var(--muted); margin-top: 6px; }
-.chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 22px; }
+.kpi-card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(16,24,40,.12); }
+.kpi-icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
+.kpi-val { font-family: var(--font-display); font-size: 1.85rem; font-weight: 800; color: var(--kpi-color, var(--ink-900)); line-height: 1.1; }
+.kpi-label { font-size: .75rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-top: 4px; }
+.kpi-sub { font-size: .75rem; color: var(--muted); font-weight: 600; margin-top: 6px; }
+.chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 22px; }
 @media(max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
-.chart-card { background: var(--card); border-radius: 13px; padding: 18px; box-shadow: var(--shadow); }
-.chart-card h4 { font-size: .85rem; font-weight: 800; color: var(--primary); margin-bottom: 14px; display: flex; align-items:center; gap:6px; }
-.progress-bar-wrap { margin-bottom: 10px; }
-.progress-bar-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text); margin-bottom: 4px; }
-.progress-bar-label span:last-child { color: var(--muted); font-size: .7rem; }
-.progress-bar-bg { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.chart-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--line); padding: 20px; box-shadow: var(--shadow); }
+.chart-card h4 { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: var(--ink-900); margin-bottom: 16px; display: flex; align-items:center; gap:8px; }
+.chart-box { position: relative; height: 300px; width: 100%; }
+.chart-box-sm { position: relative; height: 185px; width: 100%; }
+.progress-bar-wrap { margin-bottom: 12px; }
+.progress-bar-label { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.progress-bar-label span:last-child { color: var(--muted); font-size: .72rem; }
+.progress-bar-bg { height: 8px; background: var(--paper); border-radius: 4px; overflow: hidden; }
 .progress-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; background: var(--mod-color); }
 .recent-list { list-style: none; }
-.recent-list li { padding: 9px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; font-size: .8rem; }
+.recent-list li { padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; font-size: .85rem; }
 .recent-list li:last-child { border-bottom: none; }
 .recent-list .rl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .8rem; }
+.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .85rem; }
 .stat-row:last-child { border-bottom: none; }
-.stat-row .sr-label { color: var(--muted); }
-.stat-row .sr-val { font-weight: 700; color: var(--text); }
+.stat-row .sr-label { color: var(--muted); font-weight: 600; }
+.stat-row .sr-val { font-weight: 800; color: var(--text); }
 </style>
 {% endblock %}
 
@@ -104,9 +99,9 @@
 
 <!-- KPI Cards -->
 <div class="kpi-grid">
-  <div class="kpi-card" style="--kpi-color:{{ mod_info.color }}">
+  <div class="kpi-card" style="border-top-color: {{ mod_info.color }};">
     <span class="kpi-icon">📂</span>
-    <div class="kpi-val">{{ stats.total_dossiers }}</div>
+    <div class="kpi-val" style="color: {{ mod_info.color }};">{{ stats.total_dossiers }}</div>
     <div class="kpi-label">Total Dossiers</div>
     <div class="kpi-sub">Tous statuts confondus</div>
   </div>
@@ -152,13 +147,17 @@
   <!-- Évolution mensuelle -->
   <div class="chart-card">
     <h4>📈 Recouvrement mensuel {{ annee_cur }}</h4>
-    <canvas id="chartMois" height="200"></canvas>
+    <div class="chart-box">
+      <canvas id="chartMois"></canvas>
+    </div>
   </div>
 
   <!-- Répartition statuts -->
   <div class="chart-card">
     <h4>🎯 Répartition des statuts</h4>
-    <canvas id="chartStatuts" height="200"></canvas>
+    <div class="chart-box-sm">
+      <canvas id="chartStatuts"></canvas>
+    </div>
     <div style="margin-top:12px;">
       <div class="stat-row">
         <span class="sr-label">💰 Total émis</span>
@@ -190,7 +189,7 @@
         </div>
         <div class="progress-bar-bg">
           {% set pct = [(row.total_paye / (row.total_emis or 1) * 100)|round(0,'floor'), 100]|min %}
-          <div class="progress-bar-fill" style="width:{{ pct }}%"></div>
+          <div class="progress-bar-fill" style="width: {{ pct }}%;"></div>
         </div>
       </div>
       {% endfor %}
@@ -292,6 +291,7 @@
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
       scales: {
         y: {
@@ -316,6 +316,7 @@
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       cutout: '68%',
       plugins: {
         legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }

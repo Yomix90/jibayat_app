@@ -206,7 +206,7 @@
                     <td class="text-end">
                         <div class="d-flex justify-content-end gap-1">
                             <!-- Editer -->
-                            <button class="btn btn-sm btn-outline-primary" title="Modifier le montant" onclick="editMontant('{{ l.code_budgetaire }}', {{ l.montant_present }})">
+                            <button class="btn btn-sm btn-outline-primary" title="Modifier le montant" data-code="{{ l.code_budgetaire }}" data-montant="{{ l.montant_present }}" onclick="editMontantBtn(this)">
                                 ✏️
                             </button>
                             
@@ -289,15 +289,13 @@
             </label>
           </div>
 
-          <div class="partie-info-box" id="p1-auto-info"
-               style="{% if em_config.premiere_partie_mode != 'auto' %}display:none;{% endif %}">
+          <div class="partie-info-box {% if em_config.premiere_partie_mode != 'auto' %}d-none{% endif %}" id="p1-auto-info">
             Mode <strong>Automatique</strong> : la valeur est calculée automatiquement comme la somme de toutes
             les émissions des mois antérieurs à <strong>{{ mois_nom }} {{ bv.annee }}</strong>.
             <br><strong>Valeur actuelle : {{ "%.2f"|format(premiere_partie_val) }} DH</strong>
           </div>
 
-          <div class="config-val-row" id="p1-manuel-row"
-               style="{% if em_config.premiere_partie_mode != 'manuel' %}display:none;{% endif %}">
+          <div class="config-val-row {% if em_config.premiere_partie_mode != 'manuel' %}d-none{% endif %}" id="p1-manuel-row">
             <label>Montant (DH) :</label>
             <input type="number" step="0.01" min="0" name="premiere_partie_valeur"
                    id="p1ValInput"
@@ -335,19 +333,16 @@
             </label>
           </div>
 
-          <div class="partie-info-box" id="p2-vide-info"
-               style="{% if em_config.deuxieme_partie_mode != 'vide' %}display:none;{% endif %}">
+          <div class="partie-info-box {% if em_config.deuxieme_partie_mode != 'vide' %}d-none{% endif %}" id="p2-vide-info">
             La colonne <strong>2ème Partie</strong> restera vide dans le PDF.
           </div>
 
-          <div class="partie-info-box" id="p2-auto-info"
-               style="{% if em_config.deuxieme_partie_mode != 'auto' %}display:none;{% endif %}">
+          <div class="partie-info-box {% if em_config.deuxieme_partie_mode != 'auto' %}d-none{% endif %}" id="p2-auto-info">
             Mode <strong>Automatique</strong> : la valeur est le total général du mois courant
             (<strong>{{ "%.2f"|format(bv.total_general) }} DH</strong>).
           </div>
 
-          <div class="config-val-row" id="p2-manuel-row"
-               style="{% if em_config.deuxieme_partie_mode != 'manuel' %}display:none;{% endif %}">
+          <div class="config-val-row {% if em_config.deuxieme_partie_mode != 'manuel' %}d-none{% endif %}" id="p2-manuel-row">
             <label>Montant (DH) :</label>
             <input type="number" step="0.01" min="0" name="deuxieme_partie_valeur"
                    id="p2ValInput"

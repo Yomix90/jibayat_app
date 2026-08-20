@@ -1,0 +1,17 @@
+{
+  "commune": {
+    "nom": "NOM_COMMUNE",
+    "nom_ar": "",
+    "region": "",
+    "region_ar": "",
+    "province": "",
+    "province_ar": "",
+    "logo": "img/logo.png"
+  },
+  "_comment": "Les champs ci-dessous sont générés automatiquement au premier démarrage. Ne les remplissez PAS manuellement.",
+  "secret_key": "",
+  "install_date": "",
+  "license_key": "",
+  "license_type": "",
+  "license_expiry": ""
+}

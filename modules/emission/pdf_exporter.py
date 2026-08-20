@@ -16,14 +16,21 @@ _GREEN = colors.HexColor('#1a7a4a')
 
 # Try to register an Arabic-capable font; fall back if unavailable
 _AR_FONT = 'Helvetica'
-for _path, _name in [
+_FONT_CANDIDATES = [
+    ('/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', 'LiberationSans'),
+    ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 'DejaVuSans'),
+    ('/usr/share/fonts/TTF/DejaVuSans.ttf', 'DejaVuSans'),
+    ('/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf', 'DejaVuSans'),
     ('C:\\Windows\\Fonts\\arial.ttf', 'Arial'),
     ('C:\\Windows\\Fonts\\times.ttf', 'TimesNewRoman'),
-]:
+]
+
+for _path, _name in _FONT_CANDIDATES:
     if os.path.exists(_path):
         try:
             pdfmetrics.registerFont(TTFont(_name, _path))
             _AR_FONT = _name
+            break
         except Exception:
             pass
 

@@ -5,6 +5,7 @@ WORKDIR /app
 # System dependencies for reportlab (fonts, etc) and pandas (if needed)
 RUN apt-get update && apt-get install -y \
     fonts-liberation \
+    fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

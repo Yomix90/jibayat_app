@@ -27,8 +27,6 @@ def get_current_user():
     except Exception:
         session.pop('user_id', None)
         user = None
-    finally:
-        conn.close()
     return user
 
 def get_user_module_permissions(user, module_code):
@@ -47,7 +45,6 @@ def get_user_module_permissions(user, module_code):
            WHERE rmp.role_id = ? AND rmp.module_code = ?''',
         (user['role_id'], module_code)
     ).fetchone()
-    conn.close()
     if row:
         return {
             'peut_voir':      row['peut_voir'],
@@ -70,8 +67,6 @@ def get_all_user_modules(user):
             result[m['code']] = get_user_module_permissions(user, m['code'])
     except Exception:
         result = {}
-    finally:
-        conn.close()
     return result
 
 def module_required(module_code, perm='peut_voir'):
@@ -93,7 +88,6 @@ def module_required(module_code, perm='peut_voir'):
 def get_param(module, code, default=0):
     conn = get_db()
     row = conn.execute('SELECT valeur FROM parametres_calcul WHERE module=? AND code=?', (module, code)).fetchone()
-    conn.close()
     try: return float(row['valeur']) if row else default
     except: return default
 
@@ -137,8 +131,6 @@ def gen_num(prefix, table, col='numero', db_conn=None):
             n = conn.execute(f'SELECT COUNT(*) as c FROM {table}').fetchone()['c'] + 1
     else:
         n = 1
-    if not db_conn:
-        conn.close()
     return f"{prefix}{year}{n:05d}"
 
 # ── Validation noms SQL (protection injections) ──────────────
@@ -157,7 +149,6 @@ def annees_non_payees(module, ref_id, debut=None):
     payees = {r['annee'] for r in conn.execute(
         "SELECT DISTINCT annee FROM declarations WHERE module=? AND reference_id=? AND statut='paye'",
         (module, ref_id)).fetchall()}
-    conn.close()
     return [a for a in range(debut, datetime.now().year + 1) if a not in payees]
 
 def get_tarifs_module(module):
@@ -166,5 +157,4 @@ def get_tarifs_module(module):
         JOIN rubriques r ON t.rubrique_id=r.id
         WHERE r.module=? AND t.actif=1
         ORDER BY t.valeur''', (module,)).fetchall()
-    conn.close()
     return rows
