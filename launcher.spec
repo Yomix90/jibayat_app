@@ -8,6 +8,7 @@ a = Analysis(
         ('templates',      'templates'),
         ('static',         'static'),
         ('version.txt',    '.'),
+        ('app.ico',        '.'),
     ],
     hiddenimports=[
         'flask',
@@ -115,7 +116,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
+    icon='app.ico',
 )
 
 coll = COLLECT(

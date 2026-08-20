@@ -1004,31 +1004,10 @@ async function checkUpdate() {
 }
 
 async function doUpdate() {
-  if (!confirm("Voulez-vous vraiment installer la mise à jour ?\nUne sauvegarde de votre base de données sera créée automatiquement et l'application va redémarrer.")) return;
-  const status = document.getElementById('update-status');
-  const btnUpdate = document.getElementById('btn-do-update');
-  if (btnUpdate) btnUpdate.style.display = 'none';
-  status.textContent = '⏳ Téléchargement du package, sauvegarde DB et application en cours... (Veuillez patienter)';
-  status.className = 'feedback loading';
-  status.style.display = 'block';
-  
-  try {
-    const res = await apiPost('/api/systeme/do-update', new FormData());
-    if (res.ok) {
-      status.textContent = '✅ ' + res.msg;
-      status.className = 'feedback ok';
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
-    } else {
-      status.textContent = '❌ ' + res.error;
-      status.className = 'feedback err';
-      if (btnUpdate) btnUpdate.style.display = 'inline-block';
-    }
-  } catch(e) {
-    status.textContent = '❌ Erreur réseau lors de la mise à jour';
-    status.className = 'feedback err';
-    if (btnUpdate) btnUpdate.style.display = 'inline-block';
+  if (typeof openOtaModal === 'function') {
+    openOtaModal();
+  } else {
+    executeOtaUpdate();
   }
 }
 

@@ -59,6 +59,44 @@ def read_version() -> str:
         return "1.0.0"
 
 
+_single_instance_mutex = None
+
+def check_and_acquire_single_instance() -> bool:
+    """
+    Empêche le lancement multiple de l'application.
+    Si JIBAYAT tourne déjà, ouvre le navigateur sur l'application existante et quitte sans dupliquer les icônes.
+    """
+    global _single_instance_mutex
+
+    # 1. Vérifier si le port 5050 est déjà actif
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.4)
+        res = s.connect_ex(('127.0.0.1', PORT))
+        s.close()
+        if res == 0:
+            webbrowser.open(f"http://127.0.0.1:{PORT}/")
+            return False
+    except Exception:
+        pass
+
+    # 2. Mutex Windows pour verrouiller l'instance unique
+    if os.name == 'nt':
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            mutex_name = "Global\\JIBAYAT_APP_SINGLE_INSTANCE_MUTEX_2026"
+            _single_instance_mutex = kernel32.CreateMutexW(None, False, mutex_name)
+            last_err = kernel32.GetLastError()
+            if last_err == 183:  # ERROR_ALREADY_EXISTS
+                webbrowser.open(f"http://127.0.0.1:{PORT}/")
+                return False
+        except Exception:
+            pass
+
+    return True
+
+
 def get_local_ip() -> str:
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -71,6 +109,22 @@ def get_local_ip() -> str:
 
 
 def make_tray_icon() -> Image.Image:
+    """Charge l'icône officielle de JIBAYAT pour la barre des tâches Windows."""
+    candidates = [
+        'app.ico',
+        os.path.join('_internal', 'app.ico'),
+        os.path.join('static', 'img', 'app.ico'),
+        os.path.join('static', 'img', 'logo.png'),
+        os.path.join('_internal', 'static', 'img', 'logo.png')
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            try:
+                img = Image.open(c).convert('RGBA')
+                return img.resize((64, 64), Image.LANCZOS)
+            except Exception:
+                pass
+
     size = 64
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -222,5 +276,8 @@ class LauncherApp(tk.Tk):
 #  POINT D'ENTRÉE
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
+    if not check_and_acquire_single_instance():
+        sys.exit(0)
+
     app_launcher = LauncherApp()
     app_launcher.mainloop()

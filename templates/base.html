@@ -407,27 +407,95 @@
       <strong style="color:#fbbf24;">Mise à jour {{ updater.remote_version }} disponible !</strong>
       <span style="color:#cbd5e1;font-size:0.85rem;margin-left:8px;">{{ updater.release_name }}</span>
     </div>
-    <div id="ota-progress-wrap" style="display:none;flex:1;min-width:200px;">
-      <div style="background:rgba(255,255,255,0.15);border-radius:6px;height:6px;overflow:hidden;">
-        <div id="ota-progress-bar" style="background:#4ade80;height:100%;width:0%;transition:width 0.5s ease;border-radius:6px;"></div>
-      </div>
-      <div id="ota-status-text" style="color:#94a3b8;font-size:0.75rem;margin-top:3px;"></div>
-    </div>
-    <button id="ota-update-btn" onclick="otaApplyUpdate()" style="background:#fbbf24;color:#0f172a;border:none;padding:6px 16px;border-radius:6px;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;">
+    <button id="ota-update-btn" onclick="openOtaModal()" style="background:#fbbf24;color:#0f172a;border:none;padding:6px 18px;border-radius:7px;font-weight:800;font-size:0.85rem;cursor:pointer;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.2);">
       ⬆ Mettre à jour
     </button>
     <button onclick="document.getElementById('ota-update-bar').style.display='none'" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;padding:4px 8px;" title="Fermer">✕</button>
   </div>
+  {% endif %}
+
+  <!-- ════════ MODALE DE CONFIRMATION DE MISE À JOUR OTA ════════ -->
+  <div id="ota-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(10,15,30,.75);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:18px;width:100%;max-width:520px;box-shadow:0 25px 60px rgba(0,0,0,.5);overflow:hidden;color:#f8fafc;font-family:inherit;">
+      
+      <!-- Modal Header -->
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:18px 22px;border-bottom:1px solid #334155;display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:grid;place-items:center;font-size:1.3rem;box-shadow:0 4px 14px rgba(245,158,11,.35);flex-shrink:0;">
+          🚀
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#f8fafc;">Mise à Jour JIBAYAT</h3>
+          <div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">Nouvelle version disponible pour votre commune</div>
+        </div>
+        <button onclick="closeOtaModal()" style="margin-left:auto;background:transparent;border:none;color:#94a3b8;font-size:1.3rem;cursor:pointer;padding:4px;" title="Fermer">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding:22px 24px;">
+        <div style="background:rgba(15,23,42,0.6);border:1px solid #334155;border-radius:12px;padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;">
+            <div style="font-size:0.75rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Version à installer</div>
+            <div style="font-size:1.15rem;font-weight:800;color:#fbbf24;" id="ota-modal-version">v{{ updater.remote_version if updater is defined and updater.remote_version else '1.5.1' }}</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:0.75rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Version actuelle</div>
+            <div style="font-size:1.15rem;font-weight:800;color:#94a3b8;">v{{ sys_version }}</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:14px;margin-bottom:18px;display:flex;gap:10px;">
+          <span style="font-size:1.2rem;">🛡️</span>
+          <div style="font-size:0.84rem;color:#cbd5e1;line-height:1.5;">
+            <strong style="color:#60a5fa;">Zéro perte de données garantie :</strong> Vos déclarations, contribuables, paiements et licences seront automatiquement sauvegardés et conservés.
+          </div>
+        </div>
+
+        <!-- Progression (visible pendant l'installation) -->
+        <div id="ota-modal-progress-box" style="display:none;margin-bottom:14px;">
+          <div style="background:#0f172a;border-radius:8px;height:8px;overflow:hidden;border:1px solid #334155;">
+            <div id="ota-modal-progress-bar" style="background:linear-gradient(90deg,#10b981,#3b82f6);height:100%;width:0%;transition:width 0.4s ease;border-radius:8px;"></div>
+          </div>
+          <div id="ota-modal-progress-text" style="font-size:0.82rem;color:#fbbf24;margin-top:8px;text-align:center;font-weight:600;">Téléchargement en cours...</div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="background:#0f172a;padding:16px 24px;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:10px;">
+        <button id="ota-modal-cancel-btn" onclick="closeOtaModal()" style="background:#334155;color:#f8fafc;border:none;padding:9px 18px;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;">
+          Annuler
+        </button>
+        <button id="ota-modal-confirm-btn" onclick="executeOtaUpdate()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#0f172a;border:none;padding:9px 22px;border-radius:8px;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 12px rgba(245,158,11,.3);display:inline-flex;align-items:center;gap:6px;">
+          <span>⬆</span> <span>Confirmer et Mettre à jour</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script>
-  function otaApplyUpdate() {
-    if (!confirm('Lancer la mise à jour maintenant ?\n\nVos données (base de données, configuration, uploads) seront automatiquement sauvegardées.\nL\'application va redémarrer après la mise à jour.')) return;
-    const btn = document.getElementById('ota-update-btn');
-    const wrap = document.getElementById('ota-progress-wrap');
-    const bar = document.getElementById('ota-progress-bar');
-    const txt = document.getElementById('ota-status-text');
-    btn.disabled = true;
-    btn.textContent = '⏳ En cours...';
-    wrap.style.display = 'block';
+  function openOtaModal() {
+    const modal = document.getElementById('ota-confirm-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeOtaModal() {
+    const modal = document.getElementById('ota-confirm-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function executeOtaUpdate() {
+    const btn = document.getElementById('ota-modal-confirm-btn');
+    const cancelBtn = document.getElementById('ota-modal-cancel-btn');
+    const pBox = document.getElementById('ota-modal-progress-box');
+    const pBar = document.getElementById('ota-modal-progress-bar');
+    const pTxt = document.getElementById('ota-modal-progress-text');
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span> <span>Mise à jour en cours...</span>'; }
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (pBox) pBox.style.display = 'block';
+
+    const bannerBtn = document.getElementById('ota-update-btn');
+    if (bannerBtn) { bannerBtn.disabled = true; bannerBtn.textContent = '⏳ En cours...'; }
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     fetch('/api/updater/apply', {
@@ -435,35 +503,40 @@
       headers: {'X-CSRF-Token': csrfToken}
     }).then(r => r.json()).then(data => {
       if (data.ok) {
-        // Polling de progression
+        let pct = 10;
         const poll = setInterval(() => {
+          pct = Math.min(pct + 12, 90);
+          if (pBar) pBar.style.width = pct + '%';
+
           fetch('/api/updater/status').then(r => r.json()).then(s => {
-            bar.style.width = s.update_progress + '%';
-            txt.textContent = s.update_status || '';
-            if (s.update_progress >= 100 || !s.updating) {
+            if (s.update_progress > 0 && pBar) pBar.style.width = s.update_progress + '%';
+            if (s.update_status && pTxt) pTxt.textContent = s.update_status;
+
+            if (s.update_progress >= 100 || (!s.updating && s.update_progress > 0)) {
               clearInterval(poll);
-              btn.textContent = '✅ Terminé !';
-              txt.textContent = 'Redémarrage en cours...';
-              setTimeout(() => { window.location.reload(); }, 5000);
+              if (pBar) pBar.style.width = '100%';
+              if (pTxt) pTxt.textContent = '✅ Mise à jour prête ! Lancement...';
+              if (btn) btn.innerHTML = '<span>✅</span> <span>Terminé !</span>';
+              setTimeout(() => { window.location.reload(); }, 4000);
             }
           }).catch(() => {
             clearInterval(poll);
+            if (pTxt) pTxt.textContent = '✅ Mise à jour appliquée. Redémarrage...';
             setTimeout(() => { window.location.reload(); }, 3000);
           });
-        }, 1500);
+        }, 1200);
       } else {
-        btn.disabled = false;
-        btn.textContent = '⬆ Réessayer';
-        txt.textContent = '❌ ' + (data.error || 'Erreur');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>⬆</span> <span>Réessayer</span>'; }
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+        if (pTxt) pTxt.textContent = '❌ ' + (data.error || 'Erreur');
       }
     }).catch(e => {
-      btn.disabled = false;
-      btn.textContent = '⬆ Réessayer';
-      txt.textContent = '❌ Erreur réseau';
+      if (btn) { btn.disabled = false; btn.innerHTML = '<span>⬆</span> <span>Réessayer</span>'; }
+      if (cancelBtn) cancelBtn.style.display = 'inline-block';
+      if (pTxt) pTxt.textContent = '❌ Erreur réseau de communication';
     });
   }
   </script>
-  {% endif %}
 
   <div class="content">{% block content %}{% endblock %}</div>
 </main>

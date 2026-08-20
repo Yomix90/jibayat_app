@@ -337,16 +337,95 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
         _check_lock.release()
 
 
+def _cleanup_old_backups(max_keep: int = 5):
+    """Conserve uniquement les N sauvegardes les plus récentes dans sauvegardes/."""
+    try:
+        sauv_dir = 'sauvegardes'
+        if not os.path.exists(sauv_dir):
+            return
+        entries = []
+        for name in os.listdir(sauv_dir):
+            full_p = os.path.join(sauv_dir, name)
+            if os.path.isdir(full_p) and name.startswith('backup_'):
+                entries.append((os.path.getmtime(full_p), full_p))
+            elif os.path.isfile(full_p) and (name.endswith('.db') or name.endswith('.json')):
+                entries.append((os.path.getmtime(full_p), full_p))
+
+        entries.sort(key=lambda x: x[0], reverse=True)
+        if len(entries) > max_keep:
+            for _, path_to_remove in entries[max_keep:]:
+                try:
+                    if os.path.isdir(path_to_remove):
+                        shutil.rmtree(path_to_remove, ignore_errors=True)
+                    else:
+                        os.remove(path_to_remove)
+                    logger.debug(f"Ancienne sauvegarde supprimée : {path_to_remove}")
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.debug(f"Rotation des sauvegardes : {e}")
+
+
+def cleanup_temp_files():
+    """Nettoie les fichiers temporaires de mise à jour et migre les anciens fichiers vers sauvegardes/."""
+    try:
+        sauv_dir = 'sauvegardes'
+        os.makedirs(sauv_dir, exist_ok=True)
+
+        for item in os.listdir('.'):
+            # 1. Nettoyer les fichiers batch temporaires
+            if item in ('run_downloaded_setup.bat', 'run_update_setup.bat', 'update_temp.bat', 'restart_after_update.bat', 'app_payload.zip'):
+                try:
+                    os.remove(item)
+                except Exception:
+                    pass
+
+            # 2. Supprimer les installeurs temporaires téléchargés
+            elif item.startswith('JIBAYAT_Setup_Update_') and item.endswith('.exe'):
+                try:
+                    os.remove(item)
+                    logger.info(f"Installateur temporaire nettoyé : {item}")
+                except Exception:
+                    pass
+
+            # 3. Déplacer les anciens dossiers backup_pre_update_* et fiscalite_AvantMaj_* vers sauvegardes/
+            elif item.startswith('backup_pre_update_') and os.path.isdir(item):
+                try:
+                    dest = os.path.join(sauv_dir, item)
+                    if not os.path.exists(dest):
+                        shutil.move(item, dest)
+                    else:
+                        shutil.rmtree(item, ignore_errors=True)
+                except Exception:
+                    pass
+
+            elif (item.startswith('fiscalite_AvantMaj_') or item.startswith('config_AvantMaj_')) and os.path.isfile(item):
+                try:
+                    dest = os.path.join(sauv_dir, item)
+                    if not os.path.exists(dest):
+                        shutil.move(item, dest)
+                    else:
+                        os.remove(item)
+                except Exception:
+                    pass
+
+        _cleanup_old_backups(max_keep=5)
+    except Exception as e:
+        logger.debug(f"Nettoyage temporaires : {e}")
+
+
 # ─────────────────────────────────────────────
 # 4. SAUVEGARDE PRÉVENTIVE
 # ─────────────────────────────────────────────
 def _backup_before_update() -> Tuple[bool, str, str]:
     """
-    Crée une sauvegarde complète des données utilisateur avant la mise à jour.
+    Crée une sauvegarde complète des données utilisateur avant la mise à jour dans sauvegardes/.
     Retourne (succès, message, chemin_backup).
     """
     dt = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_dir = f'backup_pre_update_{dt}'
+    sauv_parent = 'sauvegardes'
+    os.makedirs(sauv_parent, exist_ok=True)
+    backup_dir = os.path.join(sauv_parent, f'backup_pre_update_{dt}')
 
     try:
         os.makedirs(backup_dir, exist_ok=True)
@@ -369,6 +448,8 @@ def _backup_before_update() -> Tuple[bool, str, str]:
         # 4. Sauvegarder le backup_log
         if os.path.exists(BACKUP_LOG):
             shutil.copy2(BACKUP_LOG, os.path.join(backup_dir, 'backup_log.json'))
+
+        _cleanup_old_backups(max_keep=5)
 
         _append_backup_log({
             'date': dt,
@@ -395,11 +476,13 @@ def apply_update() -> Dict[str, Any]:
     """
     global _state
 
-    if _state.updating:
-        return {'ok': False, 'error': 'Une mise à jour est déjà en cours.'}
+    # Si pas encore vérifié, forcer la vérification
+    if not _state.available or not _state.download_url:
+        check_for_updates(force=True)
 
     if not _state.available:
-        return {'ok': False, 'error': 'Aucune mise à jour disponible.'}
+        _state.updating = False
+        return {'ok': False, 'error': 'Aucune mise à jour disponible actuellement.'}
 
     _state.updating = True
     _state.update_progress = 0
@@ -787,21 +870,25 @@ def api_updater_apply():
     if not user or not user['peut_config']:
         return jsonify({'ok': False, 'error': 'Accès réservé aux administrateurs'}), 403
 
-    # Lancer la MAJ dans un thread pour ne pas bloquer la réponse HTTP
-    result = {'ok': True, 'msg': 'Mise à jour en cours...'}
-
-    def _async_update():
-        apply_update()
-
     if _state.updating:
-        return jsonify({'ok': False, 'error': 'Une mise à jour est déjà en cours.'})
+        return jsonify({'ok': False, 'error': 'Une mise à jour est déjà en cours d\'application.'})
 
-    _state.updating = True
-    _state.update_progress = 0
-    _state.update_status = 'Démarrage...'
+    # Lancer la MAJ dans un thread d'arrière-plan sans bloquer la requête
+    def _async_update():
+        try:
+            apply_update()
+        except Exception as e:
+            logger.error(f"Erreur thread async update: {e}")
+            _state.updating = False
+            _state.update_error = str(e)
+
     threading.Thread(target=_async_update, daemon=True).start()
 
-    return jsonify(result)
+    return jsonify({
+        'ok': True,
+        'msg': 'Mise à jour lancée avec succès. Téléchargement en cours...',
+        'version': _state.remote_version
+    })
 
 
 @bp.route('/api/updater/changelog')

@@ -286,11 +286,13 @@ def _check_update_startup():
 
 threading.Thread(target=_check_update_startup, daemon=True).start()
 
-# Démarrage du vérificateur de mises à jour périodique OTA
+# Démarrage du vérificateur de mises à jour périodique OTA & Nettoyage
 try:
+    from modules.updater import cleanup_temp_files
+    cleanup_temp_files()
     _start_updater()
 except Exception as e:
-    logger.debug(f"Démarrage updater: {e}")
+    logger.debug(f"Démarrage updater / cleanup: {e}")
 
 @app.context_processor
 def inject_global_vars():

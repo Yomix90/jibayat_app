@@ -361,17 +361,20 @@ class JibayatSetupWizard(tk.Tk):
             os.makedirs(target_dir, exist_ok=True)
             time.sleep(0.3)
 
-            # Si mise à jour : Sauvegarder impérativement la base et la config
+            # Si mise à jour : Sauvegarder impérativement dans sauvegardes/
+            sauv_dir = os.path.join(target_dir, 'sauvegardes')
+            os.makedirs(sauv_dir, exist_ok=True)
+
             if is_update:
                 self.log(f"Mise à jour détectée dans {target_dir}")
                 if os.path.exists(db_path):
-                    backup_db = os.path.join(target_dir, f'fiscalite_AvantMaj_{dt}.db')
+                    backup_db = os.path.join(sauv_dir, f'fiscalite_AvantMaj_{dt}.db')
                     shutil.copy2(db_path, backup_db)
-                    self.log(f"Sauvegarde de sécurité DB créée : {backup_db}")
+                    self.log(f"Sauvegarde de sécurité DB : {backup_db}")
                 if os.path.exists(config_path):
-                    backup_cfg = os.path.join(target_dir, f'config_AvantMaj_{dt}.json')
+                    backup_cfg = os.path.join(sauv_dir, f'config_AvantMaj_{dt}.json')
                     shutil.copy2(config_path, backup_cfg)
-                    self.log(f"Sauvegarde de sécurité Config créée : {backup_cfg}")
+                    self.log(f"Sauvegarde de sécurité Config : {backup_cfg}")
 
             self.update_progress(30, "2/5 Extraction des nouveaux fichiers...")
             payload_zip = os.path.join(self.bundle_dir, 'app_payload.zip')
@@ -404,6 +407,14 @@ class JibayatSetupWizard(tk.Tk):
                 self.log("Distribution binaire déployée.")
             else:
                 raise FileNotFoundError("Le package applicatif app_payload.zip est introuvable.")
+
+            # Nettoyage des installateurs temporaires de mise à jour restés dans target_dir
+            for f in os.listdir(target_dir):
+                if f.startswith('JIBAYAT_Setup_Update_') and f.endswith('.exe'):
+                    try:
+                        os.remove(os.path.join(target_dir, f))
+                    except Exception:
+                        pass
 
             time.sleep(0.3)
             self.update_progress(60, "3/5 Mise à jour de la configuration & Licence...")
@@ -473,17 +484,22 @@ class JibayatSetupWizard(tk.Tk):
             if self.var_create_desktop_icon.get():
                 desktop = os.path.join(os.environ.get('USERPROFILE', ''), 'Desktop')
                 shortcut_lnk = os.path.join(desktop, 'JIBAYAT.lnk')
-                
+
                 target_exe = os.path.join(target_dir, 'JIBAYAT.exe')
                 if not os.path.exists(target_exe):
                     target_exe = os.path.join(target_dir, 'DEMARRER.bat')
-                
-                icon_path = os.path.join(target_dir, '_internal', 'static', 'img', 'logo.png')
+
+                # Rechercher app.ico en priorité
+                icon_path = os.path.join(target_dir, 'app.ico')
+                if not os.path.exists(icon_path):
+                    icon_path = os.path.join(target_dir, '_internal', 'app.ico')
+                if not os.path.exists(icon_path):
+                    icon_path = os.path.join(target_dir, 'static', 'img', 'app.ico')
                 if not os.path.exists(icon_path):
                     icon_path = os.path.join(target_dir, 'static', 'img', 'logo.png')
 
                 create_windows_shortcut(target_exe, shortcut_lnk, icon_path, target_dir)
-                self.log(f"Raccourci Bureau prêt : {shortcut_lnk}")
+                self.log(f"Raccourci Bureau prêt avec icône officielle : {shortcut_lnk}")
 
             self.update_progress(100, "Opération achevée avec succès !")
             self.log("Terminé avec succès.")

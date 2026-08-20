@@ -75,8 +75,10 @@ def main():
         "--onefile",
         "--windowed",
         "--name", "JIBAYAT_Setup",
+        "--icon", "app.ico",
         "--add-data", "app_payload.zip;.",
         "--add-data", "version.txt;.",
+        "--add-data", "app.ico;.",
         "--clean",
         "--optimize", "2",
         "installer_gui.py"
