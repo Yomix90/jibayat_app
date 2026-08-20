@@ -17,8 +17,8 @@ if not exist ".git" (
 )
 
 git add .
-git commit -m "docs(release): public documentation and version manifest for JIBAYAT v1.5.0"
-git push -u origin main
+git commit -m "docs(release): public documentation and version manifest for JIBAYAT"
+git push -f -u origin main
 
 if %errorlevel% neq 0 (
     color 0C
