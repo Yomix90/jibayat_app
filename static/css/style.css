@@ -478,14 +478,19 @@ nav {
 .btn-primary, .btn-accent {
   background: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 6px 18px rgba(246, 162, 30, .35);
+  box-shadow: 0 2px 8px rgba(246, 162, 30, .25);
 }
 
 .btn-primary:hover, .btn-accent:hover {
   background: #ffb636;
-  box-shadow: 0 99px 22px rgba(246, 162, 30, .45);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(246, 162, 30, .35);
+  transform: translateY(-1px);
   color: var(--accent-ink);
+}
+
+@keyframes pulse-update {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.88; }
 }
 
 .btn-subtle {

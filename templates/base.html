@@ -21,7 +21,15 @@
         </div>
         <div class="sb-brand-text" style="overflow:hidden; flex:1; min-width:0;">
           <h1 style="font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:#fff; margin:0; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">JIBAYAT</h1>
-          <div style="font-size:0.68rem; color:#8b98b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">Fiscalité Communale <span style="background:rgba(255,255,255,0.12); color:var(--accent); padding:1px 5px; border-radius:4px; font-size:0.58rem; font-weight:800;">v{{ sys_version }}</span></div>
+          <div style="font-size:0.68rem; color:#8b98b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+            <span>Fiscalité Communale</span>
+            <span style="background:rgba(255,255,255,0.12); color:var(--accent); padding:1px 5px; border-radius:4px; font-size:0.58rem; font-weight:800;">v{{ sys_version }}</span>
+            {% if sys_has_update or (updater is defined and updater.available) %}
+            <a href="{{ url_for('parametres_systeme') }}#mises-a-jour" title="Nouvelle mise à jour disponible ! Cliquez pour mettre à jour" style="background:#ef4444; color:#ffffff; padding:1px 6px; border-radius:10px; font-size:0.58rem; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:3px; animation:pulse-update 2s infinite; box-shadow:0 2px 6px rgba(239,68,68,0.4);">
+              <span style="font-size:0.5rem;">●</span> MAJ{% if updater is defined and updater.remote_version %} v{{ updater.remote_version }}{% endif %}
+            </a>
+            {% endif %}
+          </div>
         </div>
       </div>
       <button onclick="toggleSidebarMenu()" class="collapse-btn" title="Réduire/Agrandir le menu">◀</button>
@@ -301,8 +309,12 @@
     <div class="nav-sec">Système</div>
     <div class="nav-item">
       <a href="{{ url_for('parametres_systeme') }}"
-         class="{{ 'active' if request.endpoint=='parametres_systeme' else '' }}">
+         class="{{ 'active' if request.endpoint=='parametres_systeme' else '' }}"
+         style="display:flex; align-items:center;">
         <span class="ic">🛠️</span><span class="txt">Paramètres Système</span>
+        {% if sys_has_update or (updater is defined and updater.available) %}
+        <span style="margin-left:auto; background:#ef4444; color:#fff; border-radius:10px; padding:1px 6px; font-size:0.6rem; font-weight:800; animation:pulse-update 2s infinite;">MAJ</span>
+        {% endif %}
       </a>
     </div>
     {% endif %}
