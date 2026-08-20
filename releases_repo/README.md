@@ -1,6 +1,6 @@
 # 🏛️ JIBAYAT — Gestion de la Fiscalité Communale Marocaine
 
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/Yomix90/jibayat-releases/releases)
+[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)](https://github.com/Yomix90/jibayat-releases/releases)
 [![Plateforme](https://img.shields.io/badge/plateforme-Windows%2010%20%7C%2011%20%7C%20Server-green.svg)](https://github.com/Yomix90/jibayat-releases/releases)
 [![Licence](https://img.shields.io/badge/licence-Propri%C3%A9taire-amber.svg)](https://github.com/Yomix90/jibayat-releases)
 

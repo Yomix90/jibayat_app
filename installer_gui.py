@@ -25,14 +25,25 @@ DEV_EMAIL = "yomix90@gmail.com"
 
 
 def get_current_app_version() -> str:
-    """Récupère la version actuelle depuis version.txt ou retourne 1.5.0 par défaut."""
-    try:
-        if os.path.exists('version.txt'):
-            with open('version.txt', 'r', encoding='utf-8') as f:
-                return f.read().strip()
-    except Exception:
-        pass
-    return "1.5.0"
+    """Récupère dynamiquement la version actuelle depuis les ressources internes ou version.txt."""
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        bundle = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        candidates.append(os.path.join(bundle, 'version.txt'))
+        candidates.append(os.path.join(os.path.dirname(sys.executable), 'version.txt'))
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version.txt'))
+    candidates.append('version.txt')
+
+    for p in candidates:
+        try:
+            if os.path.exists(p):
+                with open(p, 'r', encoding='utf-8') as f:
+                    v = f.read().strip()
+                    if v:
+                        return v
+        except Exception:
+            pass
+    return "1.5.1"
 
 APP_VERSION = get_current_app_version()
 

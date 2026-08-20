@@ -76,6 +76,7 @@ def main():
         "--windowed",
         "--name", "JIBAYAT_Setup",
         "--add-data", "app_payload.zip;.",
+        "--add-data", "version.txt;.",
         "--clean",
         "--optimize", "2",
         "installer_gui.py"
