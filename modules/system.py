@@ -478,75 +478,16 @@ def api_systeme_check_update():
 @login_required
 def api_systeme_do_update():
     user = get_current_user()
-    if not user['peut_config']:
-        return jsonify({'ok': False, 'error': 'Accès refusé'}), 403
+    if not user or not user['peut_config']:
+        return jsonify({'ok': False, 'error': 'Accès réservé aux administrateurs'}), 403
 
     try:
-        cfg = _load_sys_config()
-        gh_user = cfg.get('github_user', DEFAULT_GITHUB_USER).strip() or DEFAULT_GITHUB_USER
-        gh_repo = cfg.get('github_repo', DEFAULT_GITHUB_REPO).strip() or DEFAULT_GITHUB_REPO
-        token = cfg.get('github_token', '').strip()
+        from modules.updater import apply_update, check_for_updates, _state as _up_state
+        if not _up_state.available:
+            check_for_updates(force=True)
 
-        # 1. Sauvegarde automatique préventive de la base de données
-        dt = datetime.now().strftime('%Y%m%d_%H%M%S')
-        if os.path.exists('fiscalite.db'):
-            backup_name = f'fiscalite_PreMaj_{dt}.db'
-            shutil.copy('fiscalite.db', backup_name)
-            _append_backup_log({
-                'date': dt,
-                'type': 'Sauvegarde Pré-Mise à Jour',
-                'dest': backup_name,
-                'status': '✅ Succès'
-            })
-            logger.info(f"Sauvegarde pré-mise à jour créée : {backup_name}")
-
-        is_exe = getattr(sys, 'frozen', False)
-        executable = sys.executable if is_exe else 'LANCER.bat'
-
-        if is_exe:
-            # Mode Exécutable autonome
-            zip_url = f"https://github.com/{gh_user}/{gh_repo}/releases/latest/download/JIBAYAT-update.zip"
-            zip_path = "JIBAYAT-update.zip"
-
-            import urllib.request
-            req = urllib.request.Request(zip_url)
-            if token:
-                req.add_header('Authorization', f'token {token}')
-            try:
-                with urllib.request.urlopen(req, timeout=60) as resp, open(zip_path, 'wb') as out_file:
-                    shutil.copyfileobj(resp, out_file)
-            except Exception as e:
-                return jsonify({'ok': False, 'error': f"Échec du téléchargement du package ZIP : {str(e)}"})
-
-            bat_content = f"""@echo off
-ping 127.0.0.1 -n 4 > nul
-powershell -command "Expand-Archive -Path '{zip_path}' -DestinationPath '.' -Force"
-if exist "{zip_path}" del "{zip_path}"
-start "" "{executable}"
-del "%~f0"
-"""
-        else:
-            # Mode Script / Git
-            bat_content = f"""@echo off
-ping 127.0.0.1 -n 4 > nul
-git pull origin main
-start "" "{executable}"
-del "%~f0"
-"""
-
-        with open('update_temp.bat', 'w', encoding='utf-8') as f:
-            f.write(bat_content)
-
-        startupinfo = None
-        if os.name == 'nt':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = subprocess.SW_HIDE
-
-        subprocess.Popen(['update_temp.bat'], startupinfo=startupinfo)
-        import threading
-        threading.Thread(target=lambda: os._exit(0)).start()
-        return jsonify({'ok': True, 'msg': 'Mise à jour téléchargée. Sauvegarde créée. L\'application va redémarrer...'})
+        res = apply_update()
+        return jsonify(res)
     except Exception as ex:
         logger.error(f"Erreur exécution mise à jour: {ex}")
         return jsonify({'ok': False, 'error': str(ex)})

@@ -253,11 +253,27 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
                         release_body = rel_data.get('body', '')
                         published_at = rel_data.get('published_at', '')[:10]
 
+                        # 1. Chercher d'abord un exécutable d'installation (JIBAYAT_Setup.exe ou .exe)
                         for asset in rel_data.get('assets', []):
                             name = asset.get('name', '')
-                            if name.endswith('.zip') and 'update' in name.lower():
+                            if name.lower().endswith('.exe'):
                                 download_url = asset.get('browser_download_url')
-                            elif name.endswith('.sha256'):
+                                logger.info(f"Asset .exe détecté : {name}")
+                                break
+
+                        # 2. Chercher un package ZIP si pas de .exe
+                        if not download_url:
+                            for asset in rel_data.get('assets', []):
+                                name = asset.get('name', '')
+                                if name.lower().endswith('.zip'):
+                                    download_url = asset.get('browser_download_url')
+                                    logger.info(f"Asset .zip détecté : {name}")
+                                    break
+
+                        # 3. Récupérer le SHA-256 si disponible
+                        for asset in rel_data.get('assets', []):
+                            name = asset.get('name', '')
+                            if name.endswith('.sha256'):
                                 try:
                                     cs_url = asset.get('browser_download_url')
                                     cs_r = _req.get(cs_url, headers=headers, timeout=5)
@@ -265,12 +281,6 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
                                         checksum = cs_r.text.strip().split()[0]
                                 except Exception:
                                     pass
-
-                        if not download_url:
-                            for asset in rel_data.get('assets', []):
-                                if asset.get('name', '').endswith('.zip'):
-                                    download_url = asset.get('browser_download_url')
-                                    break
                         break
                 except Exception as e:
                     logger.debug(f"Test release {u}/{r}: {e}")
@@ -410,26 +420,30 @@ def apply_update() -> Dict[str, Any]:
         _state.update_status = '2/5 — Téléchargement de la mise à jour...'
 
         dt = datetime.now().strftime('%Y%m%d_%H%M%S')
+        is_exe_asset = _state.download_url.lower().endswith('.exe')
+        target_file = None
 
-        if is_exe and _state.download_url:
-            # Mode EXE : télécharger le ZIP depuis GitHub Releases
-            zip_path = f'JIBAYAT-update-{dt}.zip'
-            _download_file(_state.download_url, zip_path, token)
+        if _state.download_url:
+            if is_exe_asset:
+                target_file = f'JIBAYAT_Setup_Update_{dt}.exe'
+            else:
+                target_file = f'JIBAYAT-update-{dt}.zip'
+            _download_file(_state.download_url, target_file, token)
         elif not is_exe:
-            # Mode Script : utiliser git pull
-            zip_path = None
+            # Mode Script : git pull
+            target_file = None
         else:
-            raise RuntimeError("Aucune URL de téléchargement disponible dans la release GitHub.")
+            raise RuntimeError("Aucun fichier d'installation (.exe / .zip) disponible dans la dernière version publiée.")
 
         # ── Étape 3 : Vérification d'intégrité ──────────
         _state.update_progress = 50
         _state.update_status = '3/5 — Vérification d\'intégrité...'
 
-        if zip_path and _state.checksum:
-            actual_hash = _sha256_file(zip_path)
+        if target_file and _state.checksum:
+            actual_hash = _sha256_file(target_file)
             if actual_hash != _state.checksum:
-                if os.path.exists(zip_path):
-                    os.remove(zip_path)
+                if os.path.exists(target_file):
+                    os.remove(target_file)
                 raise RuntimeError(
                     f"Checksum invalide ! Attendu: {_state.checksum[:16]}... "
                     f"Reçu: {actual_hash[:16]}... Le fichier pourrait être altéré."
@@ -440,9 +454,21 @@ def apply_update() -> Dict[str, Any]:
         _state.update_progress = 70
         _state.update_status = '4/5 — Application de la mise à jour...'
 
-        if is_exe and zip_path:
-            # Mode EXE : extraire le ZIP en protégeant les fichiers utilisateur
-            _apply_zip_update(zip_path, backup_dir)
+        if target_file and is_exe_asset:
+            # Mode Exécutable : lancer l'installateur autonome
+            _apply_exe_update(target_file, backup_dir)
+            _state.update_progress = 100
+            _state.update_status = 'Lancement de l\'installateur de mise à jour...'
+            _state.available = False
+            return {
+                'ok': True,
+                'msg': f'Installateur de mise à jour v{_state.remote_version} téléchargé avec succès ! '
+                       f'Sauvegarde créée dans {backup_dir}. L\'installateur va s\'ouvrir...',
+                'backup_dir': backup_dir,
+            }
+        elif target_file:
+            # Mode Package ZIP
+            _apply_zip_update(target_file, backup_dir)
         else:
             # Mode Script : git pull
             _apply_git_update(token, gh_user, gh_repo)
@@ -519,6 +545,37 @@ def _download_file(url: str, dest: str, token: str = ''):
             shutil.copyfileobj(resp, out)
 
     logger.info(f"Fichier téléchargé : {dest} ({os.path.getsize(dest)} octets)")
+
+
+def _apply_exe_update(exe_path: str, backup_dir: str):
+    """Lance l'exécutable d'installation (JIBAYAT_Setup.exe) pour mettre à jour l'application sans conflit."""
+    abs_exe = os.path.abspath(exe_path)
+    app_root = _get_app_root()
+
+    bat_content = f"""@echo off
+ping 127.0.0.1 -n 3 > nul
+start "" "{abs_exe}"
+del "%~f0"
+"""
+    bat_path = os.path.join(app_root, 'run_downloaded_setup.bat')
+    with open(bat_path, 'w', encoding='utf-8') as f:
+        f.write(bat_content)
+
+    startupinfo = None
+    if os.name == 'nt':
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+
+    subprocess.Popen([bat_path], startupinfo=startupinfo, cwd=app_root)
+    logger.info(f"Lancement de l'installateur : {abs_exe}")
+
+    # Fermer le serveur après un court délai
+    def _exit_server():
+        time.sleep(2)
+        os._exit(0)
+
+    threading.Thread(target=_exit_server, daemon=True).start()
 
 
 def _apply_zip_update(zip_path: str, backup_dir: str):
