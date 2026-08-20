@@ -17,7 +17,7 @@ logger = logging.getLogger('jibayat.system')
 CONFIG_FILE = 'config.json'
 BACKUP_LOG  = 'backup_log.json'
 DEFAULT_GITHUB_USER = 'Yomix90'
-DEFAULT_GITHUB_REPO = 'JIBAYAT'
+DEFAULT_GITHUB_REPO = 'jibayat-releases'
 
 ALL_MODULES = {
     'TNB':               'Taxe Terrains Non Bâtis (TNB)',

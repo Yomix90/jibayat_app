@@ -221,7 +221,7 @@ def handle_url_build_error(error, endpoint, values):
 app.url_build_error_handlers.append(handle_url_build_error)
 
 GITHUB_USER   = 'Yomix90'
-GITHUB_REPO   = 'JIBAYAT'
+GITHUB_REPO   = 'jibayat-releases'
 
 def _read_version():
     try:

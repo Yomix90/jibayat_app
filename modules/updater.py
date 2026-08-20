@@ -31,7 +31,7 @@ CONFIG_FILE = 'config.json'
 VERSION_FILE = 'version.txt'
 BACKUP_LOG = 'backup_log.json'
 DEFAULT_GITHUB_USER = 'Yomix90'
-DEFAULT_GITHUB_REPO = 'JIBAYAT'
+DEFAULT_GITHUB_REPO = 'jibayat-releases'
 CHECK_INTERVAL_HOURS = 6
 
 # Fichiers et dossiers qui ne doivent JAMAIS être écrasés lors d'une mise à jour
@@ -226,12 +226,17 @@ def check_for_updates(force: bool = False) -> Dict[str, Any]:
             headers['Authorization'] = f'Bearer {token}'
 
         # Liste des dépôts candidats à interroger en cascade
-        candidate_repos = []
-        if (gh_user, gh_repo) not in candidate_repos:
-            candidate_repos.append((gh_user, gh_repo))
-        for u, r in [('USFOU', 'JIBAYAT'), ('Yomix90', 'JIBAYAT'), ('Yomix90', 'jibayat_app')]:
-            if (u, r) not in candidate_repos:
-                candidate_repos.append((u, r))
+        candidate_repos = [
+            ('Yomix90', 'jibayat-releases'),
+            ('USFOU', 'jibayat-releases'),
+            (gh_user, gh_repo),
+            ('USFOU', 'JIBAYAT'),
+            ('Yomix90', 'JIBAYAT'),
+            ('Yomix90', 'jibayat_app')
+        ]
+        # Dédupliquer tout en conservant l'ordre
+        seen = set()
+        candidate_repos = [x for x in candidate_repos if not (x in seen or seen.add(x))]
 
         remote_version = None
         release_name = None

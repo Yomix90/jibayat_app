@@ -1,0 +1,12 @@
+# Ignorer tous les fichiers de code et de données
+*.py
+*.pyc
+*.db
+*.sqlite3
+*.log
+*.json
+*.bat
+*.spec
+build/
+dist/
+__pycache__/
