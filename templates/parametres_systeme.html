@@ -436,24 +436,24 @@
 {# ──────────────────────────────────────────── ONGLET MISES À JOUR ── #}
 <div id="panel-mises-a-jour" class="sys-panel">
   <div class="card">
-    <div class="card-header"><h3>🔄 Gestion des Mises à Jour (GitHub)</h3></div>
+    <div class="card-header"><h3>🔄 Centre de Mises à Jour du Système</h3></div>
     <div class="card-body">
       <div class="info-chips">
         <div class="info-chip accent">
-          <span class="ic-label">Version locale</span>
-          <span class="ic-val" id="ver-local">{{ version }}</span>
+          <span class="ic-label">Version actuelle</span>
+          <span class="ic-val" id="ver-local">v{{ version }}</span>
         </div>
         <div class="info-chip" id="chip-remote">
-          <span class="ic-label">Version distante</span>
+          <span class="ic-label">Dernière version disponible</span>
           <span class="ic-val" id="ver-remote">—</span>
         </div>
-        <div class="info-chip">
-          <span class="ic-label">Dépôt configuré</span>
-          <span class="ic-val" style="font-size:.75rem;">{{ cfg.github_user or 'Yomix90' }}/{{ cfg.github_repo or 'JIBAYAT' }}</span>
+        <div class="info-chip ok">
+          <span class="ic-label">Canal de mise à jour</span>
+          <span class="ic-val">Officiel (OTA Sécurisé)</span>
         </div>
         <div class="info-chip">
-          <span class="ic-label">Branche</span>
-          <span class="ic-val">main</span>
+          <span class="ic-label">Protection des données</span>
+          <span class="ic-val">🛡️ Sauvegarde auto</span>
         </div>
       </div>
 
@@ -468,38 +468,12 @@
 
       <div class="df gap-2" style="flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="checkUpdate()">🔍 Vérifier les mises à jour</button>
-        <button class="btn btn-success" id="btn-do-update" style="display:none;" onclick="doUpdate()">⬇️ Installer la mise à jour & Sauvegarder</button>
-        <a href="https://github.com/{{ cfg.github_user or 'Yomix90' }}/{{ cfg.github_repo or 'JIBAYAT' }}" target="_blank" class="btn btn-outline">
-          🌐 Voir sur GitHub
-        </a>
+        <button class="btn btn-success" id="btn-do-update" style="display:none;" onclick="doUpdate()">⬇️ Installer la mise à jour maintenant</button>
       </div>
 
-      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:10px;font-size:.8rem;color:var(--muted);">
-        💡 <strong>Sécurité de mise à jour :</strong> Avant chaque installation, le système génère automatiquement une copie de sauvegarde de votre base de données locale.
+      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:10px;font-size:.82rem;color:var(--muted);line-height:1.6;">
+        🛡️ <strong>Garantie de non-perte de données :</strong> Toutes les mises à jour s'appliquent de manière transparente. Une sauvegarde complète de votre base de données et de vos configurations est automatiquement créée avant toute mise à jour.
       </div>
-      
-      <hr style="margin:24px 0;">
-      <div class="sys-section-title">⚙️ Configuration du Dépôt GitHub & Token PAT</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Si votre dépôt GitHub est privé, configurez un <strong>Token d'accès personnel (PAT)</strong> pour permettre la vérification et le téléchargement des releases.</p>
-      
-      <form id="form-github-config" onsubmit="event.preventDefault(); saveSection('github-config');">
-        <div class="form-grid" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label>Utilisateur / Organisation GitHub</label>
-            <input type="text" name="github_user" class="form-input" placeholder="Yomix90" value="{{ cfg.github_user or 'Yomix90' }}">
-          </div>
-          <div class="form-group">
-            <label>Nom du Dépôt</label>
-            <input type="text" name="github_repo" class="form-input" placeholder="JIBAYAT" value="{{ cfg.github_repo or 'JIBAYAT' }}">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Token GitHub (Classic ou Fine-grained)</label>
-          <input type="password" name="github_token" class="form-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxx" value="{{ cfg.github_token or '' }}">
-        </div>
-        <button type="submit" class="btn btn-success">💾 Sauvegarder Configuration GitHub</button>
-        <div id="fb-github-config" class="feedback" style="margin-top:10px;display:none;"></div>
-      </form>
     </div>
   </div>
 </div>
@@ -712,24 +686,6 @@
       </form>
     </div>
   </div>
-
-  <div class="card">
-    <div class="card-header"><h3>⚙️ Liaison Google Sheets (Télémétrie & Retours)</h3></div>
-    <div class="card-body">
-      <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px;">
-        URL du Webhook Google Apps Script pour centraliser les installations de communes et les suggestions dans votre classeur <strong>Google Sheets</strong>.
-      </p>
-      
-      <form id="form-webhook-config" onsubmit="event.preventDefault(); saveWebhookConfig();" style="max-width:650px;">
-        <div class="form-group" style="margin-bottom:12px;">
-          <label>URL Webhook Google Apps Script</label>
-          <input type="url" name="webhook_url" id="inp-webhook-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" value="{{ cfg.telemetry_webhook_url or '' }}">
-        </div>
-        <button type="submit" class="btn btn-success">💾 Enregistrer & Tester le Webhook</button>
-        <div id="fb-webhook-config" class="feedback" style="margin-top:12px;display:none;"></div>
-      </form>
-    </div>
-  </div>
 </div>
 
 
@@ -752,8 +708,6 @@
               <td><a href="mailto:yomix90@gmail.com">yomix90@gmail.com</a></td></tr>
           <tr><td class="fw-bold" style="color:var(--muted);">📄 Licence</td>
               <td>Licence Propriétaire — Édition dédiée aux Communes Marocaines</td></tr>
-          <tr><td class="fw-bold" style="color:var(--muted);">🔗 Dépôt & Mises à jour</td>
-              <td><a href="https://github.com/Yomix90/JIBAYAT" target="_blank">github.com/Yomix90/JIBAYAT</a></td></tr>
         </tbody>
       </table>
       <hr>
@@ -789,13 +743,11 @@ async function apiPost(url, formData) {
   return r.json();
 }
 
-// ── Sauvegarder sections (modules + backup + github + feedback) ─────────
+// ── Sauvegarder sections (modules + backup) ───────────────────
 async function saveSection(section) {
   const sectionMap = {
     'modules':        { form: 'form-modules',        url: '/api/systeme/modules' },
-    'backup-config':  { form: 'form-backup-config',  url: '/api/systeme/backup-config' },
-    'github-config':  { form: 'form-github-config',  url: '/api/systeme/github-config' },
-    'feedback-config':{ form: 'form-feedback-config',url: '/api/systeme/feedback-config' }
+    'backup-config':  { form: 'form-backup-config',  url: '/api/systeme/backup-config' }
   };
   const cfg = sectionMap[section];
   showFeedback(section, '⏳ Sauvegarde en cours...', 'loading');
@@ -1017,7 +969,7 @@ async function checkUpdate() {
   if (btnUpdate) btnUpdate.style.display = 'none';
   if (notesBox) notesBox.style.display = 'none';
 
-  status.textContent = '⏳ Recherche des versions sur GitHub...';
+  status.textContent = '⏳ Recherche de mise à jour...';
   status.className = 'feedback loading';
   status.style.display = 'block';
 
@@ -1025,28 +977,28 @@ async function checkUpdate() {
     const r = await fetch('/api/systeme/check-update');
     const res = await r.json();
     if (res.ok) {
-      document.getElementById('ver-remote').textContent = res.remote;
+      document.getElementById('ver-remote').textContent = res.remote ? 'v' + res.remote : '—';
       if (res.has_update) {
-        status.textContent = `🆕 Nouvelle version ${res.remote} disponible ! (actuelle: ${res.local})`;
+        status.textContent = `🆕 Nouvelle version v${res.remote} disponible ! (actuelle: v${res.local})`;
         status.className = 'feedback err';
         if (btnUpdate) btnUpdate.style.display = 'inline-block';
 
         if (res.release_notes && notesBox) {
-          relTitle.textContent = res.release_name || `Nouveautés de la version ${res.remote}`;
+          relTitle.textContent = res.release_name || `Nouveautés de la version v${res.remote}`;
           relBody.textContent = res.release_notes;
           notesBox.style.display = 'block';
         }
       } else {
-        status.textContent = `✅ Vous disposez de la version la plus récente (${res.local}).`;
+        status.textContent = `✅ Votre système est parfaitement à jour (v${res.local}).`;
         status.className = 'feedback ok';
         setTimeout(() => status.style.display = 'none', 6000);
       }
     } else {
-      status.textContent = '❌ ' + res.error;
-      status.className = 'feedback err';
+      status.textContent = 'ℹ️ Votre système est à jour ou le serveur est temporairement inaccessible.';
+      status.className = 'feedback ok';
     }
   } catch(e) {
-    status.textContent = '❌ Connexion à GitHub impossible';
+    status.textContent = '⚠️ Impossible de contacter le serveur de mise à jour. Vérifiez votre connexion Internet.';
     status.className = 'feedback err';
   }
 }
@@ -1144,30 +1096,7 @@ async function sendFeedbackFromSettings() {
   }
 }
 
-// ── Webhook Télémétrie Google Sheets ────────────────────────
-async function saveWebhookConfig() {
-  const form = document.getElementById('form-webhook-config');
-  const fd = new FormData(form);
-  const fb = document.getElementById('fb-webhook-config');
-  fb.textContent = '⏳ Enregistrement et test du webhook...';
-  fb.className = 'feedback loading';
-  fb.style.display = 'block';
 
-  try {
-    const res = await apiPost('/api/systeme/webhook/set', fd);
-    if (res.ok) {
-      fb.textContent = '✅ ' + res.msg;
-      fb.className = 'feedback ok';
-      setTimeout(() => fb.style.display = 'none', 5000);
-    } else {
-      fb.textContent = '❌ ' + res.error;
-      fb.className = 'feedback err';
-    }
-  } catch(e) {
-    fb.textContent = '❌ Erreur réseau : ' + e;
-    fb.className = 'feedback err';
-  }
-}
 
 // Ouvrir automatiquement l'onglet si mentionné dans le hash (#mises-a-jour, etc)
 window.addEventListener('DOMContentLoaded', () => {
