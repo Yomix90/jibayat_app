@@ -735,11 +735,9 @@ CREATE TABLE IF NOT EXISTS emission_config (
         c.execute("INSERT OR IGNORE INTO communes (id, nom) VALUES (1, 'Ma Commune')")
         conn.commit()
 
-    # Admin par défaut (mot de passe aléatoire généré au premier démarrage)
+    # Admin par défaut
     from werkzeug.security import generate_password_hash
-    import secrets as _sec
-    _default_admin_pwd = _sec.token_urlsafe(12)
-    pwd = generate_password_hash(_default_admin_pwd)
+    pwd = generate_password_hash('admin123')
     admin_role = c.execute("SELECT id FROM roles WHERE nom='super_admin'").fetchone()
     if admin_role:
         existing_admin = c.execute("SELECT id FROM utilisateurs WHERE email='admin@commune.ma'").fetchone()
@@ -747,7 +745,6 @@ CREATE TABLE IF NOT EXISTS emission_config (
             c.execute('''INSERT OR IGNORE INTO utilisateurs (nom,prenom,email,mot_de_passe,role_id,commune_id)
                 VALUES (?,?,?,?,?,1)''', ('Admin','Super','admin@commune.ma',pwd,admin_role[0]))
             conn.commit()
-            _logger.info(f"Admin par défaut créé : admin@commune.ma (configurer le mot de passe via /setup)")
 
     # Rubriques avec codes budgétaires officiels
     rubriques_default = [

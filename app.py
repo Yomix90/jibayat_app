@@ -104,7 +104,8 @@ app.secret_key = _secret_key
 app.permanent_session_lifetime = timedelta(days=7)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = not app.debug  # HTTPS uniquement en production
+# Activé uniquement si HTTPS explicite (sinon bloque les connexions locales http://localhost:5050)
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
 
 # ── En-têtes HTTP de Sécurité ────────────────────────────────
 @app.after_request
