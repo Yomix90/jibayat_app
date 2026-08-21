@@ -91,26 +91,49 @@ def get_param(module, code, default=0):
     try: return float(row['valeur']) if row else default
     except: return default
 
+def majore_centimes(val: float) -> float:
+    """Majore systématiquement au centime supérieur (ex: 945.721 -> 945.73)."""
+    if not val or val <= 0:
+        return 0.0
+    import math
+    v = round(float(val), 6)
+    return math.ceil(round(v * 100, 4)) / 100
+
+
 def calculer_penalites(montant, date_ech_str, date_pay_str=None, module='GLOBAL'):
-    """Calcule pénalité (10%) + majoration (5% 1er mois + 0.5% par mois COMPLET supérieur).
-    Un mois commencé mais non terminé n'est PAS comptabilisé dans les 0.5%.
+    """Calcule pénalité (10%) + majoration (5% 1er mois + 0.5% par mois de retard supplémentaire).
+    Conforme à la loi 47-06 relative à la fiscalité des collectivités territoriales.
+    Toute fraction de mois entamée compte pour un mois entier.
+    Les montants après la virgule sont automatiquement majorés au centime supérieur.
     """
-    if not date_pay_str: date_pay_str = date.today().isoformat()
+    if not date_pay_str:
+        date_pay_str = date.today().isoformat()
     try:
         d_ech = datetime.strptime(date_ech_str[:10], '%Y-%m-%d').date()
         d_pay = datetime.strptime(date_pay_str[:10], '%Y-%m-%d').date()
-    except: return 0, 0
-    if d_pay <= d_ech: return 0, 0
-    pen  = round(montant * get_param(module, 'PENALITE_RETARD', 10) / 100, 2)
+    except Exception:
+        return 0.0, 0.0
+
+    if d_pay <= d_ech:
+        return 0.0, 0.0
+
+    pen_pct = get_param(module, 'PENALITE_RETARD', 10) / 100
     maj1 = get_param(module, 'MAJORATION_1ER_MOIS', 5) / 100
     majS = get_param(module, 'MAJORATION_MOIS_SUP', 0.5) / 100
-    jours = (d_pay - d_ech).days
-    # Mois COMPLETS de retard (floor) — un mois commencé ne compte pas
-    mois_complets = jours // 30
-    # 5% s'applique dès le 1er jour de retard (même mois partiel)
-    # 0.5% uniquement pour les mois COMPLETS au-delà du 1er mois
-    extra_mois = max(0, mois_complets - 1)
-    maj = round(montant * maj1 + montant * majS * extra_mois, 2)
+
+    # Pénalité de retard majorée au centime supérieur
+    pen = majore_centimes(montant * pen_pct)
+
+    # Calcul exact des mois de retard selon la règle fiscale (calendaire) :
+    diff_mois = (d_pay.year - d_ech.year) * 12 + (d_pay.month - d_ech.month)
+    if d_pay.day > d_ech.day and diff_mois > 0 and d_ech.day < 28:
+        diff_mois += 1
+    total_mois = max(1, diff_mois)
+
+    # 5% pour le 1er mois, et 0.5% par mois supplémentaire
+    extra_mois = max(0, total_mois - 1)
+    maj = majore_centimes(montant * maj1 + montant * majS * extra_mois)
+
     return pen, maj
 
 def gen_num(prefix, table, col='numero', db_conn=None):

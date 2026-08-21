@@ -4,7 +4,8 @@ from flask import (Blueprint, render_template, request, redirect,
 from datetime import datetime, date
 from database import get_db
 from modules.helpers import (login_required, get_current_user, annees_non_payees,
-                              get_tarifs_module, get_param, calculer_penalites, gen_num)
+                              get_tarifs_module, get_param, calculer_penalites, gen_num,
+                              majore_centimes)
 import os, uuid
 
 bp = Blueprint('tnb', __name__)
@@ -109,16 +110,18 @@ def _compute_tarifs_annee(all_tarifs, zone, sup, annee, amende_pct, today_str=No
                 s_max = float(t['surface_max']) if t['surface_max'] is not None else float('inf')
                 if s_min <= sup <= s_max:
                     taux = float(t['valeur'])
-                    principal = round(taux if t['unite'] == 'DH' else sup * taux, 2)
+                    val = taux if t['unite'] == 'DH' else sup * taux
+                    principal = majore_centimes(val)
                     break
     d_ech = date(annee, 2, 28).isoformat()
     pen = maj = amende = 0.0
     if principal > 0 and today_str > d_ech:
-        amende = max(round(principal * amende_pct / 100, 2), 500)
+        amende = max(majore_centimes(principal * amende_pct / 100), 500)
         pen, maj = calculer_penalites(principal, d_ech, today_str, 'TNB')
+    total = majore_centimes(principal + pen + maj + amende)
     return {'taux': taux, 'principal': principal, 'penalite': pen,
             'majoration': maj, 'amende': amende,
-            'total': round(principal + pen + maj + amende, 2)}
+            'total': total}
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -184,7 +187,7 @@ def tnb_liste():
             for y in annees:
                 r = _compute_tarifs_annee(all_tarifs, zone_t, sup_t, y, amende_pct, today_str)
                 tot += r['total']
-            t['total_non_paye'] = round(tot, 2)
+            t['total_non_paye'] = majore_centimes(tot)
 
     # Filtrage recherche textuelle
     q_low = q.lower() if q else ''
@@ -193,7 +196,7 @@ def tnb_liste():
     for d_row in dossiers_raw:
         ctb_id      = d_row['contribuable_id']
         ter_list    = ter_by_ctb.get(ctb_id, [])
-        total_imp   = round(sum(t['total_non_paye'] for t in ter_list), 2)
+        total_imp   = majore_centimes(sum(t['total_non_paye'] for t in ter_list))
         nb_impaye   = sum(1 for t in ter_list if t['nb_non_paye'] > 0)
 
         # Filtres
@@ -576,7 +579,7 @@ def tnb_paiement(id):
         for yr in annees_imp:
             calc = _compute_tarifs_annee(all_tarifs, zone_r, sup_r, yr, amende_pct, today_str)
             total_r += calc['total']
-        r['total_impaye'] = round(total_r, 2)
+        r['total_impaye'] = majore_centimes(total_r)
         autres_terrains.append(r)
 
     params_tnb = conn.execute(

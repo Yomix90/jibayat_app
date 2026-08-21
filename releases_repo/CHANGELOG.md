@@ -1,5 +1,13 @@
 # JIBAYAT — Historique des Versions (CHANGELOG)
 
+## v1.5.2 — 2026-08-21
+
+### 📐 Calculs Fiscaux & TNB
+- **Calcul précis des pénalités de retard (0.5% / mois)** : Correction du décompte des mois de retard selon la Loi 47-06 (calcul calendaire exact, prise en compte intégrale de l'année 2025).
+- **Majoration au centime supérieur** : Arrondi automatique au centime supérieur pour tous les montants après la virgule (ex: `945.721 -> 945.73`).
+- **Nettoyage automatique & Sauvegardes isolées** : Sauvegardes pré-MAJ rangées proprement dans le sous-dossier `sauvegardes/` avec rotation automatique.
+- **Verrou d'instance unique (Mutex)** : Empêche le lancement multiple de l'application et la duplication des icônes dans la barre des tâches.
+
 ## v1.5.1 — 2026-08-20
 
 ### 🎨 Interface & UX
@@ -7,11 +15,3 @@
 - **Badge de mise à jour dynamique** : Affichage d'une pastille animée à côté de la version dans la barre latérale avec lien direct vers la mise à jour
 - **Mises à jour intelligentes** : Support du téléchargement direct des fichiers d'installation `.exe` (JIBAYAT_Setup.exe)
 - **Dépôt public dédié** : Vérification autonome des mises à jour via `Yomix90/jibayat-releases` sans exposition du code source
-
-## v1.5.0 — 2026-08-20
-
-### 🚀 Nouveautés & Améliorations
-- **Système de Mise à Jour Automatique OTA** : Détection des mises à jour et installation en 1 clic sans perte de données.
-- **Sauvegarde Préventive Automatique** : Sauvegarde automatique de la base de données avant toute mise à niveau.
-- **Sécurité Renforcée** : Chiffrement PBKDF2/AES-256 et sécurisation des sessions et rôles administrateurs.
-- **Assistant d'Installation & MAJ** : Support du double mode (Nouvelle installation et Mise à jour).
