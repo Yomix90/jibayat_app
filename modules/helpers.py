@@ -1,5 +1,5 @@
 """modules/helpers.py — Fonctions partagées entre tous les blueprints"""
-import hashlib
+import os, json, hashlib
 from flask import session, redirect, url_for, flash
 from functools import wraps
 from datetime import datetime, date
@@ -24,6 +24,8 @@ def get_current_user():
             FROM utilisateurs u JOIN roles r ON u.role_id=r.id
             LEFT JOIN communes com ON u.commune_id=com.id WHERE u.id=?''',
             (session['user_id'],)).fetchone()
+        if user:
+            return dict(user)
     except Exception:
         session.pop('user_id', None)
         user = None
@@ -36,24 +38,118 @@ def get_user_module_permissions(user, module_code):
     """
     if user is None:
         return {'peut_voir': 0, 'peut_ajouter': 0, 'peut_modifier': 0, 'peut_supprimer': 0}
+    if not isinstance(user, dict):
+        try:
+            user = dict(user)
+        except Exception:
+            pass
     # Admin / super_admin : accès total
-    if user['role_nom'] in ('super_admin', 'admin'):
+    role_name = str(user.get('role_nom', '')).lower()
+    if role_name in ('super_admin', 'admin', 'administrateur') or user.get('role_id') == 1:
         return {'peut_voir': 1, 'peut_ajouter': 1, 'peut_modifier': 1, 'peut_supprimer': 1}
+
+    mod_key = module_code.lower()
+
+    # Si l'utilisateur a une restriction explicite sur modules_autorises
+    modules_aut = user.get('modules_autorises', '') or ''
+    if modules_aut:
+        allowed_list = [m.strip().lower() for m in modules_aut.split(',') if m.strip()]
+        if mod_key not in allowed_list and module_code.upper() not in [m.upper() for m in allowed_list]:
+            return {'peut_voir': 0, 'peut_ajouter': 0, 'peut_modifier': 0, 'peut_supprimer': 0}
+
+    # Vérification dans la table role_module_permissions si configurée
     conn = get_db()
-    row = conn.execute(
-        '''SELECT rmp.* FROM role_module_permissions rmp
-           WHERE rmp.role_id = ? AND rmp.module_code = ?''',
-        (user['role_id'], module_code)
-    ).fetchone()
+    row = None
+    try:
+        row = conn.execute(
+            '''SELECT rmp.* FROM role_module_permissions rmp
+               WHERE rmp.role_id = ? AND LOWER(rmp.module_code) = ?''',
+            (user.get('role_id'), mod_key)
+        ).fetchone()
+    except Exception:
+        pass
+
     if row:
         return {
-            'peut_voir':      row['peut_voir'],
-            'peut_ajouter':   row['peut_ajouter'],
-            'peut_modifier':  row['peut_modifier'],
-            'peut_supprimer': row['peut_supprimer'],
+            'peut_voir':      int(row['peut_voir'] or 0),
+            'peut_ajouter':   int(row['peut_ajouter'] or 0),
+            'peut_modifier':  int(row['peut_modifier'] or 0),
+            'peut_supprimer': int(row['peut_supprimer'] or 0),
         }
-    # Pas de règle = pas d'accès
-    return {'peut_voir': 0, 'peut_ajouter': 0, 'peut_modifier': 0, 'peut_supprimer': 0}
+
+    return {
+        'peut_voir':      int(user.get('peut_voir', 1)),
+        'peut_ajouter':   int(user.get('peut_ajouter', 0)),
+        'peut_modifier':  int(user.get('peut_modifier', 0)),
+        'peut_supprimer': int(user.get('peut_supprimer', 0)),
+    }
+
+MODULE_ALIAS_MAP = {
+    # TNB
+    'tnb': 'TNB',
+    'terrains': 'TNB',
+    # Débits de boissons
+    'tdb': 'DEBITS_BOISSONS',
+    'debits_boissons': 'DEBITS_BOISSONS',
+    'debits': 'DEBITS_BOISSONS',
+    # Stationnement
+    'sta': 'STATIONNEMENT',
+    'stationnement': 'STATIONNEMENT',
+    'tpv': 'STATIONNEMENT',
+    'vehicules': 'STATIONNEMENT',
+    # Fourrière
+    'fou': 'FOURRIERE',
+    'fourriere': 'FOURRIERE',
+    'dossiers_fourriere': 'FOURRIERE',
+    # Domaine public
+    'odp': 'OCCUPATION_DOMAINE',
+    'occupation_domaine': 'OCCUPATION_DOMAINE',
+    'occupations': 'OCCUPATION_DOMAINE',
+    'occupation': 'OCCUPATION_DOMAINE',
+    # Location
+    'loc': 'LOCATION_LOCAUX',
+    'location_locaux': 'LOCATION_LOCAUX',
+    'locations': 'LOCATION_LOCAUX',
+    'location': 'LOCATION_LOCAUX',
+    # Souks
+    'sou': 'AFFERMAGE_SOUKS',
+    'affermage_souks': 'AFFERMAGE_SOUKS',
+    'souks': 'AFFERMAGE_SOUKS',
+    'affermages': 'AFFERMAGE_SOUKS',
+    'affermage': 'AFFERMAGE_SOUKS',
+}
+
+SYSTEM_FISCAL_MODULES = {
+    'TNB', 'DEBITS_BOISSONS', 'STATIONNEMENT', 'FOURRIERE',
+    'OCCUPATION_DOMAINE', 'LOCATION_LOCAUX', 'AFFERMAGE_SOUKS'
+}
+
+def is_system_module_active(module_code):
+    """
+    Vérifie si un module fiscal est activé dans la configuration globale du système (config.json).
+    Les modules de base (contribuables, paiements, avis, regie, config, etc.) restent toujours actifs au niveau système.
+    """
+    if not module_code:
+        return True
+    mod_str = str(module_code).strip().lower()
+    canonical = MODULE_ALIAS_MAP.get(mod_str, mod_str.upper())
+    
+    # Si ce n'est pas un des modules fiscaux configurables, c'est un module système actif
+    if canonical not in SYSTEM_FISCAL_MODULES:
+        return True
+        
+    try:
+        if os.path.exists('config.json'):
+            with open('config.json', 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                active_list = cfg.get('modules')
+                if active_list is not None:
+                    active_upper = [str(x).upper() for x in active_list]
+                    active_lower = [str(x).lower() for x in active_list]
+                    return (canonical in active_upper or mod_str in active_lower or mod_str.upper() in active_upper)
+    except Exception:
+        pass
+    return True
 
 def get_all_user_modules(user):
     """Retourne tous les modules avec permissions pour un utilisateur."""
@@ -64,10 +160,69 @@ def get_all_user_modules(user):
         modules = conn.execute('SELECT * FROM app_modules WHERE actif=1 ORDER BY ordre').fetchall()
         result = {}
         for m in modules:
-            result[m['code']] = get_user_module_permissions(user, m['code'])
+            if is_system_module_active(m['code']):
+                result[m['code']] = get_user_module_permissions(user, m['code'])
     except Exception:
         result = {}
     return result
+
+def check_user_permission(user, action, module_code=None):
+    """
+    Vérifie si l'utilisateur possède l'autorisation pour l'action donnée :
+    - action in ('voir', 'ajouter', 'modifier', 'supprimer', 'creer_bulletin', 'valider_paiement', 'config')
+    - module_code (optionnel, ex: 'sou', 'tdb', 'odp', 'sta', 'fou', 'tnb', 'loc', 'contribuables')
+    """
+    if not user:
+        return False
+    if not isinstance(user, dict):
+        try:
+            user = dict(user)
+        except Exception:
+            pass
+
+    # 1. Si un module_code est spécifié, vérifier d'abord s'il est activé au niveau système
+    if module_code and not is_system_module_active(module_code):
+        return False
+
+    # 2. super_admin et admin ont un accès complet aux modules activés
+    role_name = str(user.get('role_nom', '')).lower()
+    if role_name in ('super_admin', 'admin', 'administrateur') or user.get('role_id') == 1:
+        return True
+    
+    # Permissions spéciales / métiers
+    if action == 'config':
+        return bool(user.get('peut_config', 0))
+    if action == 'valider_paiement':
+        return bool(user.get('peut_valider_paiement', 0))
+    if action == 'creer_bulletin':
+        return bool(user.get('peut_creer_bulletin', 0))
+
+    # Permissions génériques (voir, ajouter, modifier, supprimer)
+    global_perm = bool(user.get(f'peut_{action}', 0))
+    
+    # Si un module_code est spécifié, on vérifie aussi la matrice RBAC par module
+    if module_code:
+        mod_perms = get_user_module_permissions(user, module_code)
+        mod_perm = bool(mod_perms.get(f'peut_{action}', 0))
+        return global_perm and mod_perm
+
+    return global_perm
+
+def permission_required(action, module_code=None):
+    """Décorateur qui vérifie les habilitations de l'utilisateur."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('login'))
+            user = get_current_user()
+            if not check_user_permission(user, action, module_code):
+                flash('Accès non autorisé : votre profil ne dispose pas des droits requis pour cette opération 🚫', 'danger')
+                from flask import request
+                return redirect(request.referrer or url_for('index'))
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 def module_required(module_code, perm='peut_voir'):
     """Décorateur qui vérifie l'accès à un module spécifique."""
@@ -135,6 +290,23 @@ def calculer_penalites(montant, date_ech_str, date_pay_str=None, module='GLOBAL'
     maj = majore_centimes(montant * maj1 + montant * majS * extra_mois)
 
     return pen, maj
+
+def get_next_seq_num(table, col='numero', db_conn=None):
+    """Retourne le prochain numéro séquentiel sous forme de chaîne ('1', '2', '3', ...)"""
+    conn = db_conn or get_db()
+    _validate_sql_name(table)
+    _validate_sql_name(col)
+    try:
+        row = conn.execute(f"SELECT MAX(CAST({col} AS INTEGER)) as m FROM {table} WHERE {col} GLOB '[0-9]*'").fetchone()
+        if row and row['m'] is not None and row['m'] > 0:
+            return str(row['m'] + 1)
+    except Exception:
+        pass
+    try:
+        cnt = conn.execute(f"SELECT COUNT(*) as c FROM {table}").fetchone()['c']
+        return str(cnt + 1 if cnt > 0 else 1)
+    except Exception:
+        return "1"
 
 def gen_num(prefix, table, col='numero', db_conn=None):
     """Genere un numero unique base sur MAX (safe en boucle et concurrence)."""

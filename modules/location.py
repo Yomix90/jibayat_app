@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 from database import get_db
-from modules.helpers import login_required, get_current_user, gen_num
+from modules.helpers import login_required, get_current_user, gen_num, get_next_seq_num, permission_required
 
 bp = Blueprint('loc', __name__)
 
@@ -450,19 +450,20 @@ def loc_liste():
                 province_name = ci["province"] or ""
     except Exception:
         pass
+    next_numero = get_next_seq_num('baux', 'numero', conn)
     conn.close()
     return render_template("location/loc_liste.html", user=user, items=items,
                            contribuables=contribuables, secteurs=secteurs,
                            boutiques_dispo=boutiques_dispo,
-                           commune=commune_name, province=province_name)
+                           commune=commune_name, province=province_name, next_numero=next_numero)
 
 @bp.route('/location-locaux/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'loc')
 def loc_ajouter():
     f = request.form
     conn = get_db()
-    n = conn.execute('SELECT COUNT(*) as c FROM baux').fetchone()['c'] + 1
-    num = f"LOC{datetime.now().year}{n:05d}"
+    num = f.get('numero', '').strip() or get_next_seq_num('baux', 'numero', conn)
 
     boutique_id = f.get('boutique_id') or None
     tarif_id = None
@@ -498,12 +499,13 @@ def loc_ajouter():
     )
     conn.commit()
     conn.close()
-    flash('Bail ajoute', 'success')
+    flash(f'Bail N° {num} ajouté ✅', 'success')
     return redirect(url_for('loc.loc_liste'))
 
 
 @bp.route('/location-locaux/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'loc')
 def loc_modifier(id):
     f = request.form
     conn = get_db()
@@ -527,6 +529,7 @@ def loc_modifier(id):
 
 @bp.route('/location-locaux/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'loc')
 def loc_supprimer(id):
     if not get_current_user()['peut_config']:
         flash('Acces refuse', 'danger')
@@ -552,24 +555,30 @@ def loc_detail(id):
     user = get_current_user()
     conn = get_db()
     item = conn.execute(
-        '''SELECT b.*, c.nom, c.prenom, c.raison_sociale, c.telephone, c.id as ctb_id, c.numero as ctb_num
-           FROM baux b JOIN contribuables c ON b.contribuable_id=c.id WHERE b.id=?''', (id,)
+        '''SELECT b.*, c.nom, c.prenom, c.raison_sociale, c.telephone, c.cin, c.rc, c.id as ctb_id, c.numero as ctb_num,
+                  bo.numero as boutique_numero, bo.libelle as boutique_libelle, bo.statut as boutique_statut,
+                  lt.libelle as tarif_libelle, lt.valeur as tarif_valeur, lt.type_tarif,
+                  s.libelle as secteur_libelle, s.code as secteur_code
+           FROM baux b JOIN contribuables c ON b.contribuable_id=c.id
+           LEFT JOIN loc_boutiques bo ON bo.id=b.boutique_id
+           LEFT JOIN loc_tarifs lt ON lt.id=b.tarif_id
+           LEFT JOIN loc_secteurs s ON s.id=b.secteur_id
+           WHERE b.id=?''', (id,)
     ).fetchone()
+    if not item:
+        flash('Bail introuvable', 'danger')
+        conn.close()
+        return redirect(url_for('loc.loc_liste'))
+
     declarations = conn.execute(
         '''SELECT d.*, b2.numero_bulletin FROM declarations d
            LEFT JOIN bulletins b2 ON b2.declaration_id=d.id
-           WHERE d.module="LOCATION_LOCAUX" AND d.reference_id=? ORDER BY d.annee DESC''', (id,)
+           WHERE d.module="LOCATION_LOCAUX" AND d.reference_id=? ORDER BY d.annee DESC, d.trimestre DESC''', (id,)
     ).fetchall()
     conn.close()
-    infos = [
-        ('N', item['numero']), ('Ref Local', item['ref_local']), ('Adresse', item['adresse']),
-        ('Superficie', str(item['superficie']) + ' m2' if item['superficie'] else '--'),
-        ('Loyer mensuel', str(item['loyer_mensuel']) + ' DH'),
-        ('Date debut', item['date_debut']), ('Date fin', item['date_fin'])
-    ]
-    return render_template('generic_detail.html', user=user, item=item, declarations=declarations,
-        annees_manquantes=[], infos=infos, module_icon='🏢', module_label='Location Locaux Commerciaux',
-        back_url=url_for('loc.loc_liste'), paiement_url=url_for('loc.loc_paiement', id=id))
+
+    return render_template('location/loc_detail.html', user=user, item=item, declarations=declarations)
+
 
 
 # ════════════════════════════════════════════════════════════
@@ -659,6 +668,7 @@ def loc_paiement(id):
 
 @bp.route('/location-locaux/<int:id>/payer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def loc_payer(id):
     user = get_current_user()
     f = request.form
@@ -730,17 +740,15 @@ def loc_payer(id):
 
 @bp.route('/location-locaux/tarifs/sync-fiscal', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_sync_tarifs_fiscal():
-    """Synchronise tous les tarifs loc_tarifs non encore lies a un arrete fiscal."""
-    if not get_current_user()['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('loc.loc_secteurs'))
     count = _sync_all_tarifs_fiscal()
     flash(f"{count} tarif(s) synchronise(s) avec l'arrete fiscal.", "success")
     return redirect(url_for('loc.loc_secteurs'))
 
 @bp.route('/location-locaux/tarifs/<int:id>/sync-fiscal', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_sync_tarif_un(id):
     """Synchronise un seul tarif loc_tarif avec l'arrete fiscal actif."""
     if not get_current_user()['peut_config']:
@@ -842,11 +850,8 @@ def loc_secteurs():
 
 @bp.route('/location-locaux/secteurs/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_secteur_ajouter():
-    user = get_current_user()
-    if not user or not user['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('loc.loc_secteurs'))
     f = request.form
     conn = get_db()
     n = conn.execute('SELECT COUNT(*) as c FROM loc_secteurs').fetchone()['c'] + 1
@@ -866,10 +871,8 @@ def loc_secteur_ajouter():
 
 @bp.route('/location-locaux/secteurs/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_secteur_modifier(id):
-    if not get_current_user()['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('loc.loc_secteurs'))
     f = request.form
     conn = get_db()
     conn.execute('UPDATE loc_secteurs SET libelle=?, description=?, ordre=? WHERE id=?',
@@ -881,6 +884,7 @@ def loc_secteur_modifier(id):
 
 @bp.route('/location-locaux/secteurs/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_secteur_supprimer(id):
     conn = get_db()
     n = conn.execute('SELECT COUNT(*) as c FROM baux WHERE secteur_id=? AND actif=1', (id,)).fetchone()['c']
@@ -900,10 +904,8 @@ def loc_secteur_supprimer(id):
 
 @bp.route('/location-locaux/tarifs/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_tarif_ajouter():
-    if not get_current_user()['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('loc.loc_secteurs'))
     f = request.form
     conn = get_db()
     unite = 'DH/m2/mois' if f.get('type_tarif') == 'm2' else 'DH/mois'
@@ -924,10 +926,8 @@ def loc_tarif_ajouter():
 
 @bp.route('/location-locaux/tarifs/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_tarif_modifier(id):
-    if not get_current_user()['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('loc.loc_secteurs'))
     f = request.form
     conn = get_db()
     unite = 'DH/m2/mois' if f.get('type_tarif') == 'm2' else 'DH/mois'
@@ -948,6 +948,7 @@ def loc_tarif_modifier(id):
 
 @bp.route('/location-locaux/tarifs/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def loc_tarif_supprimer(id):
     conn = get_db()
     n = conn.execute('SELECT COUNT(*) as c FROM baux WHERE tarif_id=? AND actif=1', (id,)).fetchone()['c']
@@ -966,10 +967,8 @@ def loc_tarif_supprimer(id):
 
 @bp.route('/location-locaux/boutiques/ajouter', methods=['POST'])
 @login_required
+@permission_required('modifier', 'loc')
 def loc_boutique_ajouter():
-    if not get_current_user()['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('loc.loc_secteurs'))
     f = request.form
     conn = get_db()
     try:
@@ -994,6 +993,7 @@ def loc_boutique_ajouter():
 
 @bp.route('/location-locaux/boutiques/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'loc')
 def loc_boutique_modifier(id):
     f = request.form
     conn = get_db()
@@ -1009,6 +1009,7 @@ def loc_boutique_modifier(id):
 
 @bp.route('/location-locaux/boutiques/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('modifier', 'loc')
 def loc_boutique_supprimer(id):
     conn = get_db()
     n = conn.execute('SELECT COUNT(*) as c FROM baux WHERE boutique_id=? AND actif=1', (id,)).fetchone()['c']

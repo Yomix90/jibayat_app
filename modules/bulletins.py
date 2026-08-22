@@ -4,7 +4,7 @@ modules/bulletins.py — Blueprint de gestion des bulletins de versement et vali
 from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from database import get_db
-from modules.helpers import login_required, get_current_user, gen_num
+from modules.helpers import login_required, get_current_user, gen_num, permission_required
 
 bp = Blueprint('bulletins', __name__)
 
@@ -29,11 +29,9 @@ def paiements():
 
 @bp.route('/bulletins/creer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def creer_bulletin():
     user = get_current_user()
-    if not user['peut_creer_bulletin']:
-        flash('Accès refusé', 'danger')
-        return redirect(url_for('bulletins.paiements'))
     f = request.form
     conn = get_db()
     decl = conn.execute('SELECT * FROM declarations WHERE id=?', (f['declaration_id'],)).fetchone()
@@ -50,11 +48,9 @@ def creer_bulletin():
 
 @bp.route('/bulletins/<int:id>/valider', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def valider_bulletin(id):
     user = get_current_user()
-    if not user['peut_valider_paiement']:
-        flash('Accès refusé — Réservé au Régisseur', 'danger')
-        return redirect(url_for('bulletins.paiements'))
     f = request.form
     num_quittance = f.get('numero_quittance', '').strip()
     date_quittance = f.get('date_quittance', date.today().isoformat())
@@ -91,11 +87,9 @@ def valider_bulletin(id):
 
 @bp.route('/bulletins/<int:id>/rejeter', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def rejeter_bulletin(id):
     user = get_current_user()
-    if not user['peut_valider_paiement']:
-        flash('Accès refusé', 'danger')
-        return redirect(url_for('bulletins.paiements'))
     f = request.form
     motif = f.get('motif_rejet', 'Non précisé').strip()
     conn = get_db()
@@ -110,6 +104,7 @@ def rejeter_bulletin(id):
 
 @bp.route('/bulletins/valider-masse', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def valider_bulletins_masse():
     user = get_current_user()
     if not user['peut_valider_paiement']:

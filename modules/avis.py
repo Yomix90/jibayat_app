@@ -5,7 +5,7 @@ from datetime import date, datetime
 from collections import defaultdict
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from database import get_db
-from modules.helpers import login_required, get_current_user, gen_num
+from modules.helpers import login_required, get_current_user, gen_num, permission_required
 
 bp = Blueprint('avis', __name__)
 
@@ -124,6 +124,7 @@ def avis():
 
 @bp.route('/avis/generer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def generer_avis():
     user = get_current_user()
     conn = get_db()
@@ -155,6 +156,7 @@ def generer_avis():
 
 @bp.route('/avis/generer-individuel', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def generer_avis_individuel():
     decl_id = request.form.get('declaration_id')
     if not decl_id:
@@ -176,6 +178,7 @@ def generer_avis_individuel():
 
 @bp.route('/avis/lettre/generer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def generer_lettre():
     user = get_current_user()
     conn = get_db()
@@ -261,6 +264,7 @@ def lettre_imprimer(id):
 
 @bp.route('/avis/lettre/<int:id>/approuver', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def lettre_approuver(id):
     conn = get_db()
     conn.execute('''UPDATE lettres_notification
@@ -274,6 +278,7 @@ def lettre_approuver(id):
 
 @bp.route('/avis/lettre/<int:id>/annuler', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def lettre_annuler(id):
     conn = get_db()
     conn.execute('UPDATE lettres_notification SET statut="annulee" WHERE id=?', (id,))

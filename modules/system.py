@@ -5,7 +5,7 @@ import os, json, shutil, base64, logging, subprocess, sys
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, current_app, session
 from database import get_db, init_db, check_db_integrity
-from modules.helpers import login_required, get_current_user
+from modules.helpers import login_required, get_current_user, permission_required
 from modules.security import (
     get_db_security_status, set_db_password, verify_db_password,
     remove_db_password, encrypt_file, decrypt_file
@@ -93,8 +93,8 @@ def setup():
         admin_password = request.form.get('admin_password', '')
         admin_password_confirm = request.form.get('admin_password_confirm', '')
 
-        if not nom_commune:
-            error = "Le nom de la commune est obligatoire."
+        if not nom_commune or nom_commune.lower() in ('ma commune', 'commune', 'ma_commune', 'mon commune'):
+            error = "Le nom officiel de votre commune est obligatoire pour initialiser l'application (ex: Commune de ...)."
         elif not admin_email or not admin_password:
             error = "L'identifiant/email et le mot de passe de l'administrateur sont obligatoires."
         elif len(admin_password) < 6:
@@ -189,12 +189,9 @@ def setup():
 
 @bp.route('/parametres-systeme')
 @login_required
+@permission_required('config')
 def parametres_systeme():
     user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès réservé aux administrateurs.', 'danger')
-        return redirect(url_for('index'))
-
     cfg = _load_sys_config()
     logs = _load_backup_log()
     version = _read_version()
@@ -220,11 +217,9 @@ def parametres_systeme():
 
 @bp.route('/commune/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_commune():
     user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès réservé aux administrateurs.', 'danger')
-        return redirect(url_for('system.parametres_systeme'))
 
     nom = request.form.get('nom', '').strip()
     nom_ar = request.form.get('nom_ar', '').strip()
@@ -277,6 +272,13 @@ def modifier_commune():
         cfg['commune']['logo'] = logo_path
     _save_sys_config(cfg)
 
+    # Transmission asynchrone de la mise à jour à Google Sheets
+    try:
+        from modules.telemetry import sync_installation_status
+        sync_installation_status('update')
+    except Exception:
+        pass
+
     flash('✅ Informations de la commune mises à jour.', 'success')
     return redirect(url_for('system.parametres_systeme'))
 
@@ -288,33 +290,86 @@ def api_systeme_commune():
         return jsonify({'ok': False, 'error': 'Accès refusé'}), 403
 
     nom = request.form.get('nom', '').strip()
-    if not nom:
-        return jsonify({'ok': False, 'error': 'Nom obligatoire'})
+    if not nom or nom.lower() in ('ma commune', 'commune'):
+        return jsonify({'ok': False, 'error': 'Le nom officiel de la commune est obligatoire.'})
+
+    nom_ar = request.form.get('nom_ar', '').strip()
+    region = request.form.get('region', '').strip()
+    region_ar = request.form.get('region_ar', '').strip()
+    province = request.form.get('province', '').strip()
+    province_ar = request.form.get('province_ar', '').strip()
 
     cfg = _load_sys_config()
     cfg['commune'] = {
         'nom': nom,
-        'nom_ar': request.form.get('nom_ar', '').strip(),
-        'region': request.form.get('region', '').strip(),
-        'region_ar': request.form.get('region_ar', '').strip(),
-        'province': request.form.get('province', '').strip(),
-        'province_ar': request.form.get('province_ar', '').strip(),
+        'nom_ar': nom_ar,
+        'region': region,
+        'region_ar': region_ar,
+        'province': province,
+        'province_ar': province_ar,
     }
     _save_sys_config(cfg)
-    return jsonify({'ok': True, 'msg': 'Informations commune sauvegardées.'})
+
+    # Synchronisation immédiate avec la table communes dans SQLite
+    try:
+        conn = get_db()
+        conn.execute('''INSERT INTO communes (id, nom, nom_ar, region, region_ar, province, province_ar)
+            VALUES (1, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                nom=excluded.nom, nom_ar=excluded.nom_ar,
+                region=excluded.region, region_ar=excluded.region_ar,
+                province=excluded.province, province_ar=excluded.province_ar''',
+            (nom, nom_ar, region, region_ar, province, province_ar))
+        conn.commit()
+    except Exception as _dbe:
+        logger.warning(f"Erreur sync DB commune: {_dbe}")
+
+    # Transmission asynchrone de la mise à jour à Google Sheets
+    try:
+        from modules.telemetry import sync_installation_status
+        sync_installation_status('update')
+    except Exception:
+        pass
+
+    return jsonify({'ok': True, 'msg': 'Informations commune sauvegardées et synchronisées avec succès.'})
 
 @bp.route('/api/systeme/modules', methods=['POST'])
 @login_required
 def api_systeme_modules():
     user = get_current_user()
-    if not user['peut_config']:
+    if not user or not user.get('peut_config'):
         return jsonify({'ok': False, 'error': 'Accès refusé'}), 403
 
     modules = request.form.getlist('modules')
     cfg = _load_sys_config()
     cfg['modules'] = modules
     _save_sys_config(cfg)
-    return jsonify({'ok': True, 'msg': f'{len(modules)} module(s) activé(s).'})
+
+    # Synchronisation immédiate avec la table app_modules SQLite
+    try:
+        conn = get_db()
+        from modules.helpers import MODULE_ALIAS_MAP
+        for mod_key in ALL_MODULES.keys():
+            is_active = 1 if mod_key in modules else 0
+            conn.execute('UPDATE app_modules SET actif=? WHERE UPPER(code)=? OR LOWER(code)=?', 
+                         (is_active, mod_key, mod_key.lower()))
+            # Synchroniser les alias courts
+            aliases = [k for k, v in MODULE_ALIAS_MAP.items() if v == mod_key]
+            for al in aliases:
+                conn.execute('UPDATE app_modules SET actif=? WHERE LOWER(code)=?', (is_active, al))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Erreur sync app_modules: {e}")
+
+    # Transmission asynchrone de la mise à jour à Google Sheets
+    try:
+        from modules.telemetry import sync_installation_status
+        sync_installation_status('update')
+    except Exception:
+        pass
+
+    return jsonify({'ok': True, 'msg': f'{len(modules)} module(s) fiscal/aux activé(s).'})
 
 @bp.route('/api/systeme/backup-config', methods=['POST'])
 @login_required

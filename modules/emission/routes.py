@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 
 from database import get_db
-from modules.helpers import login_required, get_current_user
+from modules.helpers import login_required, get_current_user, permission_required
 from .config import MOIS_NOMS
 from .parser import parse_bordereau_versement
 from .generator import generer_tous_bordereaux
@@ -103,6 +103,7 @@ def dashboard():
 
 @bp.route('/upload', methods=['GET', 'POST'])
 @login_required
+@permission_required('ajouter', 'emission')
 def upload():
     user = get_current_user()
     if request.method == 'POST':
@@ -220,6 +221,7 @@ def view(annee, mois):
 
 @bp.route('/<int:annee>/config', methods=['GET', 'POST'])
 @login_required
+@permission_required('config')
 def save_config(annee):
     """Save emission configuration for a given year and regenerate PDFs."""
     conn = get_db()
@@ -317,6 +319,7 @@ def download_pdf_rubrique(annee, mois, rubrique):
 
 @bp.route('/<int:annee>/<int:mois>/edit_montant/<code>', methods=['POST'])
 @login_required
+@permission_required('modifier', 'emission')
 def edit_montant(annee, mois, code):
     montant = request.form.get('montant', type=float)
     conn = get_db()
@@ -333,6 +336,7 @@ def edit_montant(annee, mois, code):
 
 @bp.route('/<int:annee>/<int:mois>/delete_montant/<code>', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'emission')
 def delete_montant(annee, mois, code):
     conn = get_db()
     bv = conn.execute('SELECT * FROM bordereaux_versement WHERE annee=? AND mois=?', (annee, mois)).fetchone()
@@ -348,6 +352,7 @@ def delete_montant(annee, mois, code):
 
 @bp.route('/<int:annee>/<int:mois>/add_rubrique', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'emission')
 def add_rubrique(annee, mois):
     code = request.form.get('code_budgetaire', '').strip()
     montant = request.form.get('montant', type=float)
@@ -388,6 +393,7 @@ def add_rubrique(annee, mois):
 
 @bp.route('/<int:annee>/<int:mois>', methods=['DELETE'])
 @login_required
+@permission_required('supprimer', 'emission')
 def delete(annee, mois):
     conn = get_db()
     bv = conn.execute('SELECT * FROM bordereaux_versement WHERE annee=? AND mois=?', (annee, mois)).fetchone()

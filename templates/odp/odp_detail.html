@@ -1,69 +1,208 @@
 {% extends 'base.html' %}
-{% block title %}{{ occ.numero }}{% endblock %}
-{% block page_title %}🏪 Occupation Domaine Public — {{ occ.numero }}{% endblock %}
+{% block title %}Dossier N° {{ occ.numero }} — Occupation Domaine Public{% endblock %}
+{% block page_title %}🏪 Fiche Occupation Domaine Public{% endblock %}
+
 {% block content %}
-<div class="df gap-2 mb-3 flex-wrap">
-  <a href="{{ url_for('odp.odp_liste') }}" class="btn btn-outline btn-sm">← Liste</a>
-  <a href="{{ url_for('odp.odp_paiement', id=occ.id) }}" class="btn btn-accent">💳 Paiement & Déclarations</a>
-  <button onclick="openModal('editOdp')" class="btn btn-primary btn-sm">✏️ Modifier</button>
-  <button onclick="openModal('renouvModal')" class="btn btn-info btn-sm">🔄 Renouveler</button>
-  {% if user.peut_supprimer %}
-  <button onclick="openModal('delOdp')" class="btn btn-danger btn-sm">🗑️ Supprimer</button>
-  {% endif %}
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-  <div class="card">
-    <div class="card-header"><h3>📋 Informations Occupation</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        <div><span class="text-muted" style="font-size:.7rem">N°</span><div><strong style="color:var(--primary)">{{ occ.numero }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Type</span><div><span class="badge b-info">{{ occ.type_occupation }}</span></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Localisation</span><div>{{ occ.localisation or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Superficie</span><div>{{ occ.superficie or '—' }} {% if occ.superficie %}m²{% endif %}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">N° Autorisation</span><div>{{ occ.num_autorisation or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Date Début</span><div>{{ occ.date_debut or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Date Fin</span><div><strong class="{% if today and today > occ.date_fin %}text-danger{% else %}text-ok{% endif %}">{{ occ.date_fin or '—' }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Statut</span><div><span class="badge {{ 'b-ok' if occ.statut=='actif' else 'b-danger' }}">{{ occ.statut }}</span></div></div>
-      </div>
-    </div>
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ url_for('odp.odp_liste') }}" class="btn btn-outline btn-sm">← Liste Occupations</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    {% if can_bulletin() or can_pay() %}
+    <a href="{{ url_for('odp.odp_paiement', id=occ.id) }}" class="btn btn-accent btn-sm">💳 Saisir Déclaration & Paiement</a>
+    {% endif %}
+    {% if can_edit('odp') %}
+    <button onclick="openModal('editOdp')" class="btn btn-primary btn-sm">✏️ Modifier</button>
+    <button onclick="openModal('renouvModal')" class="btn btn-info btn-sm">🔄 Renouveler</button>
+    {% endif %}
   </div>
-  <div class="card">
-    <div class="card-header"><h3>👤 Contribuable</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        <div><span class="text-muted" style="font-size:.7rem">N° Contribuable</span><div><strong style="color:var(--primary)">{{ occ.ctb_num }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Nom</span><div><strong>{{ occ.nom }} {{ occ.prenom or occ.raison_sociale or '' }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Téléphone</span><div>{{ occ.telephone or '—' }}</div></div>
-      </div>
-      {% if annees_manquantes %}
-      <div style="margin-top:12px;background:var(--warn-bg);border-radius:8px;padding:10px;border-left:4px solid var(--warn-bd)">
-        <div style="font-size:.72rem;font-weight:700;color:#856404">⚠️ Périodes sans paiement — Années: {% for a in annees_manquantes %}<span class="badge b-warn">{{ a }}</span> {% endfor %}</div>
-        <a href="{{ url_for('odp.odp_paiement', id=occ.id) }}" class="btn btn-accent btn-xs mt-2">Régulariser →</a>
-      </div>
+  <div class="dossier-actions-right">
+    {% if can_delete('odp') %}
+    <form method="post" action="{{ url_for('odp.odp_supprimer', id=occ.id) }}" style="display:inline"
+          onsubmit="return confirmForm(this, {title:'Supprimer l\'occupation',msg:'Archiver l\'occupation <strong>{{ occ.numero }}</strong> ?',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})">
+      <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Archiver</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-odp">
+  <span class="dossier-hero-watermark">🏪</span>
+  <div class="dossier-avatar">🏪</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">{{ occ.type_occupation|upper }}{% if occ.localisation %} — {{ occ.localisation }}{% endif %}</h2>
+    <div class="dossier-sub">
+      <span>👤 {{ occ.nom }} {{ occ.prenom or occ.raison_sociale or '' }}</span>
+      <span>·</span>
+      <span>🪪 CIN / Ref : <strong>{{ occ.ctb_num }}</strong></span>
+      <span>·</span>
+      <span>📐 {{ occ.superficie or '0' }} m²</span>
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Dossier : {{ occ.numero }}</span>
+      <span class="dossier-badge {{ 'ok' if occ.statut=='actif' else 'danger' }}">
+        {{ '✅ Actif' if occ.statut=='actif' else ('❌ Expiré' if occ.statut=='expire' else occ.statut) }}
+      </span>
+      {% if today and occ.date_fin and today > occ.date_fin %}
+      <span class="dossier-badge danger">⚠️ Autorisation Échue ({{ occ.date_fin }})</span>
+      {% elif occ.date_fin %}
+      <span class="dossier-badge ok">Valide jusqu'au {{ occ.date_fin }}</span>
       {% endif %}
     </div>
   </div>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Création dossier</div>
+    <div style="font-weight:800;font-size:.88rem">{{ (occ.date_creation or '')[:10] }}</div>
+  </div>
 </div>
-<div class="card">
-  <div class="card-header"><h3>📄 Historique Déclarations de Paiement</h3><a href="{{ url_for('odp.odp_paiement', id=occ.id) }}" class="btn btn-accent btn-sm">+ Paiement</a></div>
-  <div class="table-responsive">
-    <table>
-      <thead><tr><th>N° Décl.</th><th>Année</th><th>Période</th><th>Total</th><th>Bulletin</th><th>Statut</th></tr></thead>
-      <tbody>
-        {% for d in declarations %}
-        <tr>
-          <td><small style="color:var(--primary)">{{ d.numero }}</small></td>
-          <td><strong>{{ d.annee }}</strong></td>
-          <td>{% if d.trimestre == 0 %}<span class="badge b-primary">Année Complète</span>{% else %}<span class="badge b-info">T{{ d.trimestre }}</span>{% endif %}</td>
-          <td><strong>{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
-          <td><small>{{ d.numero_bulletin or '—' }}</small></td>
-          <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="6" class="empty-state">Aucune déclaration</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+<!-- ═══ KPIS ══════════════════════════════════════════════════════ -->
+<div class="dossier-kpis">
+  <div class="dossier-kpi info">
+    <div class="kpi-val">{{ occ.superficie or 0 }} <span style="font-size:.8rem">m²</span></div>
+    <div class="kpi-lbl">Superficie Occupée</div>
+    <div class="kpi-sub">{{ occ.type_occupation }}</div>
+  </div>
+  <div class="dossier-kpi {{ 'danger' if annees_manquantes else 'ok' }}">
+    <div class="kpi-val">{{ annees_manquantes|length }} <span style="font-size:.8rem">Année(s)</span></div>
+    <div class="kpi-lbl">Périodes Non Payées</div>
+    <div class="kpi-sub">{% if annees_manquantes %}{{ annees_manquantes|join(', ') }}{% else %}À jour{% endif %}</div>
+  </div>
+  <div class="dossier-kpi ok">
+    <div class="kpi-val">{{ declarations|length }}</div>
+    <div class="kpi-lbl">Déclarations / Paiements</div>
+    <div class="kpi-sub">Historique enregistré</div>
+  </div>
+  <div class="dossier-kpi warn">
+    <div class="kpi-val">{{ occ.num_autorisation or '—' }}</div>
+    <div class="kpi-lbl">N° Autorisation</div>
+    <div class="kpi-sub">{{ occ.date_debut or '—' }} → {{ occ.date_fin or '—' }}</div>
+  </div>
+</div>
+
+<!-- ─── TABS ─── -->
+<div class="dossier-tabs" id="odpTabs">
+  <button class="dossier-tab-btn active" onclick="switchOdpTab(this, 'paneInfo')">📋 Infos Occupation & Contribuable</button>
+  <button class="dossier-tab-btn" onclick="switchOdpTab(this, 'paneDecls')">💳 Déclarations & Paiements
+    {% if declarations %}<span class="badge b-primary" style="font-size:.65rem">{{ declarations|length }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="paneInfo" class="dossier-tab-pane active">
+  <div class="dossier-grid">
+    <!-- Carte Occupation -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>🏪 Informations de l'Occupation</h3>
+        <span class="badge {{ 'b-ok' if occ.statut=='actif' else 'b-danger' }}">{{ occ.statut }}</span>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° de Dossier</span>
+            <span class="fval">{{ occ.numero }}</span>
+          </div>
+          <div class="field-box primary-box">
+            <span class="flbl">Type d'Occupation</span>
+            <span class="fval">{{ occ.type_occupation }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Localisation / Emplacement</span>
+            <span class="fval">{{ occ.localisation or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Superficie</span>
+            <span class="fval">{{ occ.superficie or '0' }} m²</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">N° Autorisation</span>
+            <span class="fval">{{ occ.num_autorisation or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date Début</span>
+            <span class="fval">{{ occ.date_debut or '—' }}</span>
+          </div>
+          <div class="field-box {{ 'danger-box' if today and today > occ.date_fin else 'ok-box' }}">
+            <span class="flbl">Date Fin / Expiration</span>
+            <span class="fval">{{ occ.date_fin or 'Indéterminée' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte Contribuable -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>👤 Redevable / Contribuable</h3>
+        <a href="{{ url_for('contribuables.ctb_detail', id=occ.contribuable_id) }}" class="btn btn-outline btn-xs">Voir fiche complète →</a>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° Contribuable / CIN</span>
+            <span class="fval">{{ occ.cin or occ.ctb_num }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nom & Prénom / Raison Sociale</span>
+            <span class="fval">{{ occ.nom }} {{ occ.prenom or occ.raison_sociale or '' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Téléphone</span>
+            <span class="fval">{{ occ.telephone or '—' }}</span>
+          </div>
+        </div>
+
+        {% if annees_manquantes %}
+        <div class="dossier-alert-box warn" style="margin-top:16px;margin-bottom:0">
+          <div>
+            <strong>⚠️ Périodes sans paiement</strong>
+            <div style="font-size:.78rem;margin-top:2px">Années non régularisées : {% for a in annees_manquantes %}<span class="badge b-warn" style="font-size:.65rem">{{ a }}</span> {% endfor %}</div>
+          </div>
+          <a href="{{ url_for('odp.odp_paiement', id=occ.id) }}" class="btn btn-accent btn-sm">💳 Régulariser →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PANE 2 : DECLARATIONS ─── -->
+<div id="paneDecls" class="dossier-tab-pane">
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>📄 Historique des Déclarations & Paiements</h3>
+      <a href="{{ url_for('odp.odp_paiement', id=occ.id) }}" class="btn btn-accent btn-sm">+ Nouveau Paiement</a>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>N° Décl.</th>
+            <th>Année</th>
+            <th>Période</th>
+            <th>Montant Total</th>
+            <th>N° Bulletin</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in declarations %}
+          <tr>
+            <td><small style="color:var(--primary);font-weight:700">{{ d.numero }}</small></td>
+            <td><strong>{{ d.annee }}</strong></td>
+            <td>{% if d.trimestre == 0 %}<span class="badge b-primary">Année Complète</span>{% else %}<span class="badge b-info">T{{ d.trimestre }}</span>{% endif %}</td>
+            <td><strong style="color:var(--primary);font-size:.95rem">{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
+            <td><small style="font-weight:700">{{ d.numero_bulletin or '—' }}</small></td>
+            <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="empty-state"><span class="ei">📄</span>Aucune déclaration enregistrée</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -75,15 +214,18 @@
       <form method="post" action="{{ url_for('odp.odp_renouveler', id=occ.id) }}">
         <div class="form-group mb-3"><label>A partir de la date fin: <strong>{{ occ.date_fin }}</strong></label></div>
         <div class="form-group mb-3">
-            <label>Durée du renouvellement *</label>
-            <select name="duree" required class="form-select">
-                <option value="1_trimestre">+ 1 Trimestre (3 mois)</option>
-                <option value="2_trimestres">+ 2 Trimestres (6 mois)</option>
-                <option value="1_an" selected>+ 1 Année</option>
-            </select>
+          <label>Durée du renouvellement *</label>
+          <select name="duree" required class="form-select">
+            <option value="1_trimestre">+ 1 Trimestre (3 mois)</option>
+            <option value="2_trimestres">+ 2 Trimestres (6 mois)</option>
+            <option value="1_an" selected>+ 1 Année</option>
+          </select>
         </div>
-        <div class="alert alert-info">La date de fin sera recalculée automatiquement.</div>
-        <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeModal('renouvModal')">Annuler</button><button type="submit" class="btn btn-primary">🔄 Confirmer le renouvellement</button></div>
+        <div class="alert alert-info" style="font-size:.8rem">La date de fin sera recalculée automatiquement.</div>
+        <div class="modal-footer" style="border-top:1px solid var(--line);margin:0 -20px -20px;padding:14px 20px">
+          <button type="button" class="btn btn-outline" onclick="closeModal('renouvModal')">Annuler</button>
+          <button type="submit" class="btn btn-primary">🔄 Confirmer le renouvellement</button>
+        </div>
       </form>
     </div>
   </div>
@@ -108,13 +250,13 @@
           <div class="form-group"><label>Date fin</label><input type="date" name="date_fin" value="{{ occ.date_fin or '' }}"></div>
           <div class="form-group"><label>Statut</label>
             <select name="statut">
-                <option value="actif" {{ 'selected' if occ.statut=='actif' }}>Actif</option>
-                <option value="suspendu" {{ 'selected' if occ.statut=='suspendu' }}>Suspendu</option>
-                <option value="expire" {{ 'selected' if occ.statut=='expire' }}>Expiré</option>
+              <option value="actif" {{ 'selected' if occ.statut=='actif' }}>Actif</option>
+              <option value="suspendu" {{ 'selected' if occ.statut=='suspendu' }}>Suspendu</option>
+              <option value="expire" {{ 'selected' if occ.statut=='expire' }}>Expiré</option>
             </select>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="border-top:1px solid var(--line);margin:0 -20px -20px;padding:14px 20px">
           <button type="button" class="btn btn-outline" onclick="closeModal('editOdp')">Annuler</button>
           <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
         </div>
@@ -123,22 +265,13 @@
   </div>
 </div>
 
-<!-- Modal Supprimer -->
-{% if user.peut_supprimer %}
-<div class="modal-overlay" id="delOdp">
-  <div class="modal">
-    <div class="modal-header"><h3>🗑️ Supprimer</h3><button class="modal-close" onclick="closeModal('delOdp')">✕</button></div>
-    <div class="modal-body">
-      <p>Êtes-vous sûr de vouloir supprimer cette occupation ? Cette action va l'archiver.</p>
-      <form method="post" action="{{ url_for('odp.odp_supprimer', id=occ.id) }}">
-        <div class="modal-footer mt-3">
-          <button type="button" class="btn btn-outline" onclick="closeModal('delOdp')">Annuler</button>
-          <button type="submit" class="btn btn-danger">Supprimer</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-{% endif %}
-
+<script>
+function switchOdpTab(btn, paneId) {
+  document.querySelectorAll('#odpTabs .dossier-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dossier-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+</script>
 {% endblock %}

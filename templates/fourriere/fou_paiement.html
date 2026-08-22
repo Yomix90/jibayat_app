@@ -50,7 +50,11 @@
         Après encaissement, le responsable fourrière valide la sortie.
       </div>
 
-      <form method="post" action="{{ url_for('fou.fou_payer', id=dossier.id) }}">
+      <form method="post" action="{{ url_for('fou.fou_payer', id=dossier.id) }}"
+            data-confirm="info"
+            data-confirm-title="Création du bulletin de paiement"
+            data-confirm-msg="Confirmer la création du bulletin de fourrière en attente pour validation ?"
+            data-confirm-btn="🏦 Confirmer & Transmettre">
         <div class="form-grid">
           <div class="form-group" style="grid-column:span 2">
             <label>Nom du propriétaire <span style="color:var(--danger)">*</span></label>
@@ -92,8 +96,7 @@
           </div>
         </div>
         <button type="submit" class="btn btn-accent"
-                style="width:100%;margin-top:14px;padding:13px;font-size:.88rem"
-                onclick="return confirm('Confirmer la création du bulletin en attente ?')">
+                style="width:100%;margin-top:14px;padding:13px;font-size:.88rem">
           🏦 Envoyer en attente → Régisseur /paiements
         </button>
       </form>

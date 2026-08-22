@@ -4,12 +4,13 @@ modules/users.py — Blueprint de gestion des utilisateurs, rôles et permission
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash
 from database import get_db
-from modules.helpers import login_required, get_current_user
+from modules.helpers import login_required, get_current_user, permission_required
 
 bp = Blueprint('users', __name__)
 
 @bp.route('/utilisateurs')
 @login_required
+@permission_required('config')
 def utilisateurs():
     user = get_current_user()
     conn = get_db()
@@ -28,51 +29,61 @@ def utilisateurs():
 
 @bp.route('/utilisateurs/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_utilisateur():
     user = get_current_user()
     if not user or not user['peut_config']:
         flash('Accès réservé aux administrateurs ❌', 'danger')
         return redirect(url_for('users.utilisateurs'))
     f = request.form
+    nom = f['nom'].strip()
+    prenom = f['prenom'].strip()
+    email = f.get('email', '').strip()
+    username = f.get('username', '').strip() or (email.split('@')[0] if email else nom.lower())
     pwd = generate_password_hash(f['password'])
+    
     conn = get_db()
-    existing = conn.execute('SELECT id FROM utilisateurs WHERE email=?', (f['email'].strip(),)).fetchone()
+    existing = conn.execute('SELECT id FROM utilisateurs WHERE username=?', (username,)).fetchone()
     if existing:
-        flash('Cet email est déjà utilisé ❌', 'danger')
+        flash(f'Ce nom d\'utilisateur « {username} » est déjà utilisé ❌', 'danger')
     else:
-        conn.execute('INSERT INTO utilisateurs (nom,prenom,email,mot_de_passe,role_id,commune_id) VALUES (?,?,?,?,?,1)',
-            (f['nom'].strip(), f['prenom'].strip(), f['email'].strip(), pwd, f['role_id']))
+        conn.execute('INSERT INTO utilisateurs (username,nom,prenom,email,mot_de_passe,role_id,commune_id) VALUES (?,?,?,?,?,?,1)',
+            (username, nom, prenom, email, pwd, f['role_id']))
         conn.commit()
-        flash('Utilisateur ajouté ✅', 'success')
+        flash(f'Utilisateur « {username} » ajouté avec succès ✅', 'success')
     return redirect(url_for('users.utilisateurs'))
 
 @bp.route('/utilisateurs/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_utilisateur(id):
-    user = get_current_user()
-    if not user or not user['peut_config']:
-        flash('Accès réservé aux administrateurs ❌', 'danger')
-        return redirect(url_for('users.utilisateurs'))
     f = request.form
+    nom = f['nom'].strip()
+    prenom = f['prenom'].strip()
+    email = f.get('email', '').strip()
+    username = f.get('username', '').strip() or (email.split('@')[0] if email else nom.lower())
+    
     conn = get_db()
+    existing = conn.execute('SELECT id FROM utilisateurs WHERE username=? AND id != ?', (username, id)).fetchone()
+    if existing:
+        flash(f'Le nom d\'utilisateur « {username} » est déjà pris par un autre compte ❌', 'danger')
+        return redirect(url_for('users.utilisateurs'))
+
     if f.get('password'):
         pwd = generate_password_hash(f['password'])
-        conn.execute('UPDATE utilisateurs SET nom=?,prenom=?,email=?,mot_de_passe=?,role_id=?,commune_id=1 WHERE id=?',
-            (f['nom'].strip(), f['prenom'].strip(), f['email'].strip(), pwd, f['role_id'], id))
+        conn.execute('UPDATE utilisateurs SET username=?,nom=?,prenom=?,email=?,mot_de_passe=?,role_id=?,commune_id=1 WHERE id=?',
+            (username, nom, prenom, email, pwd, f['role_id'], id))
     else:
-        conn.execute('UPDATE utilisateurs SET nom=?,prenom=?,email=?,role_id=?,commune_id=1 WHERE id=?',
-            (f['nom'].strip(), f['prenom'].strip(), f['email'].strip(), f['role_id'], id))
+        conn.execute('UPDATE utilisateurs SET username=?,nom=?,prenom=?,email=?,role_id=?,commune_id=1 WHERE id=?',
+            (username, nom, prenom, email, f['role_id'], id))
     conn.commit()
-    flash('Utilisateur modifié ✅', 'success')
+    flash(f'Utilisateur « {username} » modifié ✅', 'success')
     return redirect(url_for('users.utilisateurs'))
 
 @bp.route('/utilisateurs/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_utilisateur(id):
-    user = get_current_user()
-    if not user or not user['peut_config']:
-        flash('Accès réservé aux administrateurs ❌', 'danger')
-        return redirect(url_for('users.utilisateurs'))
     conn = get_db()
     if id == session.get('user_id'):
         flash('Impossible de supprimer votre propre compte ❌', 'danger')
@@ -85,11 +96,8 @@ def supprimer_utilisateur(id):
 # ── Rôles ────────────────────────────────────────────────────
 @bp.route('/roles/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_role():
-    user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès refusé ❌', 'danger')
-        return redirect(url_for('users.utilisateurs'))
     f = request.form
     conn = get_db()
     conn.execute('''INSERT OR IGNORE INTO roles
@@ -109,11 +117,8 @@ def ajouter_role():
 
 @bp.route('/roles/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_role(id):
-    user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès refusé ❌', 'danger')
-        return redirect(url_for('users.utilisateurs'))
     f = request.form
     conn = get_db()
     conn.execute('''UPDATE roles SET nom=?,peut_voir=?,peut_ajouter=?,peut_modifier=?,
@@ -133,11 +138,8 @@ def modifier_role(id):
 
 @bp.route('/roles/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_role(id):
-    user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès refusé ❌', 'danger')
-        return redirect(url_for('users.utilisateurs'))
     conn = get_db()
     nb = conn.execute('SELECT COUNT(*) FROM utilisateurs WHERE role_id=? AND actif=1', (id,)).fetchone()[0]
     if nb > 0:
@@ -151,11 +153,13 @@ def supprimer_role(id):
 # ── Permissions RBAC ─────────────────────────────────────────
 @bp.route('/roles/permissions')
 @login_required
+@permission_required('config')
 def roles_permissions():
     return redirect(url_for('users.utilisateurs') + '#tab-droits')
 
 @bp.route('/roles/<int:role_id>/permissions/sauvegarder', methods=['POST'])
 @login_required
+@permission_required('config')
 def sauvegarder_permissions_role(role_id):
     user = get_current_user()
     if not user['peut_config']:

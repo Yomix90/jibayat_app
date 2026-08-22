@@ -74,68 +74,205 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ── Modale confirmation globale ──────────────────────────
-let _confirmCallback = null;
-let _confirmForm     = null;
+// ── Modale confirmation globale unifiée ───────────────────
+let _confirmResolver = null;
+let _confirmTargetForm = null;
 
 const CONFIRM_TYPES = {
-  danger: { icon:'\uD83D\uDDD1\uFE0F', iconBg:'#fef2f2', iconColor:'#dc2626', okBg:'#dc2626', okColor:'#fff', okLabel:'Supprimer' },
-  warning: { icon:'\u270F\uFE0F', iconBg:'#fffbeb', iconColor:'#d97706', okBg:'#d97706', okColor:'#fff', okLabel:'Modifier' },
-  info: { icon:'\u2139\uFE0F', iconBg:'#eff6ff', iconColor:'#2563eb', okBg:'#2563eb', okColor:'#fff', okLabel:'Confirmer' },
-  success: { icon:'\u2705', iconBg:'#f0fdf4', iconColor:'#16a34a', okBg:'#16a34a', okColor:'#fff', okLabel:'Valider' },
+  danger: {
+    icon: '🗑️',
+    class: 'confirm-type-danger',
+    okBg: 'linear-gradient(135deg, #ef4444, #dc2626)',
+    okColor: '#ffffff',
+    okLabel: 'Supprimer'
+  },
+  warning: {
+    icon: '⚠️',
+    class: 'confirm-type-warning',
+    okBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    okColor: '#ffffff',
+    okLabel: 'Confirmer'
+  },
+  success: {
+    icon: '✅',
+    class: 'confirm-type-success',
+    okBg: 'linear-gradient(135deg, #10b981, #059669)',
+    okColor: '#ffffff',
+    okLabel: 'Valider'
+  },
+  info: {
+    icon: 'ℹ️',
+    class: 'confirm-type-info',
+    okBg: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    okColor: '#ffffff',
+    okLabel: 'Continuer'
+  }
 };
 
-function confirmAction(opts) {
-  const type = CONFIRM_TYPES[opts.type || 'danger'];
-  const icon  = document.getElementById('confirm-icon');
-  const title = document.getElementById('confirm-title');
-  const msg   = document.getElementById('confirm-msg');
-  const det   = document.getElementById('confirm-detail');
-  const okBtn = document.getElementById('confirm-ok-btn');
+/**
+ * Affiche la boîte de confirmation unifiée.
+ * Supporte Promise, callback et soumission de formulaire.
+ */
+function showConfirm(optsOrFn, extraOpts = {}) {
+  let opts = {};
+  let callback = null;
 
-  icon.textContent  = type.icon;
-  icon.style.background = type.iconBg;
-  icon.style.color      = type.iconColor;
-  title.textContent = opts.title || 'Confirmer l\'action';
-  msg.textContent   = opts.msg   || 'Êtes-vous sûr ?';
-  okBtn.textContent = opts.okLabel || type.okLabel;
-  okBtn.style.background = type.okBg;
-  okBtn.style.color      = type.okColor;
-
-  if (opts.detail) {
-    det.style.display = 'block';
-    det.textContent   = opts.detail;
-  } else {
-    det.style.display = 'none';
+  if (typeof optsOrFn === 'function') {
+    callback = optsOrFn;
+    opts = extraOpts || {};
+  } else if (typeof optsOrFn === 'object' && optsOrFn !== null) {
+    opts = optsOrFn;
+    if (typeof opts.onOk === 'function') callback = opts.onOk;
+  } else if (typeof optsOrFn === 'string') {
+    opts = { msg: optsOrFn, ...extraOpts };
   }
 
-  _confirmCallback = opts.onOk || null;
-  _confirmForm     = opts.form || null;
-  document.getElementById('confirm-overlay').classList.add('active');
+  const typeKey = (opts.type && CONFIRM_TYPES[opts.type]) ? opts.type : 'danger';
+  const typeConfig = CONFIRM_TYPES[typeKey];
+
+  const overlay   = document.getElementById('confirm-overlay');
+  const box       = document.getElementById('confirm-box');
+  const iconEl    = document.getElementById('confirm-icon');
+  const titleEl   = document.getElementById('confirm-title');
+  const msgEl     = document.getElementById('confirm-msg');
+  const detEl     = document.getElementById('confirm-detail');
+  const okBtn     = document.getElementById('confirm-ok-btn');
+  const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+  if (!overlay || !box) {
+    const res = window.confirm(opts.msg || opts.title || 'Confirmer l\'action ?');
+    if (res && callback) callback();
+    return Promise.resolve(res);
+  }
+
+  box.className = '';
+  box.classList.add(typeConfig.class);
+
+  if (iconEl) iconEl.textContent = opts.icon || typeConfig.icon;
+  if (titleEl) titleEl.textContent = opts.title || 'Confirmation requise';
+  if (msgEl) msgEl.innerHTML = opts.msg || 'Êtes-vous sûr de vouloir effectuer cette action ?';
+
+  if (detEl) {
+    if (opts.detail) {
+      detEl.style.display = 'block';
+      detEl.innerHTML = opts.detail;
+    } else {
+      detEl.style.display = 'none';
+      detEl.innerHTML = '';
+    }
+  }
+
+  const okLabel = opts.confirmText || opts.okLabel || typeConfig.okLabel;
+  if (okBtn) {
+    okBtn.textContent = okLabel;
+    okBtn.style.background = opts.okBg || typeConfig.okBg;
+    okBtn.style.color = opts.okColor || typeConfig.okColor;
+    okBtn.classList.remove('loading');
+  }
+
+  if (cancelBtn) {
+    cancelBtn.style.display = opts.hideCancel ? 'none' : 'inline-block';
+    cancelBtn.textContent = opts.cancelText || '✕ Annuler';
+  }
+
+  _confirmTargetForm = opts.form || null;
+
+  return new Promise((resolve) => {
+    _confirmResolver = (confirmed) => {
+      overlay.classList.remove('active');
+      if (confirmed) {
+        if (callback) {
+          try {
+            const res = callback();
+            if (res instanceof Promise) {
+              if (okBtn) okBtn.classList.add('loading');
+              res.finally(() => {
+                if (okBtn) okBtn.classList.remove('loading');
+                resolve(true);
+              });
+              return;
+            }
+          } catch (e) {
+            console.error('Erreur dans callback confirm:', e);
+          }
+        }
+        if (_confirmTargetForm) {
+          _confirmTargetForm.dataset.confirmed = 'true';
+          _confirmTargetForm.submit();
+        }
+        resolve(true);
+      } else {
+        if (typeof opts.onCancel === 'function') opts.onCancel();
+        resolve(false);
+      }
+      _confirmTargetForm = null;
+      _confirmResolver = null;
+    };
+
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      if (typeKey === 'danger' && cancelBtn && !opts.hideCancel) {
+        cancelBtn.focus();
+      } else if (okBtn) {
+        okBtn.focus();
+      }
+    }, 50);
+  });
 }
 
+window.confirmAction = showConfirm;
+window.customConfirm = showConfirm;
+
+function showAlert(msg, opts = {}) {
+  return showConfirm({
+    type: opts.type || 'info',
+    icon: opts.icon || (opts.type === 'danger' ? '❌' : (opts.type === 'success' ? '✅' : 'ℹ️')),
+    title: opts.title || 'Information',
+    msg: msg,
+    detail: opts.detail || '',
+    confirmText: opts.okLabel || 'D\'accord',
+    hideCancel: true
+  });
+}
+window.showAlert = showAlert;
+
+function confirmForm(form, opts = {}) {
+  if (form.dataset.confirmed === 'true') {
+    delete form.dataset.confirmed;
+    return true;
+  }
+  opts.form = form;
+  showConfirm(opts);
+  return false;
+}
+window.confirmForm = confirmForm;
+
 function _confirmResolve() {
-  document.getElementById('confirm-overlay').classList.remove('active');
-  if (_confirmForm) { _confirmForm.submit(); }
-  else if (_confirmCallback) { _confirmCallback(); }
-  _confirmCallback = null;
-  _confirmForm = null;
+  if (_confirmResolver) _confirmResolver(true);
 }
 
 function _confirmReject() {
-  document.getElementById('confirm-overlay').classList.remove('active');
-  _confirmCallback = null;
-  _confirmForm = null;
+  if (_confirmResolver) _confirmResolver(false);
 }
 
-const _confirmOverlay = document.getElementById('confirm-overlay');
-if (_confirmOverlay) {
-  _confirmOverlay.addEventListener('click', function(e) {
-    if (e.target === this) _confirmReject();
-  });
-}
+document.addEventListener('DOMContentLoaded', function() {
+  const overlay = document.getElementById('confirm-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) _confirmReject();
+    });
+  }
+});
+
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') _confirmReject();
+  const overlay = document.getElementById('confirm-overlay');
+  if (overlay && overlay.classList.contains('active')) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      _confirmReject();
+    }
+  }
 });
 
 // ── CSRF auto-inject ─────────────────────────────────────
@@ -227,45 +364,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-
-// ── Promise-based confirm helpers (override confirmAction) ──
-function confirmForm(form, opts) {
-  return confirmActionPromise(() => {}, opts).then(ok => { if (ok) form.submit(); });
-}
-
-function confirmAction(fn, opts = {}) {
-  return confirmActionPromise(fn, opts);
-}
-
-function confirmActionPromise(fn, opts = {}) {
-  return new Promise(resolve => {
-    const type = CONFIRM_TYPES[opts.type || 'danger'] || CONFIRM_TYPES.danger;
-    const icon = document.getElementById('confirm-icon');
-    const title = document.getElementById('confirm-title');
-    const msg = document.getElementById('confirm-msg');
-    const det = document.getElementById('confirm-detail');
-    const okBtn = document.getElementById('confirm-ok-btn');
-    const cancelBtn = document.getElementById('confirm-cancel-btn');
-
-    icon.textContent = opts.icon || type.icon;
-    icon.style.background = opts.iconBg || type.iconBg;
-    icon.style.color = opts.iconColor || type.iconColor;
-    title.textContent = opts.title || 'Confirmer l\'action';
-    msg.textContent = opts.msg || 'Êtes-vous sûr ?';
-    okBtn.textContent = opts.okLabel || type.okLabel;
-    okBtn.style.background = opts.okBg || type.okBg;
-    okBtn.style.color = opts.okColor || type.okColor;
-    cancelBtn.textContent = opts.cancelText || '✕ Annuler';
-
-    if (opts.detail) {
-      det.style.display = 'block';
-      det.textContent = opts.detail;
-    } else {
-      det.style.display = 'none';
-    }
-
-    _confirmCallback = () => { fn(); resolve(true); };
-    _confirmForm = null;
-    document.getElementById('confirm-overlay').classList.add('active');
-  });
-}

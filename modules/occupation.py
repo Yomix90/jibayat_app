@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, date
 from database import get_db
-from modules.helpers import login_required, get_current_user, annees_non_payees, get_tarifs_module
+from modules.helpers import login_required, get_current_user, annees_non_payees, get_tarifs_module, get_next_seq_num, permission_required
 
 bp = Blueprint('odp', __name__)
 
@@ -14,24 +14,26 @@ def odp_liste():
     items = conn.execute('''SELECT o.*, c.nom, c.prenom, c.raison_sociale, c.numero as ctb_num
         FROM occupations o JOIN contribuables c ON o.contribuable_id=c.id WHERE o.actif=1
         ORDER BY o.date_creation DESC''').fetchall()
-    contribuables = conn.execute('SELECT id,numero,nom,prenom,raison_sociale FROM contribuables WHERE actif=1').fetchall()
+    contribuables = conn.execute('SELECT id,numero,nom,prenom,raison_sociale,cin FROM contribuables WHERE actif=1').fetchall()
     tarifs = get_tarifs_module('OCCUPATION_DOMAINE')
+    next_numero = get_next_seq_num('occupations', 'numero', conn)
     conn.close()
-    return render_template('odp/odp_liste.html', user=user, items=items, contribuables=contribuables, tarifs=tarifs)
+    return render_template('odp/odp_liste.html', user=user, items=items,
+                           contribuables=contribuables, tarifs=tarifs, next_numero=next_numero)
 
 @bp.route('/occupation-domaine/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'odp')
 def odp_ajouter():
     f = request.form
     conn = get_db()
-    n = conn.execute('SELECT COUNT(*) as c FROM occupations').fetchone()['c'] + 1
-    num = f"ODP{datetime.now().year}{n:05d}"
+    num = f.get('numero', '').strip() or get_next_seq_num('occupations', 'numero', conn)
     conn.execute('''INSERT INTO occupations (numero,contribuable_id,commune_id,type_occupation,localisation,superficie,num_autorisation,date_debut,date_fin)
         VALUES (?,?,?,?,?,?,?,?,?)''',
         (num, f['contribuable_id'], 1, f.get('type_occupation',''), f.get('localisation',''),
          f.get('superficie', 0), f.get('num_autorisation',''), f.get('date_debut',''), f.get('date_fin','')))
     conn.commit(); conn.close()
-    flash('Occupation enregistrée ✅', 'success')
+    flash(f'Occupation N° {num} enregistrée ✅', 'success')
     return redirect(url_for('odp.odp_liste'))
 
 @bp.route('/occupation-domaine/<int:id>')
@@ -67,6 +69,7 @@ def odp_detail(id):
 
 @bp.route('/occupation-domaine/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'odp')
 def odp_modifier(id):
     f = request.form
     conn = get_db()
@@ -81,16 +84,13 @@ def odp_modifier(id):
 
 @bp.route('/occupation-domaine/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'odp')
 def odp_supprimer(id):
-    user = get_current_user()
-    if not user.get('peut_supprimer'):
-        flash('Non autorisé', 'danger')
-        return redirect(url_for('odp.odp_liste'))
     conn = get_db()
     conn.execute('UPDATE occupations SET actif=0 WHERE id=?', (id,))
     conn.commit()
     conn.close()
-    flash('Occupation supprimée', 'info')
+    flash('Occupation archivée ✅', 'info')
     return redirect(url_for('odp.odp_liste'))
 
 @bp.route('/occupation-domaine/<int:id>/paiement')
@@ -140,6 +140,7 @@ def odp_paiement(id):
 
 @bp.route('/occupation-domaine/<int:id>/declarer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def odp_declarer(id):
     user = get_current_user()
     f = request.form
@@ -195,6 +196,7 @@ def odp_declarer(id):
 
 @bp.route('/occupation-domaine/<int:id>/renouveler', methods=['POST'])
 @login_required
+@permission_required('modifier', 'odp')
 def odp_renouveler(id):
     duree = request.form.get('duree')
     conn = get_db()

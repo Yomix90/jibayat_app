@@ -1,9 +1,8 @@
 {% extends 'base.html' %}
-{% block title %}Dossier N°{{ terrain.numero_dossier }}{% endblock %}
-{% block page_title %}🏗️ Dossier TNB — N°{{ terrain.numero_dossier }}{% endblock %}
+{% block title %}Dossier N° {{ terrain.numero_dossier }} — TNB {{ terrain.titre_foncier or terrain.num_parcelle or '' }}{% endblock %}
+{% block page_title %}🏗️ Fiche Terrain Non Bâti (TNB){% endblock %}
 {% block extra_head %}
 <style>
-.status-chips { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px; }
 .doc-card {
   border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;
   display:flex;align-items:center;gap:12px;background:var(--card);
@@ -27,13 +26,8 @@
   border:1.5px solid #7dd3fc;border-radius:10px;padding:10px 14px;
   margin-bottom:8px;
 }
-.exo-alert {
-  background:linear-gradient(135deg,#fef3c7,#fde68a);
-  border:2px solid #f59e0b;border-radius:10px;padding:14px 18px;
-  margin-bottom:16px;
-}
 .stat-flow {
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 16px;
 }
 .stat-step {
   padding:6px 14px;border-radius:20px;font-size:.82rem;font-weight:700;
@@ -43,181 +37,227 @@
 .stat-step.done   { background:#d1fae5;color:#065f46;border-color:#6ee7b7; }
 .stat-step.todo   { background:var(--bg);color:var(--muted);border-color:var(--border); }
 .stat-arrow { color:var(--muted);font-size:1rem; }
-.ctb-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 18px; overflow-x: auto }
-.ctb-tab-btn {
-  padding: 10px 20px; font-size: .8rem; font-weight: 700;
-  cursor: pointer; border: none; background: none;
-  color: var(--muted); border-bottom: 3px solid transparent;
-  margin-bottom: -2px; transition: all .15s; white-space: nowrap;
-}
-.ctb-tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(30,58,95,.04) }
-.ctb-tab-pane { display: none !important }
-.ctb-tab-pane.active { display: block !important }
-.tab-badge { border-radius:10px;padding:0 5px;font-size:.6rem;margin-left:4px;color:#fff }
-.bg-accent { background:var(--accent) }
-.bg-info { background:var(--info, #0ea5e9) }
-.bg-purple { background:#6f42c1 }
-.bg-sec { background:var(--muted) }
 </style>
 {% endblock %}
 {% block content %}
 
 <!-- Alertes exonération -->
 {% if alert_exo %}
-<div class="exo-alert">
-  <strong>⚠️ ALERTE EXONÉRATION TNB</strong>
-  <p style="margin:4px 0 0;font-size:.88rem">
-    Ce terrain bénéficiait d'une exonération jusqu'au <strong>31/12/{{ alert_exo.annee_fin }}</strong>
-    (<strong>{{ alert_exo.jours }} jours restants</strong>).
-    Le propriétaire doit obtenir un <strong>Permis d'Habiter</strong> ou se préparer à payer
-    les 3 années exonérées dès que la période expire.
-  </p>
+<div class="dossier-alert-box warn" style="margin-bottom:16px">
+  <div>
+    <strong>⚠️ ALERTE EXONÉRATION TNB</strong>
+    <div style="margin-top:4px;font-size:.84rem">
+      Ce terrain bénéficiait d'une exonération jusqu'au <strong>31/12/{{ alert_exo.annee_fin }}</strong>
+      (<strong>{{ alert_exo.jours }} jours restants</strong>).
+      Le propriétaire doit obtenir un <strong>Permis d'Habiter</strong> ou se préparer à payer
+      les 3 années exonérées dès que la période expire.
+    </div>
+  </div>
 </div>
 {% endif %}
 
-<!-- Boutons action en-tête -->
-<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-  <a href="{{ url_for('tnb.tnb_liste') }}" class="btn btn-outline btn-sm">← Liste TNB</a>
-  <a href="{{ url_for('tnb.tnb_paiement', id=terrain.id) }}" class="btn btn-accent">💳 Paiement &amp; Déclarations</a>
-  <button onclick="openModal('editTerrain')" class="btn btn-primary btn-sm">✏️ Modifier</button>
-  <button onclick="openModal('addPermis')" class="btn btn-info btn-sm">📄 Permis</button>
-  <button onclick="openModal('addTransfert')" class="btn btn-outline btn-sm">🔄 Transfert</button>
-  <div style="margin-left:auto;display:flex;gap:8px">
-    <!-- Archiver -->
-    <form method="post" action="{{ url_for('tnb.tnb_archiver', id=terrain.id) }}"
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ url_for('tnb.tnb_liste') }}" class="btn btn-outline btn-sm">← Liste TNB</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    {% if can_bulletin() or can_pay() %}
+    <a href="{{ url_for('tnb.tnb_paiement', id=terrain.id) }}" class="btn btn-accent btn-sm">💳 Saisir Déclaration & Paiement</a>
+    {% endif %}
+    {% if can_edit('tnb') %}
+    <button onclick="openModal('editTerrain')" class="btn btn-primary btn-sm">✏️ Modifier</button>
+    <button onclick="openModal('addPermis')" class="btn btn-info btn-sm">📄 Permis</button>
+    <button onclick="openModal('addTransfert')" class="btn btn-outline btn-sm">🔄 Transfert</button>
+    {% endif %}
+  </div>
+  <div class="dossier-actions-right">
+    {% if can_delete('tnb') %}
+    <form method="post" action="{{ url_for('tnb.tnb_archiver', id=terrain.id) }}" style="display:inline"
           onsubmit="return confirmForm(this,{title:'Archiver le dossier',msg:'Le dossier sera archivé et retiré de la liste active.',type:'warning',confirmText:'📦 Archiver',icon:'📦'})">
-      <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1.5px solid #f59e0b">
-        📦 Archiver
-      </button>
+      <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1.5px solid #f59e0b">📦 Archiver</button>
     </form>
-    <!-- Supprimer -->
-    <form method="post" action="{{ url_for('tnb.tnb_supprimer', id=terrain.id) }}"
+    <form method="post" action="{{ url_for('tnb.tnb_supprimer', id=terrain.id) }}" style="display:inline"
           onsubmit="return confirmForm(this,{title:'Supprimer le terrain',msg:'Supprimer <strong>Dossier N°{{ terrain.numero_dossier }}</strong> ?',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})">
-      <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">
-        🗑️ Supprimer
-      </button>
+      <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Supprimer</button>
     </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-tnb">
+  <span class="dossier-hero-watermark">🏗️</span>
+  <div class="dossier-avatar">🏗️</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">
+      {{ terrain.adresse or 'Terrain Non Bâti' }}{% if terrain.lotissement %} — Lot. {{ terrain.lotissement }}{% endif %}
+    </h2>
+    <div class="dossier-sub">
+      <span>👤 Propriétaire : <strong>{{ terrain.nom }} {{ terrain.prenom or terrain.raison_sociale or '' }}</strong></span>
+      <span>·</span>
+      <span>🪪 CIN / Ref : <strong>{{ terrain.cin or terrain.ctb_num }}</strong></span>
+      <span>·</span>
+      <span>📜 TF : <strong>{{ terrain.titre_foncier or 'Non immatriculé' }}</strong></span>
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Dossier : {{ terrain.numero_dossier }}</span>
+      <span class="dossier-badge {{ 'warn' if terrain.statut=='non_bati' else ('info' if terrain.statut=='en_construction' else 'ok') }}">
+        {% if terrain.statut=='non_bati' %}🏗️ Non bâti
+        {% elif terrain.statut=='en_construction' %}🚧 En construction
+        {% elif terrain.statut=='construit' %}🏠 Bâti{% endif %}
+      </span>
+      <span class="dossier-badge light">Zone {{ terrain.zone or 'A' }}</span>
+      {% if annees_manquantes %}
+      <span class="dossier-badge danger">⚠️ {{ annees_manquantes|length }} année(s) non déclarée(s)</span>
+      {% else %}
+      <span class="dossier-badge ok">✅ Déclarations à jour</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Superficie Déclarée</div>
+    <div style="font-size:1.4rem;font-weight:900;line-height:1.2">{{ terrain.superficie }} m²</div>
   </div>
 </div>
 
 <!-- Flux de statut -->
 <div class="stat-flow">
-  <span class="stat-step {{ 'active' if terrain.statut=='non_bati' else 'done' if terrain.statut in ('en_construction','construit') else 'todo' }}">🏗️ Non bâti</span>
+  <span class="stat-step {{ 'active' if terrain.statut=='non_bati' else 'done' if terrain.statut in ('en_construction','construit') else 'todo' }}">1. 🏗️ Non bâti</span>
   <span class="stat-arrow">→</span>
-  <span class="stat-step {{ 'active' if terrain.statut=='en_construction' else 'done' if terrain.statut=='construit' else 'todo' }}">🚧 En construction</span>
+  <span class="stat-step {{ 'active' if terrain.statut=='en_construction' else 'done' if terrain.statut=='construit' else 'todo' }}">2. 🚧 En construction</span>
   <span class="stat-arrow">→</span>
-  <span class="stat-step {{ 'active' if terrain.statut=='construit' else 'todo' }}">🏠 Bâti</span>
+  <span class="stat-step {{ 'active' if terrain.statut=='construit' else 'todo' }}">3. 🏠 Bâti (Exonéré TNB)</span>
+</div>
+
+<!-- ═══ KPIS ══════════════════════════════════════════════════════ -->
+<div class="dossier-kpis">
+  <div class="dossier-kpi ok">
+    <div class="kpi-val">{{ terrain.superficie }} <span style="font-size:.8rem">m²</span></div>
+    <div class="kpi-lbl">Superficie Imposable</div>
+    <div class="kpi-sub">Parcelle : {{ terrain.num_parcelle or '—' }}</div>
+  </div>
+  <div class="dossier-kpi info">
+    <div class="kpi-val">Zone {{ terrain.zone or 'A' }}</div>
+    <div class="kpi-lbl">Zone & Tarif Fiscal</div>
+    <div class="kpi-sub">{{ terrain.lotissement or 'Terrain urbain' }}</div>
+  </div>
+  <div class="dossier-kpi {{ 'danger' if annees_manquantes else 'ok' }}">
+    <div class="kpi-val">{{ annees_manquantes|length }} <span style="font-size:.8rem">Années</span></div>
+    <div class="kpi-lbl">Exercices Non Déclarés</div>
+    <div class="kpi-sub">{% if annees_manquantes %}{{ annees_manquantes|join(', ') }}{% else %}À jour{% endif %}</div>
+  </div>
+  <div class="dossier-kpi purple">
+    <div class="kpi-val">{{ coproprietaires|length + 1 }}</div>
+    <div class="kpi-lbl">Propriétaire(s)</div>
+    <div class="kpi-sub">{% if coproprietaires %}{{ coproprietaires|length }} co-propriétaire(s){% else %}Propriétaire unique{% endif %}</div>
+  </div>
 </div>
 
 <!-- ─── TABS ─── -->
-<div class="ctb-tabs" id="tnbTabs">
-  <button class="ctb-tab-btn active" data-tab="paneInfo">📋 Infos & Propriétaires</button>
-  <button class="ctb-tab-btn" data-tab="paneDecls">💳 Déclarations
-    {% if declarations %}<span class="tab-badge bg-accent">{{ declarations|length }}</span>{% endif %}
+<div class="dossier-tabs" id="tnbTabs">
+  <button class="dossier-tab-btn ctb-tab-btn active" data-tab="paneInfo">📋 Infos & Propriétaires</button>
+  <button class="dossier-tab-btn ctb-tab-btn" data-tab="paneDecls">💳 Déclarations
+    {% if declarations %}<span class="badge b-primary" style="font-size:.65rem">{{ declarations|length }}</span>{% endif %}
   </button>
-  <button class="ctb-tab-btn" data-tab="panePermis">📄 Permis
-    {% if permis %}<span class="tab-badge bg-info">{{ permis|length }}</span>{% endif %}
+  <button class="dossier-tab-btn ctb-tab-btn" data-tab="panePermis">📄 Permis
+    {% if permis %}<span class="badge b-info" style="font-size:.65rem">{{ permis|length }}</span>{% endif %}
   </button>
-  <button class="ctb-tab-btn" data-tab="paneDocs">📁 Documents
-    {% if documents %}<span class="tab-badge bg-purple">{{ documents|length }}</span>{% endif %}
+  <button class="dossier-tab-btn ctb-tab-btn" data-tab="paneDocs">📁 Documents
+    {% if documents %}<span class="badge b-purple" style="font-size:.65rem">{{ documents|length }}</span>{% endif %}
   </button>
   {% if transferts %}
-  <button class="ctb-tab-btn" data-tab="paneTransf">🔄 Transferts
-    <span class="tab-badge bg-sec">{{ transferts|length }}</span>
+  <button class="dossier-tab-btn ctb-tab-btn" data-tab="paneTransf">🔄 Transferts
+    <span class="badge b-sec" style="font-size:.65rem">{{ transferts|length }}</span>
   </button>
   {% endif %}
 </div>
 
-<!-- ─── PANE : INFOS ─── -->
-<div id="paneInfo" class="ctb-tab-pane active">
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="paneInfo" class="dossier-tab-pane ctb-tab-pane active">
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+<div class="dossier-grid mb-3">
   <!-- Infos terrain -->
-  <div class="card">
-    <div class="card-header"><h3>📋 Informations Dossier</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">N° Dossier</span>
-          <div><strong style="color:var(--primary);font-size:1.2rem">{{ terrain.numero_dossier }}</strong></div>
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>📋 Informations Terrain</h3>
+      <span class="badge {{ 'b-warn' if terrain.statut=='non_bati' else ('b-info' if terrain.statut=='en_construction' else 'b-ok') }}">{{ terrain.statut }}</span>
+    </div>
+    <div class="dossier-card-body">
+      <div class="field-grid">
+        <div class="field-box highlight">
+          <span class="flbl">N° de Dossier</span>
+          <span class="fval">{{ terrain.numero_dossier }}</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">Titre Foncier</span>
-          <div><strong>{{ terrain.titre_foncier or '—' }}</strong></div>
+        <div class="field-box primary-box">
+          <span class="flbl">Titre Foncier (TF)</span>
+          <span class="fval">{{ terrain.titre_foncier or '—' }}</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">N° Parcelle</span>
-          <div><strong>{{ terrain.num_parcelle or '—' }}</strong></div>
+        <div class="field-box">
+          <span class="flbl">N° Parcelle</span>
+          <span class="fval">{{ terrain.num_parcelle or '—' }}</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">Superficie</span>
-          <div><strong>{{ terrain.superficie }} m²</strong></div>
+        <div class="field-box ok-box">
+          <span class="flbl">Superficie</span>
+          <span class="fval">{{ terrain.superficie }} m²</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">Zone</span>
-          <div>
-            <span class="badge b-primary">Zone {{ terrain.zone }}</span>
-            {% for t in tarifs %}{% if terrain.zone and t.code_tarif and t.code_tarif.endswith(terrain.zone) %}
-            <small style="color:var(--muted)">— {{ t.valeur }} {{ t.unite }}</small>
-            {% endif %}{% endfor %}
-          </div>
+        <div class="field-box">
+          <span class="flbl">Zone</span>
+          <span class="fval">Zone {{ terrain.zone }}</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">Statut</span>
-          <div>
-            {% if terrain.statut=='non_bati' %}<span class="badge b-warn">Non bâti</span>
-            {% elif terrain.statut=='en_construction' %}<span class="badge b-info">En construction</span>
-            {% elif terrain.statut=='construit' %}<span class="badge b-ok">Construit</span>{% endif %}
-          </div>
+        <div class="field-box">
+          <span class="flbl">Lotissement</span>
+          <span class="fval">{{ terrain.lotissement or '—' }}</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">Lotissement</span>
-          <div><strong>{{ terrain.lotissement or '—' }}</strong></div>
+        <div class="field-box">
+          <span class="flbl">Date d'Acquisition</span>
+          <span class="fval">{{ terrain.date_acquisition or '—' }}</span>
         </div>
-        <div>
-          <span style="color:var(--muted);font-size:.7rem">Acquisition</span>
-          <div>{{ terrain.date_acquisition or '—' }}</div>
-        </div>
-        <div style="grid-column:1/-1">
-          <span style="color:var(--muted);font-size:.7rem">Adresse</span>
-          <div>{{ terrain.adresse }}</div>
-          {% if terrain.adresse_ar %}<div dir="rtl" style="color:var(--muted)">{{ terrain.adresse_ar }}</div>{% endif %}
+        <div class="field-box" style="grid-column:1/-1">
+          <span class="flbl">Adresse</span>
+          <span class="fval">{{ terrain.adresse }}</span>
+          {% if terrain.adresse_ar %}<div dir="rtl" style="color:var(--muted);font-size:.78rem;margin-top:2px">{{ terrain.adresse_ar }}</div>{% endif %}
         </div>
       </div>
     </div>
   </div>
 
   <!-- Infos propriétaire -->
-  <div class="card">
-    <div class="card-header"><h3>👤 Propriétaire</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        <div><span style="color:var(--muted);font-size:.7rem">N° Contribuable</span>
-          <div><strong style="color:var(--primary)">{{ terrain.ctb_num }}</strong></div>
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>👤 Propriétaire Principal</h3>
+      <a href="{{ url_for('contribuables.ctb_detail', id=terrain.contribuable_id) }}" class="btn btn-outline btn-xs">Voir fiche complète →</a>
+    </div>
+    <div class="dossier-card-body">
+      <div class="field-grid">
+        <div class="field-box highlight">
+          <span class="flbl">N° Contribuable / CIN</span>
+          <span class="fval">{{ terrain.cin or terrain.ctb_num }}</span>
         </div>
-        <div><span style="color:var(--muted);font-size:.7rem">Nom</span>
-          <div><strong>{{ terrain.nom }} {{ terrain.prenom or terrain.raison_sociale or '' }}</strong></div>
+        <div class="field-box">
+          <span class="flbl">Nom & Prénom / Raison Sociale</span>
+          <span class="fval">{{ terrain.nom }} {{ terrain.prenom or terrain.raison_sociale or '' }}</span>
         </div>
-        <div><span style="color:var(--muted);font-size:.7rem">CIN</span>
-          <div>{{ terrain.cin or '—' }}</div>
+        <div class="field-box">
+          <span class="flbl">CIN</span>
+          <span class="fval">{{ terrain.cin or '—' }}</span>
         </div>
-        <div><span style="color:var(--muted);font-size:.7rem">Téléphone</span>
-          <div>{{ terrain.telephone or '—' }}</div>
+        <div class="field-box">
+          <span class="flbl">Téléphone</span>
+          <span class="fval">{{ terrain.telephone or '—' }}</span>
         </div>
-        <div><span style="color:var(--muted);font-size:.7rem">Adresse</span>
-          <div>{{ terrain.ctb_adresse or '—' }}</div>
+        <div class="field-box" style="grid-column:1/-1">
+          <span class="flbl">Adresse Redevable</span>
+          <span class="fval">{{ terrain.ctb_adresse or '—' }}</span>
         </div>
       </div>
 
       {% if annees_manquantes %}
-      <div style="margin-top:14px;background:#fff3cd;border-radius:8px;padding:10px 12px;border-left:4px solid #ffc107">
-        <div style="font-size:.72rem;font-weight:700;color:#856404;margin-bottom:6px">⚠️ Années sans déclaration:</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          {% for a in annees_manquantes %}<span class="badge b-warn">{{ a }}</span>{% endfor %}
+      <div class="dossier-alert-box warn" style="margin-top:14px">
+        <div>
+          <strong>⚠️ Années sans déclaration TNB</strong>
+          <div style="font-size:.78rem;margin-top:2px">Exercices concernés : {% for a in annees_manquantes %}<span class="badge b-warn" style="font-size:.65rem">{{ a }}</span> {% endfor %}</div>
         </div>
-        <a href="{{ url_for('tnb.tnb_paiement', id=terrain.id) }}" class="btn btn-accent btn-xs" style="margin-top:8px">
-          Régulariser →
-        </a>
+        <a href="{{ url_for('tnb.tnb_paiement', id=terrain.id) }}" class="btn btn-accent btn-sm">💳 Régulariser →</a>
       </div>
       {% endif %}
 
@@ -225,7 +265,7 @@
       {% if dossiers_groupe %}
       <div style="margin-top:14px">
         <div style="font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:8px">
-          🔗 Autres dossiers (même propriétaire) :
+          🔗 Autres dossiers TNB de ce propriétaire :
         </div>
         {% for d in dossiers_groupe %}
         <div class="groupe-card">
@@ -242,6 +282,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- ═══════════════════ Co-propriétaires ═══════════════════ -->
 <div class="card" style="border-left:4px solid #8b5cf6">
@@ -283,8 +324,11 @@
                 class="btn btn-xs btn-outline">✏️</button>
               <form method="post"
                     action="{{ url_for('tnb.tnb_coproprio_supprimer', id=terrain.id, cp_id=cp.id) }}"
-                    onsubmit="return confirm('Retirer ce co-propriétaire ?')">
-                <button type="submit" class="btn btn-xs" style="background:#fee2e2;color:#dc2626">🗑️</button>
+                    data-confirm="danger"
+                    data-confirm-title="Retirer le co-propriétaire"
+                    data-confirm-msg="Retirer <strong>{{ cp.nom }} {{ cp.prenom or '' }}</strong> des co-propriétaires de ce terrain ?"
+                    data-confirm-btn="🗑️ Retirer">
+                <button type="submit" class="btn btn-xs" style="background:#fee2e2;color:#dc2626" title="Retirer">🗑️</button>
               </form>
             </div>
           </td>
@@ -426,8 +470,12 @@
           <a href="{{ url_for('tnb.tnb_telecharger_doc', doc_id=doc.id) }}"
              class="btn btn-xs btn-outline" title="Télécharger">⬇️</a>
           <form method="post" action="{{ url_for('tnb.tnb_supprimer_doc', doc_id=doc.id) }}"
-                onsubmit="return confirm('Supprimer ce document ?')" style="display:inline">
-            <button type="submit" class="btn btn-xs" style="background:#fee2e2;color:#dc2626">🗑️</button>
+                style="display:inline"
+                data-confirm="danger"
+                data-confirm-title="Supprimer le document"
+                data-confirm-msg="Supprimer définitivement le document <strong>{{ doc.nom_fichier }}</strong> ?"
+                data-confirm-btn="🗑️ Supprimer">
+            <button type="submit" class="btn btn-xs" style="background:#fee2e2;color:#dc2626" title="Supprimer">🗑️</button>
           </form>
         </div>
       </div>
@@ -588,7 +636,7 @@
             <select name="nouveau_contribuable_id" required>
               <option value="">— Sélectionner —</option>
               {% for c in contribuables %}{% if c.id != terrain.ctb_id %}
-              <option value="{{ c.id }}">{{ c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
+              <option value="{{ c.id }}">{{ c.cin or c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
               {% endif %}{% endfor %}
             </select>
           </div>
@@ -681,7 +729,7 @@
             <select name="contribuable_id" required>
               <option value="">— Sélectionner —</option>
               {% for c in contribuables %}{% if c.id != terrain.ctb_id %}
-              <option value="{{ c.id }}">{{ c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
+              <option value="{{ c.id }}">{{ c.cin or c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
               {% endif %}{% endfor %}
             </select>
           </div>

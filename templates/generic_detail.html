@@ -1,53 +1,164 @@
 {% extends 'base.html' %}
-{% block title %}{{ item.numero }}{% endblock %}
-{% block page_title %}{{ module_icon }} {{ module_label }} — {{ item.numero }}{% endblock %}
+{% block title %}Dossier N° {{ item.numero }} — {{ module_label }}{% endblock %}
+{% block page_title %}{{ module_icon }} Fiche {{ module_label }}{% endblock %}
+
 {% block content %}
-<div class="df gap-2 mb-3">
-  <a href="{{ back_url }}" class="btn btn-outline btn-sm">← Liste</a>
-  <a href="{{ paiement_url }}" class="btn btn-accent">💳 Paiement</a>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-  <div class="card"><div class="card-header"><h3>📋 Informations</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        {% for k, v in infos %}
-        <div><span class="text-muted" style="font-size:.7rem">{{ k }}</span><div><strong>{{ v or '—' }}</strong></div></div>
-        {% endfor %}
-      </div>
-    </div>
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ back_url }}" class="btn btn-outline btn-sm">← Liste</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    <a href="{{ paiement_url }}" class="btn btn-accent btn-sm">💳 Saisir Déclaration & Paiement</a>
   </div>
-  <div class="card"><div class="card-header"><h3>👤 Contribuable</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        <div><span class="text-muted" style="font-size:.7rem">N°</span><div><strong style="color:var(--primary)">{{ item.ctb_num }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Nom</span><div><strong>{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Tél.</span><div>{{ item.telephone or '—' }}</div></div>
-      </div>
+</div>
+
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-souk">
+  <span class="dossier-hero-watermark">{{ module_icon }}</span>
+  <div class="dossier-avatar">{{ module_icon }}</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">{{ module_label }} — Dossier N° {{ item.numero }}</h2>
+    <div class="dossier-sub">
+      <span>👤 {{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</span>
+      <span>·</span>
+      <span>🪪 CIN / Ref : <strong>{{ item.cin or item.ctb_num }}</strong></span>
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Dossier : {{ item.numero }}</span>
+      <span class="dossier-badge {{ 'ok' if item.statut=='actif' else 'danger' }}">
+        {{ item.statut or 'Actif' }}
+      </span>
       {% if annees_manquantes %}
-      <div style="margin-top:12px;background:var(--warn-bg);border-radius:8px;padding:10px;border-left:4px solid var(--warn-bd)">
-        <div style="font-size:.72rem;font-weight:700;color:#856404">⚠️ Années non payées: {% for a in annees_manquantes %}<span class="badge b-warn">{{ a }}</span> {% endfor %}</div>
-        <a href="{{ paiement_url }}" class="btn btn-accent btn-xs mt-2">Régulariser →</a>
-      </div>
+      <span class="dossier-badge danger">⚠️ Périodes en retard</span>
+      {% else %}
+      <span class="dossier-badge ok">✅ À jour</span>
       {% endif %}
     </div>
   </div>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Création dossier</div>
+    <div style="font-weight:800;font-size:.88rem">{{ (item.date_creation or '')[:10] }}</div>
+  </div>
 </div>
-<div class="card"><div class="card-header"><h3>📄 Déclarations / Paiements</h3><a href="{{ paiement_url }}" class="btn btn-accent btn-sm">+ Paiement</a></div>
-  <div class="table-responsive"><table>
-    <thead><tr><th>N° Décl.</th><th>Année</th><th>Montant</th><th>Pénalité</th><th>Total</th><th>Bulletin</th><th>Statut</th></tr></thead>
-    <tbody>
-      {% for d in declarations %}
-      <tr>
-        <td><small style="color:var(--primary)">{{ d.numero }}</small></td>
-        <td><strong>{{ d.annee }}</strong></td>
-        <td>{{ "%.2f"|format(d.montant_principal) }} DH</td>
-        <td>{% if d.penalite_retard>0 %}<span class="text-danger">{{ "%.2f"|format(d.penalite_retard) }}</span>{% else %}—{% endif %}</td>
-        <td><strong>{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
-        <td><small>{{ d.numero_bulletin or '—' }}</small></td>
-        <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
-      </tr>
-      {% else %}<tr><td colspan="7" class="empty-state">Aucune déclaration</td></tr>{% endfor %}
-    </tbody>
-  </table></div>
+
+<!-- ─── TABS ─── -->
+<div class="dossier-tabs" id="genTabs">
+  <button class="dossier-tab-btn active" onclick="switchGenTab(this, 'paneInfo')">📋 Informations & Redevable</button>
+  <button class="dossier-tab-btn" onclick="switchGenTab(this, 'paneDecls')">💳 Déclarations & Paiements
+    {% if declarations %}<span class="badge b-primary" style="font-size:.65rem">{{ declarations|length }}</span>{% endif %}
+  </button>
 </div>
+
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="paneInfo" class="dossier-tab-pane active">
+  <div class="dossier-grid">
+    <!-- Carte Informations -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>📋 Caractéristiques du Dossier</h3>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° de Dossier</span>
+            <span class="fval">{{ item.numero }}</span>
+          </div>
+          {% for k, v in infos %}
+          <div class="field-box">
+            <span class="flbl">{{ k }}</span>
+            <span class="fval">{{ v or '—' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte Contribuable -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>👤 Redevable / Contribuable</h3>
+        {% if item.ctb_id %}
+        <a href="{{ url_for('contribuables.ctb_detail', id=item.ctb_id) }}" class="btn btn-outline btn-xs">Voir fiche complète →</a>
+        {% endif %}
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° Contribuable / CIN</span>
+            <span class="fval">{{ item.cin or item.ctb_num }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nom & Prénom / Raison Sociale</span>
+            <span class="fval">{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Téléphone</span>
+            <span class="fval">{{ item.telephone or '—' }}</span>
+          </div>
+        </div>
+
+        {% if annees_manquantes %}
+        <div class="dossier-alert-box warn" style="margin-top:16px;margin-bottom:0">
+          <div>
+            <strong>⚠️ Périodes non payées</strong>
+            <div style="font-size:.78rem;margin-top:2px">Exercices à régulariser : {% for a in annees_manquantes %}<span class="badge b-warn" style="font-size:.65rem">{{ a }}</span> {% endfor %}</div>
+          </div>
+          <a href="{{ paiement_url }}" class="btn btn-accent btn-sm">💳 Régulariser →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PANE 2 : DECLARATIONS ─── -->
+<div id="paneDecls" class="dossier-tab-pane">
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>📄 Historique des Déclarations & Paiements</h3>
+      <a href="{{ paiement_url }}" class="btn btn-accent btn-sm">+ Nouveau Paiement</a>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>N° Décl.</th>
+            <th>Année</th>
+            <th>Principal</th>
+            <th>Pénalités</th>
+            <th>Total Payé</th>
+            <th>Bulletin</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in declarations %}
+          <tr>
+            <td><small style="color:var(--primary);font-weight:700">{{ d.numero }}</small></td>
+            <td><strong>{{ d.annee }}</strong></td>
+            <td>{{ "%.2f"|format(d.montant_principal) }} DH</td>
+            <td>{% if d.penalite_retard>0 %}<span class="text-danger" style="font-weight:700">{{ "%.2f"|format(d.penalite_retard) }} DH</span>{% else %}—{% endif %}</td>
+            <td><strong style="color:var(--primary);font-size:.95rem">{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
+            <td><small style="font-weight:700">{{ d.numero_bulletin or '—' }}</small></td>
+            <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty-state"><span class="ei">📄</span>Aucune déclaration enregistrée</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchGenTab(btn, paneId) {
+  document.querySelectorAll('#genTabs .dossier-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dossier-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+</script>
 {% endblock %}
+

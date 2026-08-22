@@ -3,119 +3,154 @@
 {% block page_title %}🔑 Fourrière Municipale{% endblock %}
 {% block extra_head %}
 <style>
-.stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
-.stat-card{background:var(--card);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);border-left:4px solid var(--primary);display:flex;align-items:center;gap:10px}
-.stat-card.danger{border-left-color:var(--danger)}.stat-card.ok{border-left-color:var(--ok)}.stat-card.warn{border-left-color:#fd7e14}.stat-card.purple{border-left-color:#6f42c1}
-.sv{font-size:1.3rem;font-weight:900;color:var(--primary)}.sl{font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase}
-.stat-card.danger .sv{color:var(--danger)}.stat-card.ok .sv{color:var(--ok)}.stat-card.warn .sv{color:#fd7e14}.stat-card.purple .sv{color:#6f42c1}
-
-.badge-statut{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.62rem;font-weight:700}
+.badge-statut{display:inline-block;border-radius:20px;padding:3px 10px;font-size:.67rem;font-weight:800}
 .bs-en_fourriere{background:#fff3cd;color:#856404;border:1px solid #ffc107}
 .bs-en_attente_sortie{background:#cce5ff;color:#004085;border:1px solid #0d6efd}
 .bs-sortie{background:#d4edda;color:#155724;border:1px solid #28a745}
-.badge-plus365{background:#dc2626;color:#fff;border-radius:4px;padding:1px 5px;font-size:.58rem;font-weight:900;margin-left:3px}
-
-.filter-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg);align-items:center}
-.filter-bar input,.filter-bar select{padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.8rem}
-.filter-bar input{flex:1;min-width:160px}
-
-.tarif-pill{font-size:.65rem;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
-
-/* Modal */
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
-.modal-backdrop.open{display:flex}
-.modal-box{background:var(--card);border-radius:14px;padding:24px;width:min(480px,94vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.modal-box h3{margin:0 0 16px;font-size:1rem}
+.badge-plus365{background:#dc2626;color:#fff;border-radius:4px;padding:2px 6px;font-size:.62rem;font-weight:900;margin-left:4px}
+.tarif-pill{font-size:.72rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-weight:700}
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Stats -->
-<div class="stat-strip">
-  <div class="stat-card"><span style="font-size:1.3rem">🔑</span>
-    <div><div class="sv">{{ stats.total }}</div><div class="sl">Total dossiers</div></div></div>
-  <div class="stat-card danger"><span style="font-size:1.3rem">🚗</span>
-    <div><div class="sv">{{ stats.en_fourriere }}</div><div class="sl">En fourrière</div></div></div>
-  <div class="stat-card warn"><span style="font-size:1.3rem">⏳</span>
-    <div><div class="sv">{{ stats.attente_sortie }}</div><div class="sl">Attente sortie</div></div></div>
-  <div class="stat-card ok"><span style="font-size:1.3rem">✅</span>
-    <div><div class="sv">{{ stats.sortie }}</div><div class="sl">Sortis</div></div></div>
-  <div class="stat-card purple"><span style="font-size:1.3rem">📅</span>
-    <div><div class="sv">{{ stats.plus365 }}</div><div class="sl">+365 jours</div></div></div>
-  <div class="stat-card danger"><span style="font-size:1.3rem">💰</span>
-    <div><div class="sv">{{ "%.0f"|format(stats.total_du) }}</div><div class="sl">Total dû (DH)</div></div></div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <h3>🚗 Véhicules en fourrière ({{ items|length }})</h3>
-    <div class="df gap-2">
-      <a href="{{ url_for('fou.fou_encheres') }}" class="btn btn-sm" style="background:#6f42c1;color:#fff">🔨 Enchères</a>
-      <a href="{{ url_for('fou.fou_parametres') }}" class="btn btn-outline btn-sm">⚙️ Paramètres</a>
-      <button onclick="document.getElementById('modalAjouter').classList.add('open')"
-              class="btn btn-primary btn-sm">➕ Nouveau dossier</button>
+<!-- ═══ MODULE HERO BANNER ════════════════════════════════════════ -->
+<div class="module-hero hero-fou">
+  <span class="module-watermark">🔑</span>
+  <div class="module-hero-left">
+    <div class="module-avatar">🔑</div>
+    <div>
+      <h2 class="module-hero-title">Fourrière Municipale des Véhicules</h2>
+      <div class="module-hero-sub">
+        Gestion des entrées/sorties de véhicules, calcul automatique des frais de séjour et remorquage, suivi des délais d'aliénation (+365j) et vente aux enchères.
+      </div>
     </div>
   </div>
+  <div class="module-hero-actions">
+    {% if can_add('fou') %}
+    <button onclick="openModal('modalAjouter')" class="btn btn-accent btn-sm">➕ Nouveau Dossier</button>
+    {% endif %}
+    <a href="{{ url_for('fou.fou_encheres') }}" class="btn btn-outline btn-sm">🔨 Enchères</a>
+    {% if can_config() %}
+    <a href="{{ url_for('fou.fou_parametres') }}" class="btn btn-outline btn-sm">⚙️ Paramètres</a>
+    {% endif %}
+    <button onclick="window.print()" class="btn btn-outline btn-sm">🖨️ Imprimer PDF</button>
+  </div>
+</div>
 
-  <!-- Filtres -->
-  <div class="filter-bar">
-    <form method="get" style="display:contents">
-      <input name="q" value="{{ q }}" placeholder="🔍 Immat, N° dossier, N° dépôt, propriétaire...">
-      <select name="statut">
-        <option value="">Tous statuts</option>
-        <option value="en_fourriere" {{ 'selected' if statut_f=='en_fourriere' }}>🔑 En fourrière</option>
-        <option value="en_attente_sortie" {{ 'selected' if statut_f=='en_attente_sortie' }}>⏳ Attente sortie</option>
-        <option value="sortie" {{ 'selected' if statut_f=='sortie' }}>✅ Sorti</option>
-      </select>
-      <select name="type">
-        <option value="">Tous types</option>
-        {% for t in types_vh %}
-        <option value="{{ t.code }}" {{ 'selected' if type_f==t.code }}>{{ t.libelle }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-accent btn-sm">🔍 Filtrer</button>
-      <a href="{{ url_for('fou.fou_liste') }}" class="btn btn-outline btn-sm">↺</a>
-    </form>
+<!-- ═══ STATS RAPIDES ════════════════════════════════════════════ -->
+<div class="module-stats-strip">
+  <div class="module-stat-card">
+    <div class="stat-icon-wrap">🔑</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ stats.total }}</div>
+      <div class="stat-lbl">Total Dossiers</div>
+    </div>
+  </div>
+  <div class="module-stat-card danger">
+    <div class="stat-icon-wrap">🚗</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ stats.en_fourriere }}</div>
+      <div class="stat-lbl">En Fourrière</div>
+    </div>
+  </div>
+  <div class="module-stat-card warn">
+    <div class="stat-icon-wrap">⏳</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ stats.attente_sortie }}</div>
+      <div class="stat-lbl">Attente Sortie</div>
+    </div>
+  </div>
+  <div class="module-stat-card ok">
+    <div class="stat-icon-wrap">✅</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ stats.sortie }}</div>
+      <div class="stat-lbl">Véhicules Sortis</div>
+    </div>
+  </div>
+  <div class="module-stat-card purple">
+    <div class="stat-icon-wrap">📅</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ stats.plus365 }}</div>
+      <div class="stat-lbl">Dépassant 365j</div>
+    </div>
+  </div>
+  <div class="module-stat-card danger">
+    <div class="stat-icon-wrap">💰</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ "%.2f"|format(stats.total_du) }} <span style="font-size:.8rem">DH</span></div>
+      <div class="stat-lbl">Total Dû Actuel</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TABLEAU PRINCIPAL ═══════════════════════════════════════ -->
+<div class="module-table-card">
+  <div class="module-table-header">
+    <h3>🚗 Véhicules en Fourrière (<span id="visibleCount">{{ items|length }}</span>)</h3>
+    {% if can_add('fou') %}
+    <button onclick="openModal('modalAjouter')" class="btn btn-primary btn-sm no-print">➕ Nouveau Dossier</button>
+    {% endif %}
+  </div>
+
+  <div class="module-filter-bar no-print">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher par immatriculation, N° dossier, N° dépôt, déposant..." oninput="filterFouTable()">
+    <select id="filterStatut" onchange="filterFouTable()">
+      <option value="">— Tous les statuts —</option>
+      <option value="en_fourriere">🔑 En fourrière</option>
+      <option value="en_attente_sortie">⏳ Attente sortie</option>
+      <option value="sortie">✅ Sorti</option>
+    </select>
+    <select id="filterType" onchange="filterFouTable()">
+      <option value="">— Tous les types —</option>
+      {% for t in types_vh %}
+      <option value="{{ t.code }}">{{ t.libelle }}</option>
+      {% endfor %}
+    </select>
+    <button class="filter-reset-btn" onclick="resetFouFilters()">✕ Réinitialiser</button>
+    <span class="filter-count" id="filterCount"></span>
   </div>
 
   <div class="table-responsive">
-    <table>
+    <table id="fouTable">
       <thead>
         <tr>
           <th>N° Dossier / Dépôt</th>
           <th>Immatriculation</th>
           <th>Type</th>
           <th>Déposant</th>
-          <th>Date entrée</th>
+          <th>Date Entrée</th>
           <th>Jours ▼</th>
-          <th>Tarif/j</th>
-          <th>⚠️ Montant dû</th>
+          <th>Tarif / Jour</th>
+          <th>Montant Dû</th>
           <th>Statut</th>
-          <th>Actions</th>
+          <th class="no-print">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for v in items %}
-        <tr style="{{ 'background:rgba(220,53,69,.04)' if v.plus365 and v.statut!='sortie' else '' }}">
+        <tr class="fou-row" data-statut="{{ v.statut }}" data-type="{{ v.type_vehicule_code or v.type_vehicule }}"
+            style="{{ 'background:rgba(220,53,69,.04)' if v.plus365 and v.statut!='sortie' else '' }}">
           <td>
-            <strong style="color:var(--primary);font-size:.78rem">{{ v.numero }}</strong>
-            {% if v.num_depot %}<div style="font-size:.63rem;color:var(--muted)">Dépôt: {{ v.num_depot }}</div>{% endif %}
+            <span class="badge-dossier">{{ v.numero }}</span>
+            {% if v.num_depot %}<div style="font-size:.68rem;color:var(--muted);margin-top:2px">Dépôt : <strong>{{ v.num_depot }}</strong></div>{% endif %}
           </td>
-          <td><strong>{{ v.immatriculation or '—' }}</strong></td>
-          <td style="font-size:.75rem">{{ v.type_vehicule or '—' }}</td>
-          <td style="font-size:.75rem">{{ v.deposant or '—' }}</td>
-          <td style="font-size:.75rem">{{ v.date_mise_fourriere or '—' }}</td>
+          <td><strong style="font-size:.92rem">{{ v.immatriculation or '—' }}</strong></td>
+          <td style="font-size:.78rem">{{ v.type_vehicule or '—' }}</td>
+          <td style="font-size:.78rem">{{ v.deposant or '—' }}</td>
+          <td style="font-size:.76rem">{{ v.date_mise_fourriere or '—' }}</td>
           <td>
             <strong style="{{ 'color:var(--danger)' if v.nb_jours > 365 else 'color:var(--primary)' }}">
-              {{ v.nb_jours }}
+              {{ v.nb_jours }} j
             </strong>
-            {% if v.plus365 %}<span class="badge-plus365">+365</span>{% endif %}
+            {% if v.plus365 %}<span class="badge-plus365">+365j</span>{% endif %}
           </td>
-          <td><span class="tarif-pill">{{ "%.0f"|format(v.tarif_journalier or 0) }} DH/j</span></td>
+          <td><span class="tarif-pill">{{ "%.2f"|format(v.tarif_journalier or 0) }} DH/j</span></td>
           <td>
             {% if v.statut != 'sortie' %}
-            <strong style="color:var(--danger)">{{ "%.2f"|format(v.montant_du) }} DH</strong>
-            {% else %}<span style="color:var(--ok);font-size:.75rem">Réglé</span>{% endif %}
+            <span class="pill-impaye">{{ "%.2f"|format(v.montant_du) }} DH</span>
+            {% else %}
+            <span class="pill-ok">✅ Réglé</span>
+            {% endif %}
           </td>
           <td>
             <span class="badge-statut bs-{{ v.statut }}">
@@ -124,80 +159,99 @@
               {% else %}✅ Sorti{% endif %}
             </span>
           </td>
-          <td>
+          <td class="no-print">
             <div class="df gap-1" style="flex-wrap:wrap">
-              <a href="{{ url_for('fou.fou_detail', id=v.id) }}" class="btn btn-primary btn-xs">🔍</a>
-              {% if v.statut == 'en_fourriere' %}
-              <a href="{{ url_for('fou.fou_paiement', id=v.id) }}" class="btn btn-xs" style="background:#28a745;color:#fff">💳</a>
+              <a href="{{ url_for('fou.fou_detail', id=v.id) }}" class="btn btn-outline btn-xs" title="Consulter la fiche">🔍</a>
+              {% if v.statut == 'en_fourriere' and (can_bulletin() or can_pay()) %}
+              <a href="{{ url_for('fou.fou_paiement', id=v.id) }}" class="btn btn-accent btn-xs" title="Saisir paiement">💳</a>
               {% endif %}
             </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="10" class="empty-state"><span class="ei">🔑</span>Aucun dossier</td></tr>
+        <tr><td colspan="10" class="empty-state"><span class="ei">🔑</span>Aucun dossier de fourrière enregistré</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- ────────────────── MODAL AJOUTER ────────────────── -->
-<div class="modal-backdrop" id="modalAjouter"
-     onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="modal-box">
-    <h3>➕ Nouveau véhicule en fourrière</h3>
-    <form method="post" action="{{ url_for('fou.fou_ajouter') }}">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>N° de Dépôt <span style="color:var(--danger)">*</span></label>
-          <input name="num_depot" placeholder="Ex: DEP-2026-001" required>
-        </div>
-        <div class="form-group">
-          <label>Immatriculation <span style="color:var(--danger)">*</span></label>
-          <input name="immatriculation" placeholder="Ex: 12345-A-1" required>
-        </div>
-        <div class="form-group">
-          <label>Type de véhicule <span style="color:var(--danger)">*</span></label>
-          <select name="type_vehicule" id="typeVhSelect" onchange="fetchTarif(this.value)">
-            <option value="">— Sélectionner —</option>
-            {% for t in types_vh %}
-            <option value="{{ t.code }}">{{ t.libelle }} ({{ "%.0f"|format(t.tarif_journalier) }} DH/j)</option>
-            {% endfor %}
-          </select>
-          <div id="tarifDisplay" style="font-size:.68rem;color:var(--accent);margin-top:2px"></div>
-        </div>
-        <div class="form-group">
-          <label>Date d'entrée</label>
-          <input type="date" name="date_mise_fourriere" value="{{ today }}">
-        </div>
-        <div class="form-group">
-          <label>Déposant</label>
-          <select name="deposant">
-            <option value="">— Sélectionner —</option>
-            {% for d in deposants %}
-            <option value="{{ d.libelle }}">{{ d.libelle }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Motif</label>
-          <input name="motif" placeholder="Motif de mise en fourrière">
-        </div>
-        <div class="form-group">
-          <label>Frais de remorquage (DH)</label>
-          <input type="number" name="frais_remorquage" value="0" min="0" step="0.01">
-        </div>
-        <div class="form-group">
-          <label>Notes</label>
-          <input name="notes" placeholder="Observations...">
+<!-- Modal Ajouter -->
+<div class="modal-overlay" id="modalAjouter">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-avatar">🔑</div>
+        <div>
+          <h3>Nouveau Dossier d'Entrée en Fourrière</h3>
+          <div class="modal-header-sub">Enregistrement d'un véhicule mis en fourrière avec tarification journalière automatique</div>
         </div>
       </div>
-      <div class="df gap-2" style="margin-top:14px;justify-content:flex-end">
-        <button type="button" onclick="document.getElementById('modalAjouter').classList.remove('open')"
-                class="btn btn-outline btn-sm">Annuler</button>
-        <button type="submit" class="btn btn-primary btn-sm">✅ Enregistrer</button>
-      </div>
-    </form>
+      <button class="modal-close" onclick="closeModal('modalAjouter')" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{{ url_for('fou.fou_ajouter') }}">
+        
+        <div class="modal-section-title">🪪 1. Références du Dossier & du Dépôt</div>
+        <div class="form-grid mb-3" style="grid-template-columns: 1fr 1fr;">
+          <div class="form-group dossier-num-highlight">
+            <label>N° Dossier Fourrière * <span style="font-size:.68rem;color:var(--muted);display:block">Généré auto (modifiable)</span></label>
+            <input name="numero" value="{{ next_numero }}" required>
+          </div>
+          <div class="form-group">
+            <label>N° de Dépôt / Fiche d'Entrée <span style="color:var(--danger)">*</span></label>
+            <input name="num_depot" placeholder="Ex: DEP-2026-001" required style="font-weight:700">
+          </div>
+        </div>
+
+        <div class="modal-section-title">🚗 2. Identification du Véhicule & Tarification</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Immatriculation <span style="color:var(--danger)">*</span></label>
+            <input name="immatriculation" placeholder="Ex: 12345-A-1" required style="font-weight:800;letter-spacing:1px;text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label>Catégorie de véhicule <span style="color:var(--danger)">*</span></label>
+            <select name="type_vehicule" id="typeVhSelect" onchange="fetchTarif(this.value)" required>
+              <option value="">— Sélectionner une catégorie —</option>
+              {% for t in types_vh %}
+              <option value="{{ t.code }}">{{ t.libelle }} ({{ "%.0f"|format(t.tarif_journalier) }} DH/j)</option>
+              {% endfor %}
+            </select>
+            <div id="tarifDisplay" style="font-size:.72rem;color:var(--accent);margin-top:4px;font-weight:800"></div>
+          </div>
+        </div>
+
+        <div class="modal-section-title">📋 3. Circonstances de Mise en Fourrière & Frais</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Date et Heure d'Entrée</label>
+            <input type="date" name="date_mise_fourriere" value="{{ today }}">
+          </div>
+          <div class="form-group">
+            <label>Déposant</label>
+            <select name="deposant">
+              <option value="">— Sélectionner un déposant —</option>
+              {% for d in deposants %}
+              <option value="{{ d.libelle }}">{{ d.libelle }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Notes & État du véhicule</label>
+            <input name="notes" placeholder="Observations, rayures, objets à bord...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" onclick="closeModal('modalAjouter')" class="btn btn-outline">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer l'Entrée</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -211,5 +265,35 @@ function fetchTarif(code) {
         d.tarif > 0 ? '💰 Tarif : ' + d.tarif.toFixed(2) + ' DH / jour' : '';
     });
 }
+
+function filterFouTable() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const st = (document.getElementById('filterStatut').value || '').toLowerCase();
+  const ty = (document.getElementById('filterType').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#fouTable tbody .fou-row');
+  let visible = 0;
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    const rowSt = (r.getAttribute('data-statut') || '').toLowerCase();
+    const rowTy = (r.getAttribute('data-type') || '').toLowerCase();
+    const matchQ = !q || text.includes(q);
+    const matchSt = !st || rowSt === st;
+    const matchTy = !ty || rowTy.includes(ty);
+    const match = matchQ && matchSt && matchTy;
+    r.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('filterCount').textContent = (q || st || ty) ? visible + ' résultat(s)' : '';
+  const visEl = document.getElementById('visibleCount');
+  if (visEl) visEl.textContent = visible;
+}
+
+function resetFouFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterStatut').value = '';
+  document.getElementById('filterType').value = '';
+  filterFouTable();
+}
 </script>
 {% endblock %}
+

@@ -136,13 +136,27 @@
   <div class="card">
     <div class="card-header"><h3>⚡ Actions Rapides</h3></div>
     <div class="card-body df gap-2" style="flex-wrap:wrap">
+      {% if can_add('contribuables') %}
       <a href="{{ url_for('contribuables.ajouter_contribuable') }}" class="btn btn-primary">👤 Nouveau Contribuable</a>
+      {% endif %}
+      {% if can_bulletin() or can_pay() %}
       <a href="{{ url_for('paiements') }}" class="btn btn-ok">💳 Bulletins Paiement</a>
+      {% endif %}
+      {% if can_bulletin() %}
       <a href="{{ url_for('avis') }}" class="btn btn-danger">📨 Avis Non-Paiement</a>
+      {% endif %}
+      {% if can_view('tnb') %}
       <a href="{{ url_for('tnb.tnb_liste') }}" class="btn btn-accent">🏗️ TNB</a>
+      {% endif %}
+      {% if can_view('tdb') %}
       <a href="{{ url_for('tdb.tdb_liste') }}" class="btn btn-outline">🍺 TDB</a>
+      {% endif %}
+      {% if can_view('fou') %}
       <a href="{{ url_for('fou.fou_liste') }}" class="btn btn-outline">🔑 Fourrière</a>
+      {% endif %}
+      {% if can_config() %}
       <a href="{{ url_for('config.arretes_fiscaux') }}" class="btn btn-outline">📜 Arrêtés</a>
+      {% endif %}
     </div>
   </div>
 

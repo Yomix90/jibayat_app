@@ -321,7 +321,7 @@
           {% if user.peut_creer_bulletin or user.peut_ajouter %}
           <button type="submit" class="btn btn-accent"
                   style="width:100%;justify-content:center;font-size:.9rem;padding:12px"
-                  onclick="return confirmPay()">
+                  onclick="return confirmPay(event)">
             💳 Valider le paiement &amp; Créer Bulletin
           </button>
           {% else %}
@@ -479,10 +479,28 @@ function toggleEdit() {
   btn.textContent = form.classList.contains('open') ? '✕ Fermer' : '✏️ Modifier';
 }
 
-function confirmPay() {
+function confirmPay(e) {
+  if (e) e.preventDefault();
   const nb    = document.querySelectorAll('#moisGrid input[type=checkbox]:checked').length;
   const total = document.getElementById('totalCalculeInput').value;
-  return confirm(`Confirmer le paiement de ${nb} mois pour un total de ${parseFloat(total).toFixed(2)} DH ?`);
+  if (nb === 0) {
+    showAlert('Veuillez sélectionner au moins un mois à payer.', {type: 'warning', title: 'Sélection requise'});
+    return false;
+  }
+  showConfirm({
+    type: 'success',
+    icon: '💳',
+    title: 'Confirmer le paiement',
+    msg: `Valider le paiement de <strong>${nb} mois</strong> de loyer ?`,
+    detail: `Montant total à encaisser : <strong>${parseFloat(total).toFixed(2)} DH</strong>`,
+    confirmText: '💳 Valider le paiement',
+    onOk: () => {
+      const form = document.getElementById('payForm');
+      form.dataset.confirmed = 'true';
+      form.submit();
+    }
+  });
+  return false;
 }
 
 // Init

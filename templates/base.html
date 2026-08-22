@@ -47,13 +47,17 @@
       </a>
     </div>
 
-    <!-- ═══ GESTION CONTRIBUABLES ════════════════════════ -->
+    <!-- ═══ GESTION CONTRIBUABLES & BULLETINS ═════════════════ -->
     <div class="nav-sec">Gestion</div>
+    {% if can_view('contribuables') %}
     <div class="nav-item">
       <a href="{{ url_for('contribuables.contribuables') }}" class="{{ 'active' if 'contribuable' in (request.endpoint or '') else '' }}">
         <span class="ic">👥</span><span class="txt">Contribuables</span>
       </a>
     </div>
+    {% endif %}
+    
+    {% if can_bulletin() or can_pay() %}
     <div class="nav-item">
       <a href="{{ url_for('paiements') }}" class="{{ 'active' if request.endpoint=='paiements' else '' }}" style="justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:9px;">
@@ -62,17 +66,22 @@
         {% if nb_attente > 0 %}<span class="sidebar-badge">{{ nb_attente }}</span>{% endif %}
       </a>
     </div>
+    {% endif %}
+
+    {% if can_bulletin() %}
     <div class="nav-item">
       <a href="{{ url_for('avis') }}" class="{{ 'active' if request.endpoint=='avis' else '' }}">
         <span class="ic">📨</span><span class="txt">Avis Non-Paiement</span>
       </a>
     </div>
+    {% endif %}
 
     <!-- ═══ MODULES FISCAUX ══════════════════════════════ -->
+    {% if can_view('tnb') or can_view('tdb') or can_view('sta') or can_view('fou') or can_view('odp') or can_view('loc') or can_view('sou') %}
     <div class="nav-sec">Modules Fiscaux</div>
 
     <!-- TNB -->
-    {% if not user or user_modules.get('tnb', {}).get('peut_voir', 1) %}
+    {% if can_view('tnb') %}
     <div class="nav-item {% if 'tnb' in (request.endpoint or '') %}open{% endif %}" id="menu-tnb">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-tnb');" class="{{ 'active' if 'tnb' in (request.endpoint or '') else '' }}">
         <span class="ic">🏗️</span><span class="txt">TNB — Terrains</span>
@@ -90,7 +99,7 @@
     {% endif %}
 
     <!-- Débits de Boissons -->
-    {% if not user or user_modules.get('tdb', {}).get('peut_voir', 1) %}
+    {% if can_view('tdb') %}
     <div class="nav-item {% if 'tdb' in (request.endpoint or '') %}open{% endif %}" id="menu-tdb">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-tdb');" class="{{ 'active' if 'tdb' in (request.endpoint or '') else '' }}">
         <span class="ic">🍺</span><span class="txt">Débits de Boissons</span>
@@ -108,7 +117,7 @@
     {% endif %}
 
     <!-- Stationnement -->
-    {% if not user or user_modules.get('sta', {}).get('peut_voir', 1) %}
+    {% if can_view('sta') %}
     <div class="nav-item {% if 'sta' in (request.endpoint or '') %}open{% endif %}" id="menu-sta">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-sta');" class="{{ 'active' if 'sta' in (request.endpoint or '') else '' }}">
         <span class="ic">🚗</span><span class="txt">Stationnement TPV</span>
@@ -126,7 +135,7 @@
     {% endif %}
 
     <!-- Fourrière -->
-    {% if not user or user_modules.get('fou', {}).get('peut_voir', 1) %}
+    {% if can_view('fou') %}
     <div class="nav-item {% if 'fou' in (request.endpoint or '') %}open{% endif %}" id="menu-fou">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-fou');" class="{{ 'active' if 'fou' in (request.endpoint or '') else '' }}">
         <span class="ic">🔑</span><span class="txt">Fourrière</span>
@@ -144,7 +153,7 @@
     {% endif %}
 
     <!-- Domaine Public -->
-    {% if not user or user_modules.get('odp', {}).get('peut_voir', 1) %}
+    {% if can_view('odp') %}
     <div class="nav-item {% if 'odp' in (request.endpoint or '') %}open{% endif %}" id="menu-odp">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-odp');" class="{{ 'active' if 'odp' in (request.endpoint or '') else '' }}">
         <span class="ic">🎪</span><span class="txt">Domaine Public</span>
@@ -162,7 +171,7 @@
     {% endif %}
 
     <!-- Location Locaux -->
-    {% if not user or user_modules.get('loc', {}).get('peut_voir', 1) %}
+    {% if can_view('loc') %}
     <div class="nav-item {% if 'loc' in (request.endpoint or '') %}open{% endif %}" id="menu-loc">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-loc');" class="{{ 'active' if 'loc' in (request.endpoint or '') else '' }}">
         <span class="ic">🏢</span><span class="txt">Location Locaux</span>
@@ -175,7 +184,7 @@
         <a href="{{ url_for('loc.loc_liste') }}" class="{{ 'active' if request.endpoint=='loc.loc_liste' else '' }}">
           <span class="ic">📋</span> Liste des Locaux
         </a>
-        {% if user and user.peut_config %}
+        {% if can_config() %}
         <a href="{{ url_for('loc.loc_secteurs') }}" class="{{ 'active' if request.endpoint=='loc.loc_secteurs' else '' }}">
           <span class="ic">🗂️</span> Secteurs &amp; Tarifs
         </a>
@@ -185,7 +194,7 @@
     {% endif %}
 
     <!-- Souks Communaux -->
-    {% if not user or user_modules.get('sou', {}).get('peut_voir', 1) %}
+    {% if can_view('sou') %}
     <div class="nav-item {% if 'sou' in (request.endpoint or '') %}open{% endif %}" id="menu-sou">
       <a href="javascript:void(0);" onclick="toggleSubMenu('menu-sou');" class="{{ 'active' if 'sou' in (request.endpoint or '') else '' }}">
         <span class="ic">🛒</span><span class="txt">Souks Communaux</span>
@@ -201,9 +210,10 @@
       </div>
     </div>
     {% endif %}
+    {% endif %}
 
     <!-- ═══ RÉGIE DES RECETTES ═══════════════════════════ -->
-    {% if not user or user_modules.get('regie', {}).get('peut_voir', 1) %}
+    {% if can_view('regie') %}
     <div class="nav-sec">Régie des Recettes</div>
 
     <div class="nav-item {% if 'regie' in (request.endpoint or '') %}open{% endif %}" id="menu-regie">
@@ -224,7 +234,7 @@
         <a href="{{ url_for('regie.versements') }}" class="{{ 'active' if request.endpoint=='regie.versements' else '' }}">
           <span class="ic">💰</span> Versements &amp; BV
         </a>
-        {% if user and user.peut_config %}
+        {% if can_config() %}
         <a href="{{ url_for('regie.config') }}" class="{{ 'active' if request.endpoint=='regie.config' else '' }}">
           <span class="ic">⚙️</span> Configuration
         </a>
@@ -257,30 +267,42 @@
         <a href="{{ url_for('registre.index') }}" class="{{ 'active' if request.endpoint=='registre.index' else '' }}">
           <span class="ic">📊</span> Accueil Registres
         </a>
+        {% if can_view('tnb') %}
         <a href="{{ url_for('registre.declarations', module_key='TNB') }}" class="{{ 'active' if request.endpoint=='registre.declarations' and request.view_args.get('module_key')=='TNB' else '' }}">
           <span class="ic">📝</span> Déclarations TNB
         </a>
+        {% endif %}
+        {% if can_view('tdb') %}
         <a href="{{ url_for('registre.declarations', module_key='DEBITS_BOISSONS') }}" class="{{ 'active' if request.endpoint=='registre.declarations' and request.view_args.get('module_key')=='DEBITS_BOISSONS' else '' }}">
           <span class="ic">📝</span> Déclarations TDB
         </a>
+        {% endif %}
+        {% if can_view('tnb') %}
         <a href="{{ url_for('registre.paiements', module_key='TNB') }}" class="{{ 'active' if request.endpoint=='registre.paiements' and request.view_args.get('module_key')=='TNB' else '' }}">
           <span class="ic">📒</span> Registre TNB
         </a>
+        {% endif %}
+        {% if can_view('tdb') %}
         <a href="{{ url_for('registre.paiements', module_key='DEBITS_BOISSONS') }}" class="{{ 'active' if request.endpoint=='registre.paiements' and request.view_args.get('module_key')=='DEBITS_BOISSONS' else '' }}">
           <span class="ic">📒</span> Registre TDB
         </a>
+        {% endif %}
+        {% if can_view('odp') %}
         <a href="{{ url_for('registre.paiements', module_key='OCCUPATION_DOMAINE') }}" class="{{ 'active' if request.endpoint=='registre.paiements' and request.view_args.get('module_key')=='OCCUPATION_DOMAINE' else '' }}">
           <span class="ic">📒</span> Registre ODP
         </a>
+        {% endif %}
+        {% if can_view('loc') %}
         <a href="{{ url_for('registre.paiements', module_key='LOCATION_LOCAUX') }}" class="{{ 'active' if request.endpoint=='registre.paiements' and request.view_args.get('module_key')=='LOCATION_LOCAUX' else '' }}">
           <span class="ic">📒</span> Registre Locaux
         </a>
+        {% endif %}
       </div>
     </div>
 
-    <!-- ═══ CONFIGURATION ════════════════════════════════ -->
-    {% if user and user.peut_config %}
-    <div class="nav-sec">Configuration</div>
+    <!-- ═══ CONFIGURATION & ADMINISTRATION ═══════════════ -->
+    {% if can_config() %}
+    <div class="nav-sec">Configuration &amp; Sécurité</div>
     <div class="nav-item">
       <a href="{{ url_for('config.rubriques') }}" class="{{ 'active' if 'rubrique' in (request.endpoint or '') else '' }}">
         <span class="ic">📋</span><span class="txt">Rubriques Fiscales</span>
@@ -296,16 +318,12 @@
         <span class="ic">⚙️</span><span class="txt">Paramètres Calcul</span>
       </a>
     </div>
-    {% endif %}
     <div class="nav-item">
       <a href="{{ url_for('utilisateurs') }}" class="{{ 'active' if request.endpoint=='utilisateurs' else '' }}">
         <span class="ic">🔐</span><span class="txt">Utilisateurs &amp; Rôles</span>
       </a>
     </div>
 
-
-    <!-- ═══ ADMINISTRATION SYSTÈME ════════════════════════ -->
-    {% if user and user.peut_config %}
     <div class="nav-sec">Système</div>
     <div class="nav-item">
       <a href="{{ url_for('parametres_systeme') }}"
@@ -353,11 +371,11 @@
       <div class="user-dropdown-wrap" style="position:relative; margin-left:6px;">
         <button type="button" class="user-dropdown-btn" onclick="toggleUserMenu()" style="display:flex; align-items:center; gap:8px; background:var(--card); border:1.5px solid var(--line); border-radius:99px; padding:4px 12px 4px 5px; cursor:pointer; transition:all .18s;">
           <div class="user-avatar-top" style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#ffc14d,#f29d0c); display:grid; place-items:center; font-weight:800; color:var(--accent-ink); font-size:.8rem; box-shadow:0 3px 8px rgba(246,162,30,.3);">
-            {{ user.nom[0]|upper }}{% if user.prenom %}{{ user.prenom[0]|upper }}{% endif %}
+            {{ user.nom[0]|upper if user.nom else 'U' }}{% if user.prenom %}{{ user.prenom[0]|upper }}{% endif %}
           </div>
           <div style="text-align:left; line-height:1.2;">
             <div style="font-size:.82rem; font-weight:800; color:var(--ink-900);">{{ user.prenom }} {{ user.nom }}</div>
-            <div style="font-size:.68rem; color:var(--muted); font-weight:600;">{{ user.role_nom }}</div>
+            <div style="font-size:.68rem; color:var(--muted); font-weight:600;">@{{ user.username or 'user' }} ({{ user.role_nom }})</div>
           </div>
           <span style="font-size:.65rem; color:var(--muted); margin-left:2px;">▼</span>
         </button>
@@ -365,20 +383,22 @@
         <div id="user-dropdown-menu" class="user-dropdown-menu" style="display:none; position:absolute; right:0; top:calc(100% + 8px); width:240px; background:#ffffff; border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 40px rgba(15,23,42,.15); z-index:1000; padding:8px;">
           <div style="padding:10px 12px; border-bottom:1px solid var(--line); margin-bottom:6px;">
             <div style="font-weight:800; font-size:.88rem; color:var(--ink-900);">{{ user.prenom }} {{ user.nom }}</div>
-            <div style="font-size:.72rem; color:var(--muted); word-break:break-all;">{{ user.email }}</div>
+            <div style="font-size:.74rem; color:var(--primary); font-weight:700;">@{{ user.username or 'user' }}</div>
+            {% if user.email %}<div style="font-size:.72rem; color:var(--muted); word-break:break-all;">{{ user.email }}</div>{% endif %}
             <div style="font-size:.7rem; color:var(--accent-strong); font-weight:700; margin-top:4px;">🏛️ {{ user.commune_nom or 'Administration Globale' }}</div>
           </div>
 
+          {% if can_config() %}
           <a href="{{ url_for('users.utilisateurs') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
             <span>👥</span> <span>Gestion des Profils</span>
           </a>
+          <a href="{{ url_for('parametres_systeme') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
+            <span>🛠️</span> <span>Paramètres Système</span>
+          </a>
+          {% endif %}
 
           <a href="{{ url_for('licensing.activation_page') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
             <span>🔑</span> <span>Licence & Activation</span>
-          </a>
-
-          <a href="{{ url_for('parametres_systeme') }}" class="user-menu-item" style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; color:var(--text); text-decoration:none; font-size:.85rem; font-weight:700; transition:background .15s;">
-            <span>⚙️</span> <span>Paramètres Système</span>
           </a>
 
           <hr style="margin:6px 0; border:none; border-top:1px solid var(--line);">
@@ -572,6 +592,23 @@
   </div>
 </div>
 
+<!-- ═══ MODALE DE CONFIRMATION GLOBALE UNIFIÉE (STYLE MODERNE JIBAYAT) ═══ -->
+<div id="confirm-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-msg">
+  <div id="confirm-box" class="confirm-type-danger">
+    <button type="button" class="confirm-close-btn" onclick="_confirmReject()" aria-label="Fermer" title="Fermer (Échap)">✕</button>
+    <div class="confirm-icon-wrap">
+      <div id="confirm-icon">🗑️</div>
+    </div>
+    <h3 id="confirm-title">Confirmer l'action</h3>
+    <div id="confirm-msg">Êtes-vous sûr de vouloir continuer ?</div>
+    <div id="confirm-detail"></div>
+    <div class="confirm-actions">
+      <button type="button" id="confirm-cancel-btn" class="btn-confirm-cancel" onclick="_confirmReject()">✕ Annuler</button>
+      <button type="button" id="confirm-ok-btn" class="btn-confirm-ok" onclick="_confirmResolve()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Modale contribuable globale ──────────────────────────────
 function showCtbInfo(id) {
@@ -603,7 +640,7 @@ function showCtbInfo(id) {
       const initials = (c.nom || '?')[0].toUpperCase() + (c.prenom ? c.prenom[0].toUpperCase() : '');
 
       nameEl.textContent   = fullName;
-      numEl.textContent    = 'N° ' + (c.numero || c.id);
+      numEl.textContent    = 'CIN : ' + (c.cin || c.numero || c.id);
       avatarEl.textContent = initials;
       linkEl.href = '/contribuables/' + c.id + '/detail';
 

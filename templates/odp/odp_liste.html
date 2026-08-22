@@ -1,74 +1,256 @@
 {% extends 'base.html' %}
 {% block title %}Occupation Domaine Public{% endblock %}
 {% block page_title %}🏪 Redevance Occupation Domaine Public{% endblock %}
+
 {% block content %}
-<div class="alert alert-info">📋 Redevance d'occupation temporaire du domaine public communal par des biens liés à l'exercice d'un commerce, d'une industrie ou d'une profession.
-  <div class="ms-auto" style="display:flex;gap:8px;">
-      <a href="{{ url_for('export_excel', module='OCCUPATION_DOMAINE') }}" class="btn btn-success btn-sm">📊 Excel</a>
-      <button onclick="window.print()" class="btn btn-outline btn-sm">🖨️ PDF</button>
+<!-- ═══ MODULE HERO BANNER ════════════════════════════════════════ -->
+<div class="module-hero hero-odp">
+  <span class="module-watermark">🏪</span>
+  <div class="module-hero-left">
+    <div class="module-avatar">🏪</div>
+    <div>
+      <h2 class="module-hero-title">Occupation Temporaire du Domaine Public (ODP)</h2>
+      <div class="module-hero-sub">
+        Autorisations et redevances d'occupation du domaine public communal par les terrasses, étalages, kiosques et installations commerciales.
+      </div>
+    </div>
+  </div>
+  <div class="module-hero-actions">
+    {% if can_add('odp') %}
+    <button onclick="openModal('addOdp')" class="btn btn-accent btn-sm">➕ Nouvelle Autorisation</button>
+    {% endif %}
+    <a href="{{ url_for('export_excel', module='OCCUPATION_DOMAINE') }}" class="btn btn-outline btn-sm">📊 Excel</a>
+    <button onclick="window.print()" class="btn btn-outline btn-sm">🖨️ Imprimer PDF</button>
   </div>
 </div>
-<div class="card">
-  <div class="card-header"><h3>Autorisations ({{ items|length }})</h3><button onclick="openModal('addOdp')" class="btn btn-primary btn-sm no-print">➕ Nouvelle Autorisation</button></div>
+
+<!-- ═══ STATS RAPIDES ════════════════════════════════════════════ -->
+{% set ns = namespace(nb_actifs=0, nb_expires=0, total_sup=0) %}
+{% for item in items %}
+  {% set ns.total_sup = ns.total_sup + (item.superficie|float(0)) %}
+  {% if item.statut == 'actif' %}{% set ns.nb_actifs = ns.nb_actifs + 1 %}
+  {% elif item.statut in ('expire', 'suspendu') %}{% set ns.nb_expires = ns.nb_expires + 1 %}{% endif %}
+{% endfor %}
+
+<div class="module-stats-strip">
+  <div class="module-stat-card">
+    <div class="stat-icon-wrap">🏪</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ items|length }}</div>
+      <div class="stat-lbl">Total Autorisations</div>
+    </div>
+  </div>
+  <div class="module-stat-card ok">
+    <div class="stat-icon-wrap">✅</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ ns.nb_actifs }}</div>
+      <div class="stat-lbl">Occupations Actives</div>
+    </div>
+  </div>
+  <div class="module-stat-card info">
+    <div class="stat-icon-wrap">📐</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ "%.1f"|format(ns.total_sup) }} <span style="font-size:.8rem">m²</span></div>
+      <div class="stat-lbl">Superficie Totale</div>
+    </div>
+  </div>
+  <div class="module-stat-card {{ 'danger' if ns.nb_expires > 0 else 'ok' }}">
+    <div class="stat-icon-wrap">⚠️</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ ns.nb_expires }}</div>
+      <div class="stat-lbl">Expirées / Suspendues</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TABLEAU PRINCIPAL ═══════════════════════════════════════ -->
+<div class="module-table-card">
+  <div class="module-table-header">
+    <h3>📋 Liste des Autorisations ODP (<span id="visibleCount">{{ items|length }}</span>)</h3>
+    {% if can_add('odp') %}
+    <button onclick="openModal('addOdp')" class="btn btn-primary btn-sm no-print">➕ Nouvelle Autorisation</button>
+    {% endif %}
+  </div>
+
+  <div class="module-filter-bar no-print">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher par N° dossier, contribuable, CIN, emplacement..." oninput="filterOdpTable()">
+    <select id="filterStatut" onchange="filterOdpTable()">
+      <option value="">— Tous les statuts —</option>
+      <option value="actif">✅ Actifs</option>
+      <option value="expire">❌ Expirés</option>
+      <option value="suspendu">⏸️ Suspendus</option>
+    </select>
+    <select id="filterType" onchange="filterOdpTable()">
+      <option value="">— Tous les types —</option>
+      {% for t in tarifs %}
+      <option value="{{ t.code_tarif }}">{{ t.libelle }}</option>
+      {% endfor %}
+    </select>
+    <button class="filter-reset-btn" onclick="resetOdpFilters()">✕ Réinitialiser</button>
+    <span class="filter-count" id="filterCount"></span>
+  </div>
+
   <div class="table-responsive">
-    <table>
-      <thead><tr><th>N°</th><th>Type</th><th>Contribuable</th><th>Localisation</th><th>Superficie</th><th>Date début</th><th>Statut</th><th>Actions</th></tr></thead>
+    <table id="odpTable">
+      <thead>
+        <tr>
+          <th>N° Dossier</th>
+          <th>Type d'Occupation</th>
+          <th>Redevable / Contribuable</th>
+          <th>Localisation</th>
+          <th>Superficie</th>
+          <th>Période Validité</th>
+          <th>Statut</th>
+          <th class="no-print">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for item in items %}
-        <tr>
-          <td><strong style="color:var(--primary)">{{ item.numero }}</strong></td>
+        <tr class="odp-row" data-statut="{{ item.statut }}" data-type="{{ item.type_occupation }}">
+          <td><span class="badge-dossier">{{ item.numero }}</span></td>
           <td><span class="badge b-info">{{ item.type_occupation or '—' }}</span></td>
           <td>
-            <a onclick="showCtbInfo({{ item.contribuable_id }})" style="cursor:pointer;color:var(--primary);font-weight:600;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-              {{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}
-            </a>
-            <br><small class="text-muted">{{ item.ctb_num }}</small>
+            <div class="redevable-cell">
+              <span class="ctb-nom" onclick="showCtbInfo({{ item.contribuable_id }})">
+                {{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}
+              </span>
+              <span class="ctb-cin">CIN / Ref : {{ item.cin or item.ctb_num }}</span>
+            </div>
           </td>
           <td>{{ item.localisation or '—' }}</td>
-          <td>{{ item.superficie or '—' }} {% if item.superficie %}m²{% endif %}</td>
-          <td style="font-size:.78rem">{{ item.date_debut or '—' }}</td>
-          <td><span class="badge {{ 'b-ok' if item.statut=='actif' else 'b-danger' }}">{{ item.statut }}</span></td>
-          <td><div class="df gap-2">
-            <a href="{{ url_for('odp.odp_detail', id=item.id) }}" class="btn btn-primary btn-xs">🔍</a>
-            <a href="{{ url_for('odp.odp_paiement', id=item.id) }}" class="btn btn-accent btn-xs">💳</a>
-          </div></td>
+          <td><strong>{{ item.superficie or '0' }} m²</strong></td>
+          <td style="font-size:.76rem">
+            <div>{{ item.date_debut or '—' }}</div>
+            <div style="color:var(--muted)">→ {{ item.date_fin or 'Indéterminée' }}</div>
+          </td>
+          <td>
+            <span class="badge {{ 'b-ok' if item.statut=='actif' else 'b-danger' }}">{{ item.statut }}</span>
+          </td>
+          <td class="no-print">
+            <div class="df gap-2">
+              <a href="{{ url_for('odp.odp_detail', id=item.id) }}" class="btn btn-outline btn-xs" title="Consulter la fiche">🔍</a>
+              {% if can_bulletin() or can_pay() %}
+              <a href="{{ url_for('odp.odp_paiement', id=item.id) }}" class="btn btn-accent btn-xs" title="Déclarer & Payer">💳</a>
+              {% endif %}
+            </div>
+          </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" class="empty-state"><span class="ei">🏪</span>Aucune autorisation</td></tr>
+        <tr><td colspan="8" class="empty-state"><span class="ei">🏪</span>Aucune autorisation enregistrée</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Modal ajout -->
 <div class="modal-overlay" id="addOdp">
-  <div class="modal">
-    <div class="modal-header"><h3>🏪 Nouvelle Occupation Domaine Public</h3><button class="modal-close" onclick="closeModal('addOdp')">✕</button></div>
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-avatar">🏪</div>
+        <div>
+          <h3>Nouvelle Autorisation d'Occupation (ODP)</h3>
+          <div class="modal-header-sub">Enregistrement d'une occupation temporaire du domaine public communal</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('addOdp')" title="Fermer">✕</button>
+    </div>
     <div class="modal-body">
       <form method="post" action="{{ url_for('odp.odp_ajouter') }}">
-        <div class="form-group mb-3"><label>Contribuable *</label>
-          <select name="contribuable_id" required><option value="">— Sélectionner —</option>
-            {% for c in contribuables %}<option value="{{ c.id }}">{{ c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="form-grid mb-3">
-          <div class="form-group"><label>Type Occupation</label>
-            <select name="type_occupation">
-              {% for t in tarifs %}<option value="{{ t.code_tarif }}">{{ t.libelle }} ({{ t.valeur }} {{ t.unite }})</option>{% endfor %}
-              <option value="autre">Autre</option>
+        
+        <div class="modal-section-title">🪪 1. Dossier & Contribuable (Redevable)</div>
+        <div class="form-grid mb-3" style="grid-template-columns: 1fr 2fr;">
+          <div class="form-group dossier-num-highlight">
+            <label>N° Dossier / ODP * <span style="font-size:.68rem;color:var(--muted);display:block">Généré auto (modifiable)</span></label>
+            <input name="numero" value="{{ next_numero }}" required>
+          </div>
+          <div class="form-group">
+            <label>Contribuable / Bénéficiaire *</label>
+            <select name="contribuable_id" required style="height:44px">
+              <option value="">— Sélectionner un contribuable —</option>
+              {% for c in contribuables %}
+              <option value="{{ c.id }}">{{ c.cin or c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
+              {% endfor %}
             </select>
           </div>
-          <div class="form-group"><label>Localisation</label><input name="localisation"></div>
-          <div class="form-group"><label>Superficie (m²)</label><input type="number" name="superficie" step="0.1"></div>
-          <div class="form-group"><label>N° Autorisation</label><input name="num_autorisation"></div>
-          <div class="form-group"><label>Date début</label><input type="date" name="date_debut"></div>
-          <div class="form-group"><label>Date fin</label><input type="date" name="date_fin"></div>
         </div>
+
+        <div class="modal-section-title">🏪 2. Caractéristiques de l'Occupation</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Type d'Occupation *</label>
+            <select name="type_occupation">
+              {% for t in tarifs %}
+              <option value="{{ t.code_tarif }}">{{ t.libelle }} ({{ t.valeur }} {{ t.unite }})</option>
+              {% endfor %}
+              <option value="autre">Autre occupation</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Superficie (m²) *</label>
+            <input type="number" name="superficie" step="0.1" placeholder="Ex: 12.5" required style="font-weight:700">
+          </div>
+          <div class="form-group">
+            <label>Localisation / Emplacement</label>
+            <input name="localisation" placeholder="Ex: Devant le local, Angle Av. Hassan II">
+          </div>
+        </div>
+
+        <div class="modal-section-title">📅 3. Autorisation & Période de Validité</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>N° Décision d'Autorisation</label>
+            <input name="num_autorisation" placeholder="Ex: DEC-ODP-2026/012">
+          </div>
+          <div class="form-group">
+            <label>Date de Début</label>
+            <input type="date" name="date_debut">
+          </div>
+          <div class="form-group">
+            <label>Date de Fin (Échéance)</label>
+            <input type="date" name="date_fin">
+          </div>
+        </div>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline" onclick="closeModal('addOdp')">Annuler</button>
-          <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+          <button type="button" class="btn btn-outline" onclick="closeModal('addOdp')">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer l'Autorisation</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+function filterOdpTable() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const st = (document.getElementById('filterStatut').value || '').toLowerCase();
+  const ty = (document.getElementById('filterType').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#odpTable tbody .odp-row');
+  let visible = 0;
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    const rowSt = (r.getAttribute('data-statut') || '').toLowerCase();
+    const rowTy = (r.getAttribute('data-type') || '').toLowerCase();
+    const matchQ = !q || text.includes(q);
+    const matchSt = !st || rowSt === st;
+    const matchTy = !ty || rowTy === ty;
+    const match = matchQ && matchSt && matchTy;
+    r.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('filterCount').textContent = (q || st || ty) ? visible + ' résultat(s)' : '';
+  const visEl = document.getElementById('visibleCount');
+  if (visEl) visEl.textContent = visible;
+}
+
+function resetOdpFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterStatut').value = '';
+  document.getElementById('filterType').value = '';
+  filterOdpTable();
+}
+</script>
 {% endblock %}
+

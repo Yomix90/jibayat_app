@@ -168,22 +168,32 @@
 {% block extra_js %}
 <script>
 function deleteBv(annee, mois) {
-    if (confirm("Êtes-vous sûr de vouloir supprimer les bordereaux de ce mois ? Tous les enregistrements associés seront effacés.")) {
-        fetch(`{{ url_for('emission.dashboard') }}${annee}/${mois}`, {
-            method: 'DELETE',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert("Erreur lors de la suppression.");
-            }
-        });
-    }
+    showConfirm({
+        type: 'danger',
+        title: 'Supprimer les bordereaux',
+        msg: 'Êtes-vous sûr de vouloir supprimer les bordereaux de ce mois ?',
+        detail: 'Tous les enregistrements d\'émission associés à ce mois seront définitivement effacés.',
+        confirmText: '🗑️ Supprimer ce mois',
+        onOk: () => {
+            return fetch(`{{ url_for('emission.dashboard') }}${annee}/${mois}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    showAlert("Erreur lors de la suppression du bordereau.", {type: 'danger', title: 'Erreur'});
+                }
+            })
+            .catch(err => {
+                showAlert("Erreur réseau : " + err, {type: 'danger', title: 'Erreur'});
+            });
+        }
+    });
 }
 </script>
 {% endblock %}

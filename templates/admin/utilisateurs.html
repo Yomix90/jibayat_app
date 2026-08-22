@@ -1,19 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Utilisateurs & Rôles{% endblock %}
+{% block title %}Gestion des Utilisateurs & Rôles RBAC{% endblock %}
 {% block page_title %}🔐 Utilisateurs & Rôles{% endblock %}
 
 {% block extra_head %}
 <style>
-.perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:10px}
-.perm-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:8px;font-size:.8rem;cursor:pointer}
-.perm-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
-.perm-item label{cursor:pointer;font-weight:500}
-.check-yes{color:#27ae60;font-weight:700}
-.check-no{color:#e74c3c;font-weight:700}
-.user-card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;border-left:4px solid var(--border)}
-.user-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:.9rem;flex-shrink:0}
-
-
+/* ══ DESIGN SYSTEM — GESTION UTILISATEURS & RBAC ══ */
 :root {
   --clr-voir:     #2563eb;
   --clr-ajouter:  #16a34a;
@@ -21,330 +12,654 @@
   --clr-suppr:    #dc2626;
 }
 
-/* ── Page layout ── */
-.rbac-header {
-  background: linear-gradient(135deg, #152238 0%, #0e1626 100%);
-  border-radius: var(--radius);
-  padding: 24px 28px;
-  margin-bottom: 24px;
+/* Tab Navigation */
+.admin-tab-nav {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  background: var(--card);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  box-shadow: 0 4px 14px rgba(0,0,0,.03);
+  flex-wrap: wrap;
+}
+.admin-tab-btn {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: .88rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all .2s ease;
+  font-family: inherit;
+}
+.admin-tab-btn:hover {
+  color: var(--ink-900);
+  background: #f1f5f9;
+}
+.admin-tab-btn.active {
+  background: #1e3a5f;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(30,58,95,.28);
+}
+.admin-tab-btn .tab-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: .72rem;
+  background: rgba(0,0,0,.08);
+}
+.admin-tab-btn.active .tab-badge {
+  background: rgba(255,255,255,.25);
   color: #fff;
+}
+
+/* User Profile Cards Grid */
+.user-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+.user-profile-card {
+  background: var(--card);
+  border-radius: 16px;
+  border: 1.5px solid var(--line);
+  box-shadow: 0 4px 20px rgba(0,0,0,.04);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.user-profile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,.08);
+  border-color: #cbd5e1;
+}
+.user-profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--user-color, #1e3a5f);
+}
+.user-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.user-avatar-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--user-color, #1e3a5f);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+}
+.user-name-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink-900);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.user-email-text {
+  font-size: .8rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+.user-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: .74rem;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+/* Role definitions colors */
+.role-super_admin { --user-color: #dc2626; background: #fee2e2; color: #991b1b; }
+.role-admin       { --user-color: #2563eb; background: #dbeafe; color: #1e40af; }
+.role-agent_assiette { --user-color: #d97706; background: #fef3c7; color: #92400e; }
+.role-regisseur   { --user-color: #059669; background: #d1fae5; color: #065f46; }
+.role-consultant  { --user-color: #64748b; background: #f1f5f9; color: #334155; }
+.role-custom      { --user-color: #7c3aed; background: #ede9fe; color: #5b21b6; }
+
+/* Capability Pills */
+.cap-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 12px 0 16px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+.cap-pill {
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+.cap-pill.ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.user-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Role Definition Cards */
+.role-desc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.role-desc-card {
+  background: var(--card);
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  padding: 16px;
+  border-left: 5px solid var(--rc, #1e3a5f);
+  box-shadow: 0 2px 8px rgba(0,0,0,.03);
+}
+.role-desc-card h4 {
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--ink-900);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.role-desc-card p {
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Permission Matrix Table */
+.matrix-table-card {
+  background: var(--card);
+  border-radius: 16px;
+  border: 1.5px solid var(--line);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.matrix-table-header {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.matrix-table th {
+  background: #f8fafc;
+  padding: 12px 14px;
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--line);
+  text-align: center;
+}
+.matrix-table th:first-child { text-align: left; }
+.matrix-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: .86rem;
+  text-align: center;
+}
+.matrix-table td:first-child { text-align: left; }
+.matrix-table tr:hover td { background: #fbfcfe; }
+
+.chk-icon-yes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 900;
+  font-size: .85rem;
+}
+.chk-icon-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: .8rem;
+}
+
+/* RBAC Module Manager */
+.rbac-role-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.rbac-role-btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  cursor: pointer;
+  font-size: .84rem;
+  font-weight: 800;
+  color: var(--ink-900);
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+}
+.rbac-role-btn:hover {
+  border-color: #1e3a5f;
+  transform: translateY(-1px);
+}
+.rbac-role-btn.active {
+  background: #1e3a5f !important;
+  color: #ffffff !important;
+  border-color: #1e3a5f !important;
+  box-shadow: 0 4px 14px rgba(30,58,95,.3);
+}
+
+.mod-perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.mod-perm-row {
+  background: var(--card);
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0,0,0,.03);
+  overflow: hidden;
+  transition: all .18s ease;
+}
+.mod-perm-row:hover {
+  border-color: #1e3a5f;
+  box-shadow: 0 6px 18px rgba(0,0,0,.07);
+}
+.mod-perm-row.has-access {
+  border-left: 5px solid #059669;
+}
+.mod-perm-row.no-access {
+  border-left: 5px solid #cbd5e1;
+  opacity: .75;
+}
+.mod-perm-row-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--line);
+}
+.mod-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  background: rgba(30,58,95,.08);
+  flex-shrink: 0;
+}
+.mod-perm-checks {
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.perm-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all .15s;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.perm-check-item:hover {
+  border-color: #94a3b8;
+}
+.perm-check-item:has(input:checked) {
+  border-color: currentColor;
+  background: #f8fafc;
+}
+.perm-check-item input[type=checkbox] {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.perm-voir     { color: #2563eb; }
+.perm-ajouter  { color: #16a34a; }
+.perm-modifier { color: #d97706; }
+.perm-suppr    { color: #dc2626; }
+
+.save-bar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 50;
+  background: #0f172a;
+  border-radius: 14px;
+  padding: 14px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
-  box-shadow: var(--shadow);
-}
-.rbac-header h2 { font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; margin-bottom: 4px; }
-.rbac-header p  { font-size: .82rem; color: rgba(255,255,255,.6); }
-
-.legend-pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700;
-}
-.legend-voir     { background: rgba(37,99,235,.15);  color: var(--clr-voir);     border: 1px solid rgba(37,99,235,.3);   }
-.legend-ajouter  { background: rgba(22,163,74,.15);  color: var(--clr-ajouter);  border: 1px solid rgba(22,163,74,.3);   }
-.legend-modifier { background: rgba(217,119,6,.15);  color: var(--clr-modifier); border: 1px solid rgba(217,119,6,.3);   }
-.legend-suppr    { background: rgba(220,38,38,.15);  color: var(--clr-suppr);    border: 1px solid rgba(220,38,38,.3);   }
-
-/* ── Role tabs ── */
-.role-tabs {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
-}
-.role-tab {
-  padding: 9px 18px; border-radius: 10px; border: 1.5px solid var(--line);
-  background: var(--card); cursor: pointer; font-size: .82rem; font-weight: 800;
-  color: var(--text); transition: all .2s;
-}
-.role-tab:hover, .role-tab.active {
-  background: var(--ink-800); color: #fff; border-color: var(--ink-800);
-  transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,23,42,.25);
-}
-.role-tab.active { box-shadow: 0 4px 16px rgba(30,58,95,.35); }
-
-/* ── Permission panel ── */
-.role-panel { display: none; }
-.role-panel.active { display: block; }
-
-.role-panel-header {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 12px; margin-bottom: 18px;
-  padding: 14px 18px;
-  background: var(--card); border-radius: 12px; box-shadow: var(--shadow);
-  border-left: 5px solid var(--primary);
-}
-.role-panel-header h3 { font-size: 1rem; font-weight: 900; color: var(--primary); }
-.role-panel-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-
-/* ── Module permission rows ── */
-.mod-perm-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-.mod-perm-row {
-  background: var(--card);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  border: 1.5px solid var(--border);
-  transition: border-color .2s, box-shadow .2s;
-}
-.mod-perm-row:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-.mod-perm-row.has-access { border-left: 4px solid var(--ok); }
-.mod-perm-row.no-access  { border-left: 4px solid var(--border); opacity: .75; }
-
-.mod-perm-row-header {
-  padding: 12px 16px;
-  display: flex; align-items: center; gap: 12px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  user-select: none;
-}
-.mod-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; background: var(--primary); color: #fff;
-  flex-shrink: 0;
-}
-.mod-name { font-weight: 800; font-size: .88rem; }
-.mod-code { font-size: .68rem; color: var(--muted); font-family: monospace; }
-
-.perm-checks {
-  padding: 12px 16px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
-}
-
-.perm-check-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px; border-radius: 8px;
-  border: 1.5px solid var(--border);
-  cursor: pointer; transition: all .15s;
-  background: var(--bg);
-}
-.perm-check-item:hover { border-color: currentColor; }
-.perm-check-item input[type=checkbox] {
-  width: 17px; height: 17px; cursor: pointer;
-  border-radius: 4px; flex-shrink: 0;
-}
-.perm-check-item .perm-label { font-size: .78rem; font-weight: 700; }
-
-.perm-voir     { --c: var(--clr-voir);    }
-.perm-ajouter  { --c: var(--clr-ajouter); }
-.perm-modifier { --c: var(--clr-modifier);}
-.perm-suppr    { --c: var(--clr-suppr);   }
-.perm-check-item.perm-voir     { color: var(--clr-voir);     }
-.perm-check-item.perm-ajouter  { color: var(--clr-ajouter);  }
-.perm-check-item.perm-modifier { color: var(--clr-modifier); }
-.perm-check-item.perm-suppr    { color: var(--clr-suppr);    }
-
-.perm-check-item input[type=checkbox]:checked {
-  accent-color: var(--c, var(--primary));
-}
-.perm-check-item:has(input:checked) {
-  border-color: var(--c, var(--border));
-  background: color-mix(in srgb, var(--c, var(--border)) 8%, white);
-}
-
-/* ── Quick action buttons ── */
-.quick-btn {
-  padding: 4px 10px; border-radius: 6px; border: 1.5px solid;
-  font-size: .72rem; font-weight: 700; cursor: pointer;
-  transition: all .15s; background: transparent;
-}
-.quick-tout-ouvrir  { color: var(--ok);    border-color: var(--ok);    }
-.quick-tout-fermer  { color: var(--danger);border-color: var(--danger); }
-.quick-lecture-seule{ color: var(--info);  border-color: var(--info);  }
-.quick-btn:hover    { color: #fff; background: currentColor; }
-
-/* ── Save banner ── */
-.save-bar {
-  position: sticky; bottom: 0; z-index: 20;
-  background: rgba(15,23,42,.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255,255,255,.12);
-  padding: 14px 20px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  border-radius: 12px 12px 0 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
   margin-top: 20px;
-  transform: translateY(0);
-  animation: slideUp .3s ease;
+  border: 1px solid rgba(255,255,255,.1);
 }
-@keyframes slideUp { from { transform: translateY(40px); opacity:0; } }
-.save-bar-info { color: rgba(255,255,255,.7); font-size: .82rem; }
-.save-bar-info strong { color: #eab308; }
-
-/* Admin lock badge */
-.lock-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 8px; border-radius: 6px;
-  background: rgba(220,38,38,.15); color: #ef4444;
-  font-size: .65rem; font-weight: 700; border: 1px solid rgba(220,38,38,.25);
-}
-
-/* ── User permissions card ── */
-.user-perm-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
-}
-.user-perm-card {
-  background: var(--card); border-radius: 10px; padding: 12px 14px;
-  box-shadow: var(--shadow); border-left: 3px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.user-perm-card.active { border-left-color: var(--ok); }
-.user-perm-card.inactive { border-left-color: var(--border); opacity: .6; }
-.user-perm-chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
-.chip {
-  display: inline-block; padding: 1px 6px; border-radius: 4px;
-  font-size: .6rem; font-weight: 700;
-}
-.chip-voir     { background: rgba(37,99,235,.12);  color: var(--clr-voir);    }
-.chip-ajouter  { background: rgba(22,163,74,.12);  color: var(--clr-ajouter); }
-.chip-modifier { background: rgba(217,119,6,.12);  color: var(--clr-modifier);}
-.chip-suppr    { background: rgba(220,38,38,.12);  color: var(--clr-suppr);   }
-
 </style>
 {% endblock %}
 
 {% block content %}
-
-{# ════ ONGLETS ═════════════════════════════════════════════ #}
-<div class="tab-nav">
-  <button class="tab-btn active" onclick="showTab('tab-users',this)">👥 Utilisateurs ({{ items|length }})</button>
-  <button class="tab-btn" onclick="showTab('tab-roles',this)">🎭 Rôles ({{ roles|length }})</button>
-  <button class="tab-btn" onclick="showTab('tab-droits',this)">🛡️ Droits par Module</button>
-</div>
-
-{# ════════════════════════════════════════════════════════════
-   ONGLET UTILISATEURS
-════════════════════════════════════════════════════════════ #}
-<div id="tab-users" class="tab-content active">
-  <div style="display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start">
-
-    {# — Formulaire ajout — #}
-    {% if user.peut_config %}
-    <div class="card">
-      <div class="card-header"><h3>➕ Nouvel Utilisateur</h3></div>
-      <div class="card-body">
-        <form method="post" action="{{ url_for('ajouter_utilisateur') }}">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-          <div class="form-grid mb-3">
-            <div class="form-group"><label>Nom *</label><input name="nom" required></div>
-            <div class="form-group"><label>Prénom *</label><input name="prenom" required></div>
-          </div>
-          <div class="form-group mb-3"><label>Email *</label><input name="email" type="email" required></div>
-          <div class="form-group mb-3"><label>Mot de passe *</label><input name="password" type="password" required minlength="6" placeholder="Min. 6 caractères"></div>
-          <div class="form-group mb-3">
-            <label>Rôle *</label>
-            <select name="role_id" required>
-              {% for r in roles %}<option value="{{ r.id }}">{{ r.nom }}</option>{% endfor %}
-            </select>
-          </div>
-          <div class="form-actions"><button type="submit" class="btn btn-primary">💾 Créer</button></div>
-        </form>
+<!-- ═══ MODULE HERO BANNER ════════════════════════════════════════ -->
+<div class="module-hero hero-users no-print">
+  <span class="module-watermark">🔐</span>
+  <div class="module-hero-left">
+    <div class="module-avatar">🛡️</div>
+    <div>
+      <h2 class="module-hero-title">Administration des Utilisateurs & Sécurité RBAC</h2>
+      <div class="module-hero-sub">
+        Gestion centralisée des comptes d'agents municipaux, des profils d'habilitation et de la matrice des droits d'accès granulaires par module fiscal.
       </div>
     </div>
+  </div>
+  <div class="module-hero-actions">
+    {% if user.peut_config %}
+    <button onclick="openModal('modal-add-user')" class="btn btn-accent btn-sm">➕ Nouvel Utilisateur</button>
+    <button onclick="openModal('modal-add-role')" class="btn btn-outline btn-sm">➕ Nouveau Rôle</button>
     {% endif %}
+  </div>
+</div>
 
-    {# — Liste utilisateurs — #}
-    <div class="card">
-      <div class="card-header">
-        <h3>Utilisateurs Actifs ({{ items|length }})</h3>
-      </div>
-      <div class="card-body" style="padding:12px">
-        {% set role_colors = {'super_admin':'#e74c3c','admin':'#2980b9','agent_assiette':'#e8a020','regisseur':'#27ae60','consultant':'#7f8c8d'} %}
-        {% for u in items %}
-        <div class="user-card" style="border-left-color:{{ role_colors.get(u.role_nom,'#ccc') }}">
-          <div class="user-avatar" style="background:{{ role_colors.get(u.role_nom,'#95a5a6') }}">
-            {{ u.prenom[0]|upper if u.prenom else '' }}{{ u.nom[0]|upper }}
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:800;font-size:.88rem">{{ u.prenom }} {{ u.nom }}</div>
-            <div style="font-size:.72rem;color:var(--muted)">{{ u.email }}</div>
-            <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
-              <span class="badge b-primary" style="font-size:.6rem">{{ u.role_nom }}</span>
-              <span class="badge b-ok" style="font-size:.6rem">Actif</span>
-            </div>
-          </div>
-          {% if user.peut_config %}
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <a href="{{ url_for('user_permissions', user_id=u.id) }}" class="btn btn-outline btn-sm" title="Voir les droits">🔍</a>
-            <button class="btn btn-outline btn-sm" onclick="openModalModifUser({{ u.id }},'{{ u.nom }}','{{ u.prenom }}','{{ u.email }}',{{ u.role_id }})">✏️</button>
-            {% if u.id != user.id %}
-            <form method="post" action="{{ url_for('supprimer_utilisateur', id=u.id) }}"
-              data-confirm="danger"
-              data-confirm-title="Désactiver l'utilisateur"
-              data-confirm-msg="Confirmer la désactivation de {{ u.prenom }} {{ u.nom }} ?"
-              data-confirm-detail="Cet utilisateur ne pourra plus se connecter.">
-              <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
-            </form>
-            {% else %}
-            <button class="btn btn-outline btn-sm" disabled title="Votre propre compte">🔒</button>
-            {% endif %}
-          </div>
-          {% endif %}
-        </div>
-        {% else %}
-        <div class="empty-state"><span class="ei">👤</span>Aucun utilisateur actif</div>
-        {% endfor %}
-      </div>
+<!-- ═══ STATS RAPIDES ════════════════════════════════════════════ -->
+<div class="module-stats-strip no-print">
+  <div class="module-stat-card">
+    <div class="stat-icon-wrap">👥</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ items|length }}</div>
+      <div class="stat-lbl">Utilisateurs Actifs</div>
+    </div>
+  </div>
+  <div class="module-stat-card info">
+    <div class="stat-icon-wrap">🎭</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ roles|length }}</div>
+      <div class="stat-lbl">Rôles Définis</div>
+    </div>
+  </div>
+  <div class="module-stat-card danger">
+    <div class="stat-icon-wrap">🔴</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ items|selectattr('role_nom','equalto','super_admin')|list|length + items|selectattr('role_nom','equalto','admin')|list|length }}</div>
+      <div class="stat-lbl">Administrateurs</div>
+    </div>
+  </div>
+  <div class="module-stat-card warn">
+    <div class="stat-icon-wrap">💼</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ items|selectattr('role_nom','equalto','agent_assiette')|list|length }}</div>
+      <div class="stat-lbl">Agents d'Assiette</div>
+    </div>
+  </div>
+  <div class="module-stat-card ok">
+    <div class="stat-icon-wrap">💰</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ items|selectattr('role_nom','equalto','regisseur')|list|length }}</div>
+      <div class="stat-lbl">Régisseurs des Recettes</div>
     </div>
   </div>
 </div>
 
-{# ════════════════════════════════════════════════════════════
-   ONGLET RÔLES
-════════════════════════════════════════════════════════════ #}
-<div id="tab-roles" class="tab-content">
+<!-- ═══ NAVIGATION DES ONGLETS ═══════════════════════════════════ -->
+<div class="admin-tab-nav no-print">
+  <button class="admin-tab-btn active" onclick="switchAdminTab('tab-users', this)">
+    <span>👥 Comptes Utilisateurs</span>
+    <span class="tab-badge">{{ items|length }}</span>
+  </button>
+  <button class="admin-tab-btn" onclick="switchAdminTab('tab-roles', this)">
+    <span>🎭 Rôles & Habilitations</span>
+    <span class="tab-badge">{{ roles|length }}</span>
+  </button>
+  <button class="admin-tab-btn" onclick="switchAdminTab('tab-droits', this)">
+    <span>🛡️ Droits d'Accès par Module (RBAC)</span>
+    <span class="tab-badge">{{ modules|length }} mod.</span>
+  </button>
+</div>
 
-  {# — Matrice des droits — #}
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-header">
-      <h3>📋 Matrice des Droits par Rôle</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- ONGLET 1 : COMPTES UTILISATEURS                                -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="tab-users" class="admin-tab-content">
+  <!-- Barre de recherche utilisateurs -->
+  <div class="module-table-card mb-3">
+    <div class="module-table-header">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h3>👥 Répertoire des Utilisateurs Actifs ({{ items|length }})</h3>
+      </div>
+      {% if user.peut_config %}
+      <button onclick="openModal('modal-add-user')" class="btn btn-primary btn-sm">➕ Ajouter un utilisateur</button>
+      {% endif %}
+    </div>
+    <div class="module-filter-bar">
+      <div class="search-wrap">
+        <input type="text" id="searchUserInput" placeholder="Rechercher un utilisateur (nom, prénom, email...)" oninput="filterUsersList()">
+      </div>
+      <select id="filterUserRole" onchange="filterUsersList()">
+        <option value="">— Tous les rôles —</option>
+        {% for r in roles %}
+        <option value="{{ r.nom }}">{{ r.nom }}</option>
+        {% endfor %}
+      </select>
+      <button class="filter-reset-btn" onclick="resetUserFilters()">✕ Réinitialiser</button>
+      <span class="filter-count" id="userFilterCount"></span>
+    </div>
+  </div>
+
+  <!-- Cartes des profils utilisateurs -->
+  <div class="user-cards-grid" id="userCardsContainer">
+    {% for u in items %}
+    {% set r_cls = 'role-' ~ u.role_nom if u.role_nom in ('super_admin','admin','agent_assiette','regisseur','consultant') else 'role-custom' %}
+    <div class="user-profile-card {{ r_cls }}" data-name="{{ u.prenom|lower }} {{ u.nom|lower }} {{ (u.username or '')|lower }} {{ (u.email or '')|lower }}" data-role="{{ u.role_nom }}">
+      <div>
+        <div class="user-card-head">
+          <div class="user-avatar-circle">
+            {{ u.prenom[0]|upper if u.prenom else '' }}{{ u.nom[0]|upper if u.nom else 'U' }}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="user-name-title">{{ u.prenom }} {{ u.nom }}</div>
+            <div style="font-size:.82rem;font-weight:800;color:var(--primary);margin-bottom:2px">
+              👤 @<strong>{{ u.username or 'user' ~ u.id }}</strong>
+            </div>
+            {% if u.email %}<div class="user-email-text">✉️ {{ u.email }}</div>{% endif %}
+            <span class="user-role-badge">
+              {% if u.role_nom == 'super_admin' %}🔴 Super Administrateur
+              {% elif u.role_nom == 'admin' %}🔵 Administrateur
+              {% elif u.role_nom == 'agent_assiette' %}🟡 Agent d'Assiette Fiscale
+              {% elif u.role_nom == 'regisseur' %}🟢 Régisseur des Recettes
+              {% elif u.role_nom == 'consultant' %}⚪ Consultant (Lecture)
+              {% else %}🟣 {{ u.role_nom }}{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <!-- Capacités opérationnelles du profil -->
+        <div class="cap-pills-wrap">
+          <span class="cap-pill {{ 'ok' if u.peut_voir else '' }}">👁️ Consulter</span>
+          <span class="cap-pill {{ 'ok' if u.peut_ajouter else '' }}">➕ Créer dossiers</span>
+          <span class="cap-pill {{ 'ok' if u.peut_modifier else '' }}">✏️ Modifier</span>
+          <span class="cap-pill {{ 'ok' if u.peut_creer_bulletin else '' }}">📄 Bulletins</span>
+          <span class="cap-pill {{ 'ok' if u.peut_valider_paiement else '' }}">💳 Encaissement</span>
+          <span class="cap-pill {{ 'ok' if u.peut_config else '' }}">⚙️ Config</span>
+        </div>
+      </div>
+
+      <div class="user-card-actions">
+        <button class="btn btn-outline btn-xs" onclick="inspectUserPerms({{ u.id }}, '{{ u.prenom }} {{ u.nom }}', '{{ u.role_nom }}')" title="Consulter les permissions détaillées">🛡️ Droits</button>
         {% if user.peut_config %}
-        <button type="button" class="btn btn-accent btn-sm" onclick="showTab('tab-droits', document.querySelectorAll('.tab-btn')[2])">🛡️ Droits par Module</button>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-role')">➕ Nouveau Rôle</button>
+        <button class="btn btn-outline btn-xs" onclick="openModalModifUser({{ u.id }},'{{ u.username or '' }}','{{ u.nom }}','{{ u.prenom }}','{{ u.email or '' }}',{{ u.role_id }})" title="Modifier l'utilisateur">✏️ Modifier</button>
+        {% if u.id != user.id %}
+        <form method="post" action="{{ url_for('users.supprimer_utilisateur', id=u.id) }}"
+              onsubmit="return confirmForm(this, {title:'Désactiver l\'utilisateur',msg:'Confirmer la désactivation du compte de <strong>{{ u.prenom }} {{ u.nom }}</strong> ?',detail:'Cet agent ne pourra plus se connecter à l\'application.',type:'danger',confirmText:'🗑️ Désactiver',icon:'🗑️'})">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn btn-danger btn-xs" title="Désactiver le compte">🗑️</button>
+        </form>
+        {% else %}
+        <span class="badge b-sec" style="font-size:.7rem" title="Vous êtes connecté sur ce compte">🔒 Mon Compte</span>
+        {% endif %}
         {% endif %}
       </div>
     </div>
+    {% else %}
+    <div class="empty-state" style="grid-column:1/-1">
+      <span class="ei">👤</span>Aucun utilisateur actif enregistré
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- ONGLET 2 : RÔLES & HABILITATIONS                               -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="tab-roles" class="admin-tab-content" style="display:none">
+  <!-- Cartes descriptives des rôles officiels -->
+  <div class="role-desc-grid">
+    <div class="role-desc-card" style="--rc:#dc2626">
+      <h4>🔴 Super Administrateur</h4>
+      <p>Contrôle absolu sur l'ensemble du système, gestion de la commune, des rôles, des sauvegardes et de la sécurité.</p>
+    </div>
+    <div class="role-desc-card" style="--rc:#2563eb">
+      <h4>🔵 Administrateur</h4>
+      <p>Supervision globale des dossiers fiscaux, contribuables, arrêtés fiscaux, états récapitulatifs et statistiques.</p>
+    </div>
+    <div class="role-desc-card" style="--rc:#d97706">
+      <h4>🟡 Agent d'Assiette</h4>
+      <p>Recensement des redevables, création des dossiers fiscaux, liquidation des taxes et génération des bulletins de versement.</p>
+    </div>
+    <div class="role-desc-card" style="--rc:#059669">
+      <h4>🟢 Régisseur des Recettes</h4>
+      <p>Encaissement exclusif des paiements, émission des quittances officielles, gestion de la caisse et export TGR.</p>
+    </div>
+    <div class="role-desc-card" style="--rc:#64748b">
+      <h4>⚪ Consultant</h4>
+      <p>Consultation en lecture seule pour audit, contrôle interne, inspections et consultation de statistiques.</p>
+    </div>
+  </div>
+
+  <!-- Matrice des droits globaux -->
+  <div class="matrix-table-card">
+    <div class="matrix-table-header">
+      <div>
+        <h3 style="margin:0;font-size:1.1rem;font-weight:900">📋 Matrice des Habilitations Globales par Rôle</h3>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:2px">Droits d'actions globaux accordés aux profils d'utilisateurs</div>
+      </div>
+      {% if user.peut_config %}
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn btn-accent btn-sm" onclick="switchAdminTab('tab-droits', document.querySelectorAll('.admin-tab-btn')[2])">🛡️ Droits par Module</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-role')">➕ Nouveau Rôle</button>
+      </div>
+      {% endif %}
+    </div>
+
     <div class="table-responsive">
-      <table>
+      <table class="matrix-table">
         <thead>
           <tr>
-            <th>Rôle</th>
-            <th>Voir</th><th>Ajouter</th><th>Modifier</th><th>Supprimer</th>
-            <th>Créer Bulletin</th><th>Valider Paiement</th><th>Config</th>
+            <th>Rôle / Profil</th>
+            <th>👁️ Voir</th>
+            <th>➕ Ajouter</th>
+            <th>✏️ Modifier</th>
+            <th>🗑️ Supprimer</th>
+            <th>📄 Bulletins</th>
+            <th>💳 Encaisser</th>
+            <th>⚙️ Config</th>
             {% if user.peut_config %}<th>Actions</th>{% endif %}
           </tr>
         </thead>
         <tbody>
-          {% set role_styles = {'super_admin':'b-danger','admin':'b-primary','agent_assiette':'b-warn','regisseur':'b-ok','consultant':'b-sec'} %}
           {% for r in roles %}
           <tr>
-            <td><span class="badge {{ role_styles.get(r.nom, 'b-sec') }}">{{ r.nom }}</span></td>
-            <td class="text-center">{% if r.peut_voir %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
-            <td class="text-center">{% if r.peut_ajouter %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
-            <td class="text-center">{% if r.peut_modifier %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
-            <td class="text-center">{% if r.peut_supprimer %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
-            <td class="text-center">{% if r.peut_creer_bulletin %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
-            <td class="text-center">{% if r.peut_valider_paiement %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
-            <td class="text-center">{% if r.peut_config %}<span class="check-yes">✓</span>{% else %}<span class="check-no">✗</span>{% endif %}</td>
+            <td>
+              <strong style="font-size:.92rem;color:var(--ink-900)">{{ r.nom }}</strong>
+              <div style="font-size:.72rem;color:var(--muted)">ID: {{ r.id }}</div>
+            </td>
+            <td>{% if r.peut_voir %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
+            <td>{% if r.peut_ajouter %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
+            <td>{% if r.peut_modifier %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
+            <td>{% if r.peut_supprimer %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
+            <td>{% if r.peut_creer_bulletin %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
+            <td>{% if r.peut_valider_paiement %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
+            <td>{% if r.peut_config %}<span class="chk-icon-yes">✓</span>{% else %}<span class="chk-icon-no">✕</span>{% endif %}</td>
             {% if user.peut_config %}
             <td>
-              <div style="display:flex;gap:6px">
-                <button class="btn btn-outline btn-xs" onclick="openModalModifRole({{ r.id }},'{{ r.nom }}',{{ r.peut_voir }},{{ r.peut_ajouter }},{{ r.peut_modifier }},{{ r.peut_supprimer }},{{ r.peut_creer_bulletin }},{{ r.peut_valider_paiement }},{{ r.peut_config }})">✏️ Modifier</button>
-                <form method="post" action="{{ url_for('supprimer_role', id=r.id) }}"
-                  data-confirm="danger"
-                  data-confirm-title="Supprimer le rôle"
-                  data-confirm-msg="Supprimer le rôle « {{ r.nom }} » ?"
-                  data-confirm-detail="Impossible si des utilisateurs utilisent ce rôle.">
-                  <button type="submit" class="btn btn-danger btn-xs">🗑️</button>
+              <div style="display:flex;gap:6px;justify-content:center">
+                <button class="btn btn-outline btn-xs" onclick="openModalModifRole({{ r.id }},'{{ r.nom }}',{{ r.peut_voir }},{{ r.peut_ajouter }},{{ r.peut_modifier }},{{ r.peut_supprimer }},{{ r.peut_creer_bulletin }},{{ r.peut_valider_paiement }},{{ r.peut_config }})" title="Modifier les droits">✏️</button>
+                {% if r.nom not in ('super_admin', 'admin', 'agent_assiette', 'regisseur') %}
+                <form method="post" action="{{ url_for('users.supprimer_role', id=r.id) }}"
+                      onsubmit="return confirmForm(this, {title:'Supprimer le rôle',msg:'Supprimer définitivement le rôle « <strong>{{ r.nom }}</strong> » ?',detail:'Impossible si des utilisateurs lui sont encore rattachés.',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                  <button type="submit" class="btn btn-danger btn-xs" title="Supprimer ce rôle">🗑️</button>
                 </form>
+                {% endif %}
               </div>
             </td>
             {% endif %}
@@ -353,281 +668,373 @@
         </tbody>
       </table>
     </div>
-    <div style="padding:10px 16px;background:var(--bg);font-size:.72rem;color:var(--muted)">
-      💡 <strong>Agent Assiette:</strong> Crée déclarations + bulletins. <strong>Régisseur:</strong> Valide et encaisse uniquement. <strong>Consultant:</strong> Lecture seule.
-    </div>
   </div>
 </div>
 
 
-
-{# ════════════════════════════════════════════════════════════
-   ONGLET DROITS PAR MODULE
-════════════════════════════════════════════════════════════ #}
-<div id="tab-droits" class="tab-content">
-{# ── En-tête ── #}
-<div class="rbac-header">
-  <div>
-    <h2>🛡️ Contrôle d'Accès par Module (RBAC)</h2>
-    <p>Définissez précisément quels modules chaque rôle peut consulter, créer, modifier ou supprimer.</p>
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- ONGLET 3 : DROITS D'ACCÈS PAR MODULE (RBAC)                    -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="tab-droits" class="admin-tab-content" style="display:none">
+  <!-- Rôles sélecteurs -->
+  <div class="rbac-role-nav" id="rbacRoleNav">
+    {% for role in roles %}
+    <button class="rbac-role-btn {% if loop.first %}active{% endif %}"
+            onclick="activateRbacRole('{{ role.id }}')"
+            id="rbac-tab-{{ role.id }}">
+      <span>🎭 {{ role.nom }}</span>
+      {% if role.nom in ('super_admin', 'admin') %}
+      <span class="badge b-danger" style="font-size:.65rem">🔒 Admin</span>
+      {% endif %}
+    </button>
+    {% endfor %}
   </div>
-  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-    <span class="legend-pill legend-voir">👁️ Voir</span>
-    <span class="legend-pill legend-ajouter">➕ Ajouter</span>
-    <span class="legend-pill legend-modifier">✏️ Modifier</span>
-    <span class="legend-pill legend-suppr">🗑️ Supprimer</span>
-  </div>
-</div>
 
-{# ── Navigation des rôles ── #}
-<div class="role-tabs" id="role-tabs-nav">
+  <!-- Panneaux par rôle -->
   {% for role in roles %}
-  {% set role_colors = {'super_admin':'#dc2626','admin':'#2563eb','agent_assiette':'#d97706','regisseur':'#16a34a','consultant':'#6b7280'} %}
-  <button class="role-tab {% if loop.first %}active{% endif %}"
-    onclick="activateRole('{{ role.id }}')"
-    id="tab-btn-{{ role.id }}"
-    style="{% if loop.first %}background:var(--primary);color:#fff;border-color:var(--primary);{% endif %}">
-    <span>{{ role_colors.get(role.nom, '⚙️') and '' }}{{ role.nom }}</span>
-    {% if role.nom in ('super_admin', 'admin') %}
-    <span class="lock-badge">🔒 Admin</span>
-    {% endif %}
-  </button>
-  {% endfor %}
-</div>
-
-{# ── Panneaux par rôle ── #}
-{% for role in roles %}
-<div class="role-panel {% if loop.first %}active{% endif %}" id="panel-{{ role.id }}" data-role-id="{{ role.id }}">
-
-  {# Header du panneau #}
-  <div class="role-panel-header">
-    <div>
-      <h3>🎭 Rôle : {{ role.nom }}</h3>
-      <div style="font-size:.75rem;color:var(--muted);margin-top:2px;">
-        {% if role.nom in ('super_admin', 'admin') %}
-          <span class="lock-badge">🔒 Accès total automatique — non modifiable</span>
-        {% else %}
-          Configurez les droits d'accès aux modules pour ce rôle
+  <div class="rbac-role-panel" id="rbac-panel-{{ role.id }}" style="{% if not loop.first %}display:none{% endif %}">
+    
+    <div class="module-table-card mb-3">
+      <div class="module-table-header">
+        <div>
+          <h3 style="margin:0">🛡️ Permissions du Rôle : <span style="color:var(--primary)">{{ role.nom }}</span></h3>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">
+            {% if role.nom in ('super_admin', 'admin') %}
+            🔒 Les administrateurs disposent d'un accès total garanti à tous les modules fiscaux.
+            {% else %}
+            Configurez précisément les autorisations d'accès pour chaque module fiscal de la commune.
+            {% endif %}
+          </div>
+        </div>
+        {% if role.nom not in ('super_admin', 'admin') and user.peut_config %}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-ok btn-xs" onclick="setAllRbac('{{ role.id }}', true)">✅ Tout Autoriser</button>
+          <button type="button" class="btn btn-outline btn-xs" onclick="setAllViewRbac('{{ role.id }}')">👁️ Lecture Seule</button>
+          <button type="button" class="btn btn-danger btn-xs" onclick="setAllRbac('{{ role.id }}', false)">🚫 Tout Bloquer</button>
+        </div>
         {% endif %}
       </div>
     </div>
-    {% if role.nom not in ('super_admin', 'admin') %}
-    <div class="role-panel-tools">
-      <button class="quick-btn quick-tout-ouvrir" onclick="setAll('{{ role.id }}', true)">✅ Tout ouvrir</button>
-      <button class="quick-btn quick-lecture-seule" onclick="setAllView('{{ role.id }}')">👁️ Lecture seule</button>
-      <button class="quick-btn quick-tout-fermer" onclick="setAll('{{ role.id }}', false)">🚫 Tout fermer</button>
-    </div>
-    {% endif %}
-  </div>
 
-  {% if role.nom in ('super_admin', 'admin') %}
-    {# Affichage read-only pour admin #}
-    <div class="alert alert-info" style="margin-bottom:16px;">
-      ℹ️ Les rôles <strong>super_admin</strong> et <strong>admin</strong> ont automatiquement accès à <strong>tous les modules</strong> avec tous les droits. Cette configuration ne peut pas être modifiée.
-    </div>
+    {% if role.nom in ('super_admin', 'admin') %}
+    <!-- Rôle admin en lecture seule -->
     <div class="mod-perm-grid">
       {% for mod in modules %}
       <div class="mod-perm-row has-access">
-        <div class="mod-perm-row-header" style="cursor:default;">
-          <div class="mod-icon">{{ mod.icone }}</div>
-          <div style="flex:1;">
-            <div class="mod-name">{{ mod.libelle }}</div>
-            <div class="mod-code">{{ mod.code }}</div>
+        <div class="mod-perm-row-header">
+          <div class="mod-icon-box">{{ mod.icone }}</div>
+          <div style="flex:1">
+            <strong style="font-size:.9rem;color:var(--ink-900)">{{ mod.libelle }}</strong>
+            <div style="font-size:.72rem;color:var(--muted)">{{ mod.code }}</div>
           </div>
-          <div style="display:flex;gap:5px;">
-            <span class="chip chip-voir">👁️ Voir</span>
-            <span class="chip chip-ajouter">➕ Ajouter</span>
-            <span class="chip chip-modifier">✏️ Modifier</span>
-            <span class="chip chip-suppr">🗑️ Supprimer</span>
-          </div>
+          <span class="badge b-ok" style="font-size:.72rem">✅ Accès Total</span>
+        </div>
+        <div class="mod-perm-checks" style="opacity:.6;pointer-events:none">
+          <label class="perm-check-item perm-voir"><input type="checkbox" checked disabled><span>👁️ Voir</span></label>
+          <label class="perm-check-item perm-ajouter"><input type="checkbox" checked disabled><span>➕ Ajouter</span></label>
+          <label class="perm-check-item perm-modifier"><input type="checkbox" checked disabled><span>✏️ Modifier</span></label>
+          <label class="perm-check-item perm-suppr"><input type="checkbox" checked disabled><span>🗑️ Supprimer</span></label>
         </div>
       </div>
       {% endfor %}
     </div>
 
-  {% else %}
-    {# Formulaire éditable #}
-    <form method="post" action="{{ url_for('sauvegarder_permissions_role', role_id=role.id) }}"
-          id="form-role-{{ role.id }}">
+    {% else %}
+    <!-- Rôle éditable -->
+    <form method="post" action="{{ url_for('users.sauvegarder_permissions_role', role_id=role.id) }}" id="form-rbac-{{ role.id }}">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-      <div class="mod-perm-grid" id="grid-{{ role.id }}">
+      
+      <div class="mod-perm-grid">
         {% for mod in modules %}
         {% set p = perms.get(role.id, {}).get(mod.code, {}) %}
-        {% set has_view = p.get('peut_voir', 0) %}
-        <div class="mod-perm-row {{ 'has-access' if has_view else 'no-access' }}"
-             id="row-{{ role.id }}-{{ mod.code }}">
-          <div class="mod-perm-row-header" onclick="toggleModRow('{{ role.id }}', '{{ mod.code }}')">
-            <div class="mod-icon">{{ mod.icone }}</div>
-            <div style="flex:1;">
-              <div class="mod-name">{{ mod.libelle }}</div>
-              <div class="mod-code">{{ mod.code }}</div>
+        {% set has_v = p.get('peut_voir', 0) %}
+        <div class="mod-perm-row {{ 'has-access' if has_v else 'no-access' }}" id="row-{{ role.id }}-{{ mod.code }}">
+          <div class="mod-perm-row-header">
+            <div class="mod-icon-box">{{ mod.icone }}</div>
+            <div style="flex:1">
+              <strong style="font-size:.9rem;color:var(--ink-900)">{{ mod.libelle }}</strong>
+              <div style="font-size:.72rem;color:var(--muted)">{{ mod.code }}</div>
             </div>
-            <div id="chips-{{ role.id }}-{{ mod.code }}" style="display:flex;gap:4px;flex-wrap:wrap;">
-              {% if p.get('peut_voir',0) %}
-                <span class="chip chip-voir">👁️ Voir</span>
-              {% endif %}
-              {% if p.get('peut_ajouter',0) %}
-                <span class="chip chip-ajouter">➕</span>
-              {% endif %}
-              {% if p.get('peut_modifier',0) %}
-                <span class="chip chip-modifier">✏️</span>
-              {% endif %}
-              {% if p.get('peut_supprimer',0) %}
-                <span class="chip chip-suppr">🗑️</span>
-              {% endif %}
+            <div id="chips-{{ role.id }}-{{ mod.code }}" style="display:flex;gap:4px">
+              {% if p.get('peut_voir',0) %}<span class="badge b-info" style="font-size:.65rem">👁️</span>{% endif %}
+              {% if p.get('peut_ajouter',0) %}<span class="badge b-ok" style="font-size:.65rem">➕</span>{% endif %}
+              {% if p.get('peut_modifier',0) %}<span class="badge b-warn" style="font-size:.65rem">✏️</span>{% endif %}
+              {% if p.get('peut_supprimer',0) %}<span class="badge b-danger" style="font-size:.65rem">🗑️</span>{% endif %}
             </div>
-            <span style="font-size:.75rem;color:var(--muted);margin-left:8px;">▼</span>
           </div>
-
-          <div class="perm-checks" id="checks-{{ role.id }}-{{ mod.code }}">
-            <label class="perm-check-item perm-voir"
-                   id="lbl-voir-{{ role.id }}-{{ mod.code }}">
-              <input type="checkbox"
-                     name="{{ mod.code }}_voir"
-                     id="cb-voir-{{ role.id }}-{{ mod.code }}"
+          <div class="mod-perm-checks">
+            <label class="perm-check-item perm-voir">
+              <input type="checkbox" name="{{ mod.code }}_voir" id="cb-voir-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_voir',0) %}checked{% endif %}
-                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'voir', this.checked)">
-              <span class="perm-label">👁️ Voir</span>
+                     onchange="onRbacPermChange('{{ role.id }}', '{{ mod.code }}', 'voir', this.checked)">
+              <span>👁️ Voir</span>
             </label>
             <label class="perm-check-item perm-ajouter">
-              <input type="checkbox"
-                     name="{{ mod.code }}_ajouter"
-                     id="cb-ajouter-{{ role.id }}-{{ mod.code }}"
+              <input type="checkbox" name="{{ mod.code }}_ajouter" id="cb-ajouter-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_ajouter',0) %}checked{% endif %}
-                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'ajouter', this.checked)">
-              <span class="perm-label">➕ Ajouter</span>
+                     onchange="onRbacPermChange('{{ role.id }}', '{{ mod.code }}', 'ajouter', this.checked)">
+              <span>➕ Ajouter</span>
             </label>
             <label class="perm-check-item perm-modifier">
-              <input type="checkbox"
-                     name="{{ mod.code }}_modifier"
-                     id="cb-modifier-{{ role.id }}-{{ mod.code }}"
+              <input type="checkbox" name="{{ mod.code }}_modifier" id="cb-modifier-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_modifier',0) %}checked{% endif %}
-                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'modifier', this.checked)">
-              <span class="perm-label">✏️ Modifier</span>
+                     onchange="onRbacPermChange('{{ role.id }}', '{{ mod.code }}', 'modifier', this.checked)">
+              <span>✏️ Modifier</span>
             </label>
             <label class="perm-check-item perm-suppr">
-              <input type="checkbox"
-                     name="{{ mod.code }}_supprimer"
-                     id="cb-suppr-{{ role.id }}-{{ mod.code }}"
+              <input type="checkbox" name="{{ mod.code }}_supprimer" id="cb-suppr-{{ role.id }}-{{ mod.code }}"
                      {% if p.get('peut_supprimer',0) %}checked{% endif %}
-                     onchange="onPermChange('{{ role.id }}', '{{ mod.code }}', 'suppr', this.checked)">
-              <span class="perm-label">🗑️ Supprimer</span>
+                     onchange="onRbacPermChange('{{ role.id }}', '{{ mod.code }}', 'suppr', this.checked)">
+              <span>🗑️ Supprimer</span>
             </label>
           </div>
         </div>
         {% endfor %}
       </div>
 
-      {# ── Barre d'enregistrement ── #}
+      <!-- Barre d'enregistrement sticky -->
       <div class="save-bar">
-        <div class="save-bar-info">
-          Rôle : <strong>{{ role.nom }}</strong> —
-          <span id="modified-count-{{ role.id }}" style="color:rgba(255,255,255,.5)">Aucune modification</span>
+        <div style="color:#ffffff;font-size:.85rem">
+          Permissions pour <strong>{{ role.nom }}</strong> :
+          <span id="rbac-count-{{ role.id }}" style="color:#fbbf24;font-weight:700">Modifications prêtes</span>
         </div>
-        <button type="submit" class="btn btn-accent" style="padding:10px 24px;font-size:.88rem;">
-          💾 Enregistrer les permissions
-        </button>
+        <button type="submit" class="btn btn-accent btn-sm">💾 Enregistrer les permissions</button>
       </div>
     </form>
-  {% endif %}
+    {% endif %}
 
-</div><!-- /role-panel -->
-{% endfor %}
-
-
+  </div>
+  {% endfor %}
 </div>
 
-{# ════ MODALE — Modifier Utilisateur ══════════════════════ #}
-<div class="modal-overlay" id="modal-modif-user">
-  <div class="modal" style="max-width:500px">
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODALES MODERNES                                               -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<!-- MODAL 1 : Nouvel Utilisateur -->
+<div class="modal-overlay" id="modal-add-user">
+  <div class="modal modal-md">
     <div class="modal-header">
-      <h3>✏️ Modifier l'Utilisateur</h3>
-      <button class="modal-close" onclick="closeModal('modal-modif-user')">✕</button>
+      <div class="modal-header-left">
+        <div class="modal-avatar">👤</div>
+        <div>
+          <h3>Nouvel Utilisateur Municipal</h3>
+          <div class="modal-header-sub">Création d'un compte agent avec profil de sécurité et mot de passe</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-add-user')" title="Fermer">✕</button>
     </div>
-    <form method="post" id="form-modif-user">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-      <div class="modal-body">
+    <div class="modal-body">
+      <form method="post" action="{{ url_for('users.ajouter_utilisateur') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        
+        <div class="modal-section-title">🪪 1. Identité de l'Agent</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Nom de famille *</label>
+            <input name="nom" required placeholder="Nom">
+          </div>
+          <div class="form-group">
+            <label>Prénom *</label>
+            <input name="prenom" required placeholder="Prénom">
+          </div>
+        </div>
+
+        <div class="modal-section-title">🔐 2. Identifiant de Connexion & Sécurité</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Nom d'utilisateur (Identifiant de connexion) *</label>
+            <input name="username" required placeholder="ex: ahmed.benani" style="font-weight:700">
+          </div>
+          <div class="form-group">
+            <label>Mot de passe initial * <span style="font-size:.68rem;color:var(--muted)">(min. 6 car.)</span></label>
+            <input name="password" type="password" required minlength="6" placeholder="••••••••">
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <label>Adresse Email professionnelle <small style="color:var(--muted)">(facultative)</small></label>
+          <input name="email" type="email" placeholder="agent@commune.ma">
+        </div>
+
+        <div class="modal-section-title">🎭 3. Profil de Rôle & Habilitations</div>
+        <div class="form-group mb-3">
+          <label>Rôle attribué *</label>
+          <select name="role_id" required style="height:44px;font-weight:700">
+            {% for r in roles %}
+            <option value="{{ r.id }}">{{ r.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-user')">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Créer l'Utilisateur</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 2 : Modifier Utilisateur -->
+<div class="modal-overlay" id="modal-modif-user">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-avatar">✏️</div>
+        <div>
+          <h3>Modifier le Compte Utilisateur</h3>
+          <div class="modal-header-sub">Mise à jour des coordonnées, du profil de rôle ou réinitialisation du mot de passe</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-modif-user')" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" id="form-modif-user">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        
+        <div class="modal-section-title">🪪 1. Identité</div>
         <div class="form-grid mb-3">
           <div class="form-group"><label>Nom *</label><input name="nom" id="mu-nom" required></div>
           <div class="form-group"><label>Prénom *</label><input name="prenom" id="mu-prenom" required></div>
         </div>
-        <div class="form-group mb-3"><label>Email *</label><input name="email" id="mu-email" type="email" required></div>
-        <div class="form-group mb-3">
-          <label>Nouveau mot de passe <span style="font-weight:400;color:var(--muted)">(laisser vide = inchangé)</span></label>
-          <input name="password" type="password" minlength="6" placeholder="Laisser vide pour ne pas changer">
+
+        <div class="modal-section-title">🔐 2. Identifiants & Sécurité</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Nom d'utilisateur (Identifiant) *</label>
+            <input name="username" id="mu-username" required style="font-weight:700">
+          </div>
+          <div class="form-group">
+            <label>Nouveau mot de passe <small style="color:var(--muted)">(vide = inchangé)</small></label>
+            <input name="password" type="password" minlength="6" placeholder="Laisser vide si inchangé">
+          </div>
         </div>
         <div class="form-group mb-3">
-          <label>Rôle *</label>
-          <select name="role_id" id="mu-role" required>
+          <label>Email professionnelle</label>
+          <input name="email" id="mu-email" type="email" placeholder="agent@commune.ma">
+        </div>
+
+        <div class="modal-section-title">🎭 3. Rôle</div>
+        <div class="form-group mb-3">
+          <label>Rôle attribué *</label>
+          <select name="role_id" id="mu-role" required style="height:44px;font-weight:700">
             {% for r in roles %}<option value="{{ r.id }}">{{ r.nom }}</option>{% endfor %}
           </select>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-modif-user')">Annuler</button>
-        <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-      </div>
-    </form>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-modif-user')">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer les Modifications</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
-{# ════ MODALE — Nouveau Rôle ══════════════════════════════ #}
+<!-- MODAL 3 : Nouveau Rôle -->
 <div class="modal-overlay" id="modal-add-role">
-  <div class="modal" style="max-width:560px">
+  <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>➕ Nouveau Rôle</h3>
-      <button class="modal-close" onclick="closeModal('modal-add-role')">✕</button>
-    </div>
-    <form method="post" action="{{ url_for('ajouter_role') }}">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-      <div class="modal-body">
-        <div class="form-group mb-3"><label>Nom du rôle *</label><input name="nom" required placeholder="ex: superviseur"></div>
-        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Permissions</label>
-        <div class="perm-grid">
-          <label class="perm-item"><input type="checkbox" name="peut_voir" checked><span>👁️ Voir</span></label>
-          <label class="perm-item"><input type="checkbox" name="peut_ajouter"><span>➕ Ajouter</span></label>
-          <label class="perm-item"><input type="checkbox" name="peut_modifier"><span>✏️ Modifier</span></label>
-          <label class="perm-item"><input type="checkbox" name="peut_supprimer"><span>🗑️ Supprimer</span></label>
-          <label class="perm-item"><input type="checkbox" name="peut_creer_bulletin"><span>📄 Créer Bulletin</span></label>
-          <label class="perm-item"><input type="checkbox" name="peut_valider_paiement"><span>✅ Valider Paiement</span></label>
-          <label class="perm-item"><input type="checkbox" name="peut_config"><span>⚙️ Configuration</span></label>
+      <div class="modal-header-left">
+        <div class="modal-avatar">🎭</div>
+        <div>
+          <h3>Nouveau Rôle & Profil de Sécurité</h3>
+          <div class="modal-header-sub">Définition d'un profil d'agent et de ses permissions opérationnelles globales</div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-role')">Annuler</button>
-        <button type="submit" class="btn btn-primary">💾 Créer</button>
-      </div>
-    </form>
+      <button class="modal-close" onclick="closeModal('modal-add-role')" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{{ url_for('users.ajouter_role') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group mb-3">
+          <label>Nom de code du rôle * <span style="font-size:.68rem;color:var(--muted)">(ex: inspecteur_fiscal, chef_bureau...)</span></label>
+          <input name="nom" required placeholder="nom_du_role" style="font-weight:700">
+        </div>
+
+        <div class="modal-section-title">🛡️ Habilitations Globales Accordées</div>
+        <div class="form-grid mb-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+          <label class="perm-check-item perm-voir"><input type="checkbox" name="peut_voir" checked><span>👁️ Voir les dossiers</span></label>
+          <label class="perm-check-item perm-ajouter"><input type="checkbox" name="peut_ajouter"><span>➕ Créer des dossiers</span></label>
+          <label class="perm-check-item perm-modifier"><input type="checkbox" name="peut_modifier"><span>✏️ Modifier dossiers</span></label>
+          <label class="perm-check-item perm-suppr"><input type="checkbox" name="peut_supprimer"><span>🗑️ Supprimer dossiers</span></label>
+          <label class="perm-check-item"><input type="checkbox" name="peut_creer_bulletin"><span>📄 Créer Bulletins</span></label>
+          <label class="perm-check-item"><input type="checkbox" name="peut_valider_paiement"><span>💳 Valider Paiements</span></label>
+          <label class="perm-check-item"><input type="checkbox" name="peut_config"><span>⚙️ Paramétrage Système</span></label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-role')">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Créer le Rôle</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
-{# ════ MODALE — Modifier Rôle ════════════════════════════ #}
+<!-- MODAL 4 : Modifier Rôle -->
 <div class="modal-overlay" id="modal-modif-role">
-  <div class="modal" style="max-width:560px">
+  <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>✏️ Modifier le Rôle</h3>
-      <button class="modal-close" onclick="closeModal('modal-modif-role')">✕</button>
-    </div>
-    <form method="post" id="form-modif-role">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-      <div class="modal-body">
-        <div class="form-group mb-3"><label>Nom du rôle *</label><input name="nom" id="mr-nom" required></div>
-        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Permissions</label>
-        <div class="perm-grid">
-          <label class="perm-item"><input type="checkbox" id="mr-voir" name="peut_voir"><span>👁️ Voir</span></label>
-          <label class="perm-item"><input type="checkbox" id="mr-ajouter" name="peut_ajouter"><span>➕ Ajouter</span></label>
-          <label class="perm-item"><input type="checkbox" id="mr-modifier" name="peut_modifier"><span>✏️ Modifier</span></label>
-          <label class="perm-item"><input type="checkbox" id="mr-supprimer" name="peut_supprimer"><span>🗑️ Supprimer</span></label>
-          <label class="perm-item"><input type="checkbox" id="mr-bulletin" name="peut_creer_bulletin"><span>📄 Créer Bulletin</span></label>
-          <label class="perm-item"><input type="checkbox" id="mr-valider" name="peut_valider_paiement"><span>✅ Valider Paiement</span></label>
-          <label class="perm-item"><input type="checkbox" id="mr-config" name="peut_config"><span>⚙️ Configuration</span></label>
+      <div class="modal-header-left">
+        <div class="modal-avatar">✏️</div>
+        <div>
+          <h3>Modifier le Profil de Rôle</h3>
+          <div class="modal-header-sub">Mise à jour du libellé et des permissions globales associées</div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-modif-role')">Annuler</button>
-        <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+      <button class="modal-close" onclick="closeModal('modal-modif-role')" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" id="form-modif-role">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group mb-3">
+          <label>Nom du rôle *</label>
+          <input name="nom" id="mr-nom" required style="font-weight:700">
+        </div>
+
+        <div class="modal-section-title">🛡️ Habilitations Globales</div>
+        <div class="form-grid mb-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+          <label class="perm-check-item perm-voir"><input type="checkbox" id="mr-voir" name="peut_voir"><span>👁️ Voir les dossiers</span></label>
+          <label class="perm-check-item perm-ajouter"><input type="checkbox" id="mr-ajouter" name="peut_ajouter"><span>➕ Créer dossiers</span></label>
+          <label class="perm-check-item perm-modifier"><input type="checkbox" id="mr-modifier" name="peut_modifier"><span>✏️ Modifier dossiers</span></label>
+          <label class="perm-check-item perm-suppr"><input type="checkbox" id="mr-supprimer" name="peut_supprimer"><span>🗑️ Supprimer dossiers</span></label>
+          <label class="perm-check-item"><input type="checkbox" id="mr-bulletin" name="peut_creer_bulletin"><span>📄 Créer Bulletins</span></label>
+          <label class="perm-check-item"><input type="checkbox" id="mr-valider" name="peut_valider_paiement"><span>💳 Valider Paiements</span></label>
+          <label class="perm-check-item"><input type="checkbox" id="mr-config" name="peut_config"><span>⚙️ Paramétrage</span></label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-modif-role')">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer les Modifications</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 5 : Inspection des Droits Utilisateur -->
+<div class="modal-overlay" id="modal-user-perms">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-avatar">🔍</div>
+        <div>
+          <h3 id="mup-title">Permissions de l'Utilisateur</h3>
+          <div class="modal-header-sub" id="mup-sub">Détail des accès par module</div>
+        </div>
       </div>
-    </form>
+      <button class="modal-close" onclick="closeModal('modal-user-perms')" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body" id="mup-body">
+      <div style="text-align:center;padding:20px"><span class="spinner"></span> Chargement...</div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary btn-sm" onclick="closeModal('modal-user-perms')">Fermer</button>
+    </div>
   </div>
 </div>
 
@@ -635,172 +1042,196 @@
 
 {% block extra_js %}
 <script>
-function openModalModifUser(id, nom, prenom, email, roleId) {
-  document.getElementById('form-modif-user').action = '/utilisateurs/' + id + '/modifier';
-  document.getElementById('mu-nom').value     = nom;
-  document.getElementById('mu-prenom').value  = prenom;
-  document.getElementById('mu-email').value   = email;
-  document.getElementById('mu-role').value    = roleId;
-  const sel = document.getElementById('mu-commune');
-  sel.value = communeId !== null ? String(communeId) : '';
-  openModal('modal-modif-user');
+// ── Gestion des onglets principaux ──────────────────────────
+function switchAdminTab(tabId, btn) {
+  document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
+  document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+  
+  const target = document.getElementById(tabId);
+  if (target) target.style.display = '';
+  if (btn) btn.classList.add('active');
+  
+  window.location.hash = tabId;
 }
 
-function openModalModifRole(id, nom, voir, ajouter, modifier, supprimer, bulletin, valider, config) {
-  document.getElementById('form-modif-role').action = '/roles/' + id + '/modifier';
-  document.getElementById('mr-nom').value      = nom;
-  document.getElementById('mr-voir').checked     = !!voir;
-  document.getElementById('mr-ajouter').checked  = !!ajouter;
-  document.getElementById('mr-modifier').checked = !!modifier;
-  document.getElementById('mr-supprimer').checked= !!supprimer;
-  document.getElementById('mr-bulletin').checked = !!bulletin;
-  document.getElementById('mr-valider').checked  = !!valider;
-  document.getElementById('mr-config').checked   = !!config;
-  openModal('modal-modif-role');
-}
+// ── Filtrage de la liste des utilisateurs ───────────────────
+function filterUsersList() {
+  const q = (document.getElementById('searchUserInput').value || '').toLowerCase();
+  const role = (document.getElementById('filterUserRole').value || '').toLowerCase();
+  const cards = document.querySelectorAll('#userCardsContainer .user-profile-card');
+  let count = 0;
 
+  cards.forEach(card => {
+    const text = (card.getAttribute('data-name') || '').toLowerCase();
+    const r = (card.getAttribute('data-role') || '').toLowerCase();
 
-const MODULES = {{ modules | map(attribute='code') | list | tojson }};
+    const matchQ = !q || text.includes(q);
+    const matchR = !role || r === role;
 
-// ── Active un panneau de rôle ────────────────────────────────
-function activateRole(roleId) {
-  document.querySelectorAll('.role-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.role-tab').forEach(b => {
-    b.classList.remove('active');
-    b.style.background = '';
-    b.style.color = '';
-    b.style.borderColor = '';
+    if (matchQ && matchR) {
+      card.style.display = '';
+      count++;
+    } else {
+      card.style.display = 'none';
+    }
   });
-  document.getElementById(`panel-${roleId}`).classList.add('active');
-  const btn = document.getElementById(`tab-btn-${roleId}`);
-  btn.classList.add('active');
-  btn.style.background = 'var(--primary)';
-  btn.style.color = '#fff';
-  btn.style.borderColor = 'var(--primary)';
-}
 
-// ── Toggle affichage d'une ligne module ──────────────────────
-function toggleModRow(roleId, modCode) {
-  const checks = document.getElementById(`checks-${roleId}-${modCode}`);
-  const voire = document.getElementById(`cb-voir-${roleId}-${modCode}`);
-  if (!voire) return;
-  // Si pas "voir" -> cocher voir automatiquement
-  if (!voire.checked) {
-    voire.checked = true;
-    onPermChange(roleId, modCode, 'voir', true);
+  const countBadge = document.getElementById('userFilterCount');
+  if (countBadge) {
+    countBadge.textContent = (q || role) ? `${count} utilisateur(s) trouvé(s)` : '';
   }
 }
 
-// ── Quand la permission "voir" change ───────────────────────
-function onPermChange(roleId, modCode, perm, checked) {
+function resetUserFilters() {
+  document.getElementById('searchUserInput').value = '';
+  document.getElementById('filterUserRole').value = '';
+  filterUsersList();
+}
+
+// ── Modale Modification Utilisateur ──────────────────────────
+function openModalModifUser(id, username, nom, prenom, email, roleId) {
+  document.getElementById('form-modif-user').action = '/utilisateurs/' + id + '/modifier';
+  document.getElementById('mu-username').value = username || '';
+  document.getElementById('mu-nom').value      = nom;
+  document.getElementById('mu-prenom').value   = prenom;
+  document.getElementById('mu-email').value    = email || '';
+  document.getElementById('mu-role').value     = roleId;
+  openModal('modal-modif-user');
+}
+
+// ── Modale Modification Rôle ─────────────────────────────────
+function openModalModifRole(id, nom, voir, ajouter, modifier, supprimer, bulletin, valider, config) {
+  document.getElementById('form-modif-role').action = '/roles/' + id + '/modifier';
+  document.getElementById('mr-nom').value       = nom;
+  document.getElementById('mr-voir').checked      = !!voir;
+  document.getElementById('mr-ajouter').checked   = !!ajouter;
+  document.getElementById('mr-modifier').checked  = !!modifier;
+  document.getElementById('mr-supprimer').checked = !!supprimer;
+  document.getElementById('mr-bulletin').checked  = !!bulletin;
+  document.getElementById('mr-valider').checked   = !!valider;
+  document.getElementById('mr-config').checked    = !!config;
+  openModal('modal-modif-role');
+}
+
+// ── Inspection des Permissions d'un Utilisateur ──────────────
+function inspectUserPerms(userId, userName, roleName) {
+  document.getElementById('mup-title').textContent = `Permissions : ${userName}`;
+  document.getElementById('mup-sub').textContent = `Rôle associé : ${roleName}`;
+  const body = document.getElementById('mup-body');
+  body.innerHTML = '<div style="text-align:center;padding:20px">Chargement des droits...</div>';
+  openModal('modal-user-perms');
+
+  fetch(`/utilisateurs/${userId}/permissions`)
+    .then(r => r.json())
+    .then(data => {
+      if (roleName === 'super_admin' || roleName === 'admin') {
+        body.innerHTML = `
+          <div class="alert alert-info" style="margin-bottom:12px">
+            🔒 En tant qu'<strong>${roleName}</strong>, cet utilisateur possède un accès complet à tous les modules fiscaux.
+          </div>
+        `;
+        return;
+      }
+      let html = '<div style="display:grid;gap:8px">';
+      let count = 0;
+      for (const [code, perms] of Object.entries(data)) {
+        if (perms.peut_voir) {
+          count++;
+          html += `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
+              <strong style="font-size:.84rem">${code}</strong>
+              <div style="display:flex;gap:4px">
+                <span class="badge b-info" style="font-size:.65rem">👁️ Voir</span>
+                ${perms.peut_ajouter ? '<span class="badge b-ok" style="font-size:.65rem">➕ Ajouter</span>' : ''}
+                ${perms.peut_modifier ? '<span class="badge b-warn" style="font-size:.65rem">✏️ Modifier</span>' : ''}
+                ${perms.peut_supprimer ? '<span class="badge b-danger" style="font-size:.65rem">🗑️ Supprimer</span>' : ''}
+              </div>
+            </div>
+          `;
+        }
+      }
+      if (count === 0) {
+        html += '<div style="text-align:center;color:var(--muted);padding:14px">Aucune permission module accordée à ce rôle pour l\'instant.</div>';
+      }
+      html += '</div>';
+      body.innerHTML = html;
+    })
+    .catch(e => {
+      body.innerHTML = '<div style="color:var(--danger)">Erreur lors du chargement des permissions.</div>';
+    });
+}
+
+// ── Gestion RBAC par rôle ────────────────────────────────────
+function activateRbacRole(roleId) {
+  document.querySelectorAll('.rbac-role-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.rbac-role-btn').forEach(b => b.classList.remove('active'));
+  
+  const p = document.getElementById(`rbac-panel-${roleId}`);
+  if (p) p.style.display = '';
+  const btn = document.getElementById(`rbac-tab-${roleId}`);
+  if (btn) btn.classList.add('active');
+}
+
+const ALL_MODULES = {{ modules | map(attribute='code') | list | tojson }};
+
+function onRbacPermChange(roleId, modCode, perm, checked) {
   const row = document.getElementById(`row-${roleId}-${modCode}`);
   const vb  = document.getElementById(`cb-voir-${roleId}-${modCode}`);
-  // Si on décoche "voir", on décoche aussi tout
+  
   if (perm === 'voir' && !checked) {
     ['ajouter','modifier','suppr'].forEach(p => {
       const cb = document.getElementById(`cb-${p}-${roleId}-${modCode}`);
       if (cb) cb.checked = false;
     });
-    row.classList.remove('has-access');
-    row.classList.add('no-access');
+    if (row) { row.classList.remove('has-access'); row.classList.add('no-access'); }
   } else if (perm === 'voir' && checked) {
-    row.classList.add('has-access');
-    row.classList.remove('no-access');
+    if (row) { row.classList.add('has-access'); row.classList.remove('no-access'); }
   }
-  // Si on coche ajouter/modifier/suppr -> forcer voir
+
   if (['ajouter','modifier','suppr'].includes(perm) && checked && vb) {
     vb.checked = true;
-    row.classList.add('has-access');
-    row.classList.remove('no-access');
-  }
-  updateChips(roleId, modCode);
-  updateModifiedCount(roleId);
-}
-
-// ── Mettre à jour les chips visuelles ───────────────────────
-function updateChips(roleId, modCode) {
-  const chips = document.getElementById(`chips-${roleId}-${modCode}`);
-  if (!chips) return;
-  const voir  = document.getElementById(`cb-voir-${roleId}-${modCode}`)?.checked;
-  const aj    = document.getElementById(`cb-ajouter-${roleId}-${modCode}`)?.checked;
-  const mod   = document.getElementById(`cb-modifier-${roleId}-${modCode}`)?.checked;
-  const sup   = document.getElementById(`cb-suppr-${roleId}-${modCode}`)?.checked;
-  chips.innerHTML = '';
-  if (voir) chips.innerHTML += '<span class="chip chip-voir">👁️ Voir</span>';
-  if (aj)   chips.innerHTML += '<span class="chip chip-ajouter">➕</span>';
-  if (mod)  chips.innerHTML += '<span class="chip chip-modifier">✏️</span>';
-  if (sup)  chips.innerHTML += '<span class="chip chip-suppr">🗑️</span>';
-  // row border
-  const row = document.getElementById(`row-${roleId}-${modCode}`);
-  if (voir) { row.classList.add('has-access'); row.classList.remove('no-access'); }
-  else      { row.classList.remove('has-access'); row.classList.add('no-access'); }
-  updateModifiedCount(roleId);
-}
-
-// ── Compter les modules actifs ───────────────────────────────
-function updateModifiedCount(roleId) {
-  const form = document.getElementById(`form-role-${roleId}`);
-  if (!form) return;
-  const total = MODULES.length;
-  const active = MODULES.filter(code => {
-    const cb = document.getElementById(`cb-voir-${roleId}-${code}`);
-    return cb && cb.checked;
-  }).length;
-  const info = document.getElementById(`modified-count-${roleId}`);
-  if (info) {
-    info.textContent = `${active}/${total} module(s) activé(s)`;
-    info.style.color = active > 0 ? '#eab308' : 'rgba(255,255,255,.4)';
+    if (row) { row.classList.add('has-access'); row.classList.remove('no-access'); }
   }
 }
 
-// ── Actions rapides ──────────────────────────────────────────
-function setAll(roleId, enabled) {
-  MODULES.forEach(code => {
+function setAllRbac(roleId, enabled) {
+  ALL_MODULES.forEach(code => {
     ['voir','ajouter','modifier','suppr'].forEach(p => {
       const cb = document.getElementById(`cb-${p}-${roleId}-${code}`);
       if (cb) cb.checked = enabled;
     });
-    updateChips(roleId, code);
+    const row = document.getElementById(`row-${roleId}-${code}`);
+    if (row) {
+      if (enabled) { row.classList.add('has-access'); row.classList.remove('no-access'); }
+      else { row.classList.remove('has-access'); row.classList.add('no-access'); }
+    }
   });
 }
 
-function setAllView(roleId) {
-  MODULES.forEach(code => {
+function setAllViewRbac(roleId) {
+  ALL_MODULES.forEach(code => {
     const voir = document.getElementById(`cb-voir-${roleId}-${code}`);
     if (voir) voir.checked = true;
     ['ajouter','modifier','suppr'].forEach(p => {
       const cb = document.getElementById(`cb-${p}-${roleId}-${code}`);
       if (cb) cb.checked = false;
     });
-    updateChips(roleId, code);
+    const row = document.getElementById(`row-${roleId}-${code}`);
+    if (row) { row.classList.add('has-access'); row.classList.remove('no-access'); }
   });
 }
 
-// ── Init : comptes ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  {% for role in roles %}
-  {% if role.nom not in ('super_admin', 'admin') %}
-  updateModifiedCount('{{ role.id }}');
-  {% endif %}
-  {% endfor %}
-
-  // Handle hash in URL to open specific tab
+// ── Initialisation au chargement ─────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
   if (window.location.hash) {
-    const hash = window.location.hash.replace('#', '');
-    if (hash === 'tab-droits') {
-      const btn = document.querySelectorAll('.tab-btn')[2];
-      if (btn) showTab('tab-droits', btn);
-    } else if (hash === 'tab-roles') {
-      const btn = document.querySelectorAll('.tab-btn')[1];
-      if (btn) showTab('tab-roles', btn);
-    } else if (hash.startsWith('role-')) {
-      const roleId = hash.replace('role-', '');
-      const btn = document.querySelectorAll('.tab-btn')[2];
-      if (btn) showTab('tab-droits', btn);
-      activateRole(roleId);
+    const h = window.location.hash.replace('#', '');
+    if (h === 'tab-droits' || h === 'tab-roles' || h === 'tab-users') {
+      const idx = h === 'tab-users' ? 0 : (h === 'tab-roles' ? 1 : 2);
+      const btn = document.querySelectorAll('.admin-tab-btn')[idx];
+      if (btn) switchAdminTab(h, btn);
     }
   }
 });
-
 </script>
 {% endblock %}
+

@@ -115,8 +115,8 @@ CREATE TABLE IF NOT EXISTS role_module_permissions (
         UNIQUE(role_id, module_code)
     );
 CREATE TABLE IF NOT EXISTS utilisateurs (
-        id INTEGER PRIMARY KEY, nom TEXT, prenom TEXT,
-        email TEXT UNIQUE, mot_de_passe TEXT, role_id INTEGER,
+        id INTEGER PRIMARY KEY, username TEXT UNIQUE, nom TEXT, prenom TEXT,
+        email TEXT, mot_de_passe TEXT, role_id INTEGER,
         actif INTEGER DEFAULT 1, commune_id INTEGER
     );
 CREATE TABLE IF NOT EXISTS communes (
@@ -720,30 +720,56 @@ CREATE TABLE IF NOT EXISTS emission_config (
     # Commune depuis config.json (enregistrement unique ID=1)
     if cfg and cfg.get('commune'):
         cm = cfg['commune']
+        c_nom = cm.get('nom', '').strip()
         c.execute('''INSERT INTO communes (id, nom, nom_ar, region, region_ar, province, province_ar, logo)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
-                nom=excluded.nom, nom_ar=excluded.nom_ar,
+                nom=CASE WHEN excluded.nom != '' THEN excluded.nom ELSE communes.nom END,
+                nom_ar=excluded.nom_ar,
                 region=excluded.region, region_ar=excluded.region_ar,
                 province=excluded.province, province_ar=excluded.province_ar,
                 logo=excluded.logo''',
-            (cm.get('nom','Commune'), cm.get('nom_ar',''), cm.get('region',''),
+            (c_nom, cm.get('nom_ar',''), cm.get('region',''),
              cm.get('region_ar',''), cm.get('province',''), cm.get('province_ar',''),
              cm.get('logo', 'img/logo.png')))
         conn.commit()
     else:
-        c.execute("INSERT OR IGNORE INTO communes (id, nom) VALUES (1, 'Ma Commune')")
+        c.execute("INSERT OR IGNORE INTO communes (id, nom) VALUES (1, '')")
         conn.commit()
+
+    # Nettoyage automatique des noms par défaut historiques
+    try:
+        c.execute("UPDATE communes SET nom='' WHERE nom IN ('Ma Commune', 'Commune') AND id=1")
+        if cfg and cfg.get('commune', {}).get('nom'):
+            real_name = cfg['commune']['nom'].strip()
+            if real_name and real_name not in ('Ma Commune', 'Commune'):
+                c.execute("UPDATE communes SET nom=? WHERE id=1 AND (nom='' OR nom IS NULL)", (real_name,))
+        conn.commit()
+    except Exception as _e:
+        _logger.debug(f"Nettoyage nom commune par défaut : {_e}")
+
+    # Migration automatique username utilisateurs si colonne manquante
+    try:
+        u_cols = [col[1] for col in c.execute("PRAGMA table_info(utilisateurs)").fetchall()]
+        if 'username' not in u_cols:
+            c.execute("ALTER TABLE utilisateurs ADD COLUMN username TEXT")
+            users = c.execute("SELECT id, email, nom FROM utilisateurs").fetchall()
+            for u in users:
+                uname = (u['email'].split('@')[0] if u['email'] and '@' in u['email'] else (u['nom'] or f"user{u['id']}")).lower().strip()
+                c.execute("UPDATE utilisateurs SET username=? WHERE id=?", (uname, u['id']))
+            conn.commit()
+    except Exception as _e:
+        _logger.warning(f"Migration username utilisateurs: {_e}")
 
     # Admin par défaut
     from werkzeug.security import generate_password_hash
     pwd = generate_password_hash('admin123')
     admin_role = c.execute("SELECT id FROM roles WHERE nom='super_admin'").fetchone()
     if admin_role:
-        existing_admin = c.execute("SELECT id FROM utilisateurs WHERE email='admin@commune.ma'").fetchone()
+        existing_admin = c.execute("SELECT id FROM utilisateurs WHERE username='admin' OR email='admin@commune.ma'").fetchone()
         if not existing_admin:
-            c.execute('''INSERT OR IGNORE INTO utilisateurs (nom,prenom,email,mot_de_passe,role_id,commune_id)
-                VALUES (?,?,?,?,?,1)''', ('Admin','Super','admin@commune.ma',pwd,admin_role[0]))
+            c.execute('''INSERT OR IGNORE INTO utilisateurs (username,nom,prenom,email,mot_de_passe,role_id,commune_id)
+                VALUES (?,?,?,?,?,?,1)''', ('admin','Admin','Super','admin@commune.ma',pwd,admin_role[0]))
             conn.commit()
 
     # Rubriques avec codes budgétaires officiels

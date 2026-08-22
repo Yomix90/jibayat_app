@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from werkzeug.utils import secure_filename
 from datetime import date, datetime
 from database import get_db
-from modules.helpers import login_required, get_current_user
+from modules.helpers import login_required, get_current_user, permission_required
 
 bp = Blueprint('regie', __name__, url_prefix='/regie')
 
@@ -131,6 +131,7 @@ def paquets():
 
 @bp.route('/paquets/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'regie')
 def ajouter_paquet():
     user = get_current_user()
     f = request.form
@@ -153,6 +154,7 @@ def ajouter_paquet():
 
 @bp.route('/paquets/<int:pid>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'regie')
 def modifier_paquet(pid):
     f = request.form
     conn = get_db()
@@ -186,6 +188,7 @@ def modifier_paquet(pid):
 
 @bp.route('/paquets/<int:pid>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'regie')
 def supprimer_paquet(pid):
     conn = get_db()
     paquet = conn.execute('SELECT * FROM regie_paquets WHERE id=?', (pid,)).fetchone()
@@ -210,6 +213,7 @@ NB_CARNETS_PAR_PAQUET = 10
 
 @bp.route('/paquets/<int:pid>/ouvrir', methods=['POST'])
 @login_required
+@permission_required('modifier', 'regie')
 def ouvrir_paquet(pid):
     conn = get_db()
     paquet = conn.execute('SELECT * FROM regie_paquets WHERE id=?', (pid,)).fetchone()
@@ -311,6 +315,7 @@ def carnets():
 
 @bp.route('/carnets/<int:cid>/affecter', methods=['POST'])
 @login_required
+@permission_required('modifier', 'regie')
 def affecter_carnet(cid):
     f = request.form
     conn = get_db()
@@ -379,6 +384,7 @@ def versements():
 
 @bp.route('/versements/employe', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def versement_employe():
     f = request.form
     carnet_id = f.get('carnet_id')
@@ -413,6 +419,7 @@ def versement_employe():
 
 @bp.route('/versements/bordereau', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def creer_bordereau():
     user = get_current_user()
     f = request.form
@@ -490,6 +497,7 @@ def imprimer_bordereau(bid):
 
 @bp.route('/config')
 @login_required
+@permission_required('config')
 def config():
     user = get_current_user()
     conn = get_db()
@@ -506,6 +514,7 @@ def config():
 
 @bp.route('/config/service/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_service():
     conn = get_db()
     conn.execute("INSERT INTO regie_services (nom) VALUES (?)", (request.form['nom'],))
@@ -516,6 +525,7 @@ def ajouter_service():
 
 @bp.route('/config/service/<int:sid>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_service(sid):
     conn = get_db()
     conn.execute("UPDATE regie_services SET nom=? WHERE id=?", (request.form['nom'], sid))
@@ -526,6 +536,7 @@ def modifier_service(sid):
 
 @bp.route('/config/service/<int:sid>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_service(sid):
     conn = get_db()
     nb = conn.execute("SELECT COUNT(*) FROM regie_employes WHERE service_id=? AND actif=1", (sid,)).fetchone()[0]
@@ -541,6 +552,7 @@ def supprimer_service(sid):
 
 @bp.route('/config/service/<int:sid>/toggle', methods=['POST'])
 @login_required
+@permission_required('config')
 def toggle_service(sid):
     conn = get_db()
     conn.execute("UPDATE regie_services SET actif = 1-actif WHERE id=?", (sid,))
@@ -550,6 +562,7 @@ def toggle_service(sid):
 
 @bp.route('/config/employe/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_employe():
     f = request.form
     conn = get_db()
@@ -562,6 +575,7 @@ def ajouter_employe():
 
 @bp.route('/config/employe/<int:eid>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_employe(eid):
     f = request.form
     conn = get_db()
@@ -574,6 +588,7 @@ def modifier_employe(eid):
 
 @bp.route('/config/employe/<int:eid>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_employe(eid):
     conn = get_db()
     nb = conn.execute("SELECT COUNT(*) FROM regie_carnets WHERE employe_id=?", (eid,)).fetchone()[0]
@@ -589,6 +604,7 @@ def supprimer_employe(eid):
 
 @bp.route('/config/employe/<int:eid>/toggle', methods=['POST'])
 @login_required
+@permission_required('config')
 def toggle_employe(eid):
     conn = get_db()
     conn.execute("UPDATE regie_employes SET actif = 1-actif WHERE id=?", (eid,))
@@ -598,6 +614,7 @@ def toggle_employe(eid):
 
 @bp.route('/config/valeur/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_valeur():
     f = request.form
     conn = get_db()
@@ -610,6 +627,7 @@ def ajouter_valeur():
 
 @bp.route('/config/valeur/<int:vid>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_valeur(vid):
     f = request.form
     conn = get_db()
@@ -622,6 +640,7 @@ def modifier_valeur(vid):
 
 @bp.route('/config/valeur/<int:vid>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_valeur(vid):
     conn = get_db()
     nb = conn.execute("SELECT COUNT(*) FROM regie_carnets WHERE valeur_id=?", (vid,)).fetchone()[0]
@@ -654,6 +673,7 @@ def tgr_index():
 
 @bp.route('/tgr/upload', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def tgr_upload():
     user = get_current_user()
     if 'fichier' not in request.files:

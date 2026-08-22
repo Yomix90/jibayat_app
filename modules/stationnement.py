@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from datetime import datetime, date
 from database import get_db
 from modules.helpers import (login_required, get_current_user,
-                              get_tarifs_module, get_param, calculer_penalites)
+                              get_tarifs_module, get_param, calculer_penalites, get_next_seq_num, permission_required)
 
 bp = Blueprint('sta', __name__)
 
@@ -96,9 +96,10 @@ def sta_liste():
         'SELECT id,numero,nom,prenom,raison_sociale,cin,rc,telephone FROM contribuables WHERE actif=1'
     ).fetchall()
     tarifs_sta = get_tarifs_module('STATIONNEMENT')
+    next_numero = get_next_seq_num('vehicules', 'numero', conn)
     conn.close()
     return render_template('stationnement/sta_liste.html', user=user, items=items,
-                           contribuables=contribuables, tarifs=tarifs_sta, q=q)
+                           contribuables=contribuables, tarifs=tarifs_sta, q=q, next_numero=next_numero)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -106,11 +107,11 @@ def sta_liste():
 # ═══════════════════════════════════════════════════════════════════════════════
 @bp.route('/stationnement/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'sta')
 def sta_ajouter():
     f = request.form
     conn = get_db()
-    n   = conn.execute('SELECT COUNT(*) as c FROM vehicules').fetchone()['c'] + 1
-    num = f"STA{datetime.now().year}{n:05d}"
+    num = f.get('numero', '').strip() or get_next_seq_num('vehicules', 'numero', conn)
     conn.execute(
         '''INSERT INTO vehicules
            (numero,contribuable_id,commune_id,immatriculation,type_vehicule,
@@ -121,7 +122,7 @@ def sta_ajouter():
          f.get('num_autorisation', ''), f.get('date_autorisation', ''),
          f.get('nombre_sieges', 0)))
     conn.commit(); conn.close()
-    flash('Véhicule enregistré ✅', 'success')
+    flash(f'Véhicule N° {num} enregistré ✅', 'success')
     return redirect(url_for('sta.sta_liste'))
 
 
@@ -159,6 +160,7 @@ def sta_detail(id):
 # ═══════════════════════════════════════════════════════════════════════════════
 @bp.route('/stationnement/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'sta')
 def sta_modifier(id):
     f = request.form
     conn = get_db()
@@ -241,6 +243,7 @@ def sta_paiement(id):
 # ═══════════════════════════════════════════════════════════════════════════════
 @bp.route('/stationnement/<int:id>/payer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def sta_payer(id):
     user = get_current_user()
     f    = request.form
@@ -398,6 +401,7 @@ def sta_avis(id):
 # ═══════════════════════════════════════════════════════════
 @bp.route('/stationnement/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'sta')
 def sta_supprimer(id):
     user = get_current_user()
     if not user['peut_supprimer']:

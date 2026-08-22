@@ -133,11 +133,14 @@
   </div>
   <div class="rec-hero-actions">
     <button onclick="exportExcel('')" class="btn-excel" title="Exporter tous les arriérés">📊 Export Excel</button>
-    <form method="post" action="{{ url_for('generer_avis') }}" style="display:inline">
+    <form method="post" action="{{ url_for('generer_avis') }}" style="display:inline"
+          data-confirm="warning"
+          data-confirm-title="Générer les avis globaux"
+          data-confirm-msg="Voulez-vous générer des avis de non-paiement pour <strong>TOUS les impayés</strong> de la commune ?"
+          data-confirm-btn="📨 Confirmer & Générer">
       <input type="hidden" name="mode" value="lot">
       <button type="submit" class="btn btn-sm"
-              style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)"
-              onclick="return confirm('Générer des avis pour TOUS les impayés?')">
+              style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)">
         📨 Générer Avis Global
       </button>
     </form>
@@ -303,10 +306,13 @@
         {% endif %}
 
         {% if m.rows | rejectattr('avis_id') | list | length > 0 %}
-        <form method="post" action="{{ url_for('generer_avis') }}">
+        <form method="post" action="{{ url_for('generer_avis') }}"
+              data-confirm="warning"
+              data-confirm-title="Générer les avis — {{ m.module }}"
+              data-confirm-msg="Générer les avis de non-paiement pour tous les impayés du module <strong>{{ m.module }}</strong> ?"
+              data-confirm-btn="📨 Confirmer & Générer">
           <input type="hidden" name="module" value="{{ m.module }}">
-          <button type="submit" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none"
-                  onclick="return confirm('Générer des avis pour tous les impayés de ce module?')">
+          <button type="submit" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none">
             📨 Générer Avis — {{ m.module }}
           </button>
         </form>
@@ -471,15 +477,21 @@
           🖨️ Imprimer
         </a>
         {% if l.statut == 'brouillon' %}
-        <form method="post" action="{{ url_for('lettre_approuver', id=l.id) }}" style="display:inline">
-          <button type="submit" class="btn btn-xs btn-primary"
-                  onclick="return confirm('Confirmer l\'envoi de cette lettre ?')">
+        <form method="post" action="{{ url_for('lettre_approuver', id=l.id) }}" style="display:inline"
+              data-confirm="success"
+              data-confirm-title="Confirmer l'envoi"
+              data-confirm-msg="Confirmer l'envoi officiel de la lettre N°<strong>{{ l.numero_lettre }}</strong> ?"
+              data-confirm-btn="✅ Confirmer l'envoi">
+          <button type="submit" class="btn btn-xs btn-primary">
             ✅ Confirmer Envoi
           </button>
         </form>
-        <form method="post" action="{{ url_for('lettre_annuler', id=l.id) }}" style="display:inline">
-          <button type="submit" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none"
-                  onclick="return confirm('Annuler cette lettre ?')">✕ Annuler</button>
+        <form method="post" action="{{ url_for('lettre_annuler', id=l.id) }}" style="display:inline"
+              data-confirm="danger"
+              data-confirm-title="Annuler la lettre"
+              data-confirm-msg="Voulez-vous vraiment annuler la lettre N°<strong>{{ l.numero_lettre }}</strong> ?"
+              data-confirm-btn="✕ Oui, Annuler">
+          <button type="submit" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">✕ Annuler</button>
         </form>
         {% endif %}
       </div>
@@ -544,7 +556,7 @@ async function exportExcel(module){
   try {
     const resp = await fetch(url);
     const data = await resp.json();
-    if(!data || !data.length){ alert('Aucune donnée à exporter'); return; }
+    if(!data || !data.length){ showAlert('Aucune donnée à exporter.', {type:'info', title:'Export Excel'}); return; }
 
     // Construire le CSV
     const headers = Object.keys(data[0]);
@@ -562,7 +574,7 @@ async function exportExcel(module){
     a.download = 'arrieres_'+(module||'global')+'_{{ today or "export" }}.csv';
     a.click();
   } catch(e){
-    alert('Erreur export: '+e.message);
+    showAlert('Erreur lors de l\'export : ' + e.message, {type:'danger', title:'Erreur Export'});
   }
 }
 

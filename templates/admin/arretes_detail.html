@@ -193,9 +193,12 @@
                       data-edit-smax="{{ t.surface_max or '' }}"
                       data-edit-mod="{{ mod }}"
                       onclick="openEditModalFromEl(this)">✏️</button>
-              <form method="post" action="{{ url_for('config.supprimer_tarif', id=t.id) }}" onsubmit="return confirm('Supprimer ?')">
+              <form method="post" action="{{ url_for('config.supprimer_tarif', id=t.id) }}"
+                    data-confirm="danger"
+                    data-confirm-title="Supprimer le tarif"
+                    data-confirm-msg="Voulez-vous vraiment supprimer ce tarif fiscal ?">
                 <input type="hidden" name="arrete_id" value="{{ arrete.id }}">
-                <button class="btn btn-xs" style="background:var(--danger);color:#fff">🗑️</button>
+                <button class="btn btn-xs" style="background:var(--danger);color:#fff" title="Supprimer">🗑️</button>
               </form>
             </div>
           </td>{% endif %}
@@ -280,9 +283,11 @@
                   ✏️
                 </button>
                 <form method="post" action="{{ url_for('config.supprimer_tarif', id=t.id) }}"
-                      onsubmit="return confirm('Supprimer ce tarif ?')">
+                      data-confirm="danger"
+                      data-confirm-title="Supprimer le tarif"
+                      data-confirm-msg="Voulez-vous vraiment supprimer ce tarif ?">
                   <input type="hidden" name="arrete_id" value="{{ arrete.id }}">
-                  <button class="btn btn-xs" style="background:var(--danger);color:#fff">🗑️</button>
+                  <button class="btn btn-xs" style="background:var(--danger);color:#fff" title="Supprimer">🗑️</button>
                 </form>
               </div>
             </td>{% endif %}

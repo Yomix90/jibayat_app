@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from datetime import datetime, date
 from database import get_db
 
-from modules.helpers import login_required, get_current_user
+from modules.helpers import login_required, get_current_user, permission_required
 
 bp = Blueprint('config', __name__)
 
@@ -16,6 +16,7 @@ bp = Blueprint('config', __name__)
 
 @bp.route('/rubriques')
 @login_required
+@permission_required('config')
 def rubriques():
     user = get_current_user()
     conn = get_db()
@@ -25,6 +26,7 @@ def rubriques():
 
 @bp.route('/rubriques/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_rubrique():
     f = request.form
     conn = get_db()
@@ -36,6 +38,7 @@ def ajouter_rubrique():
 
 @bp.route('/rubriques/<int:id>/toggle', methods=['POST'])
 @login_required
+@permission_required('config')
 def toggle_rubrique(id):
     conn = get_db()
     conn.execute('UPDATE rubriques SET actif = CASE WHEN actif=1 THEN 0 ELSE 1 END WHERE id=?', (id,))
@@ -45,6 +48,7 @@ def toggle_rubrique(id):
 
 @bp.route('/rubriques/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_rubrique(id):
     f = request.form
     conn = get_db()
@@ -61,6 +65,7 @@ def modifier_rubrique(id):
 
 @bp.route('/arretes-fiscaux')
 @login_required
+@permission_required('config')
 def arretes_fiscaux():
     user = get_current_user()
     conn = get_db()
@@ -72,11 +77,9 @@ def arretes_fiscaux():
 
 @bp.route('/arretes-fiscaux/creer', methods=['POST'])
 @login_required
+@permission_required('config')
 def creer_arrete():
     user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès refusé', 'danger')
-        return redirect(url_for('config.arretes_fiscaux'))
     f = request.form
     conn = get_db()
     n = conn.execute('SELECT COUNT(*) as c FROM arretes_fiscaux').fetchone()['c'] + 1
@@ -95,6 +98,7 @@ def creer_arrete():
 
 @bp.route('/arretes-fiscaux/<int:id>')
 @login_required
+@permission_required('config')
 def arretes_detail(id):
     user = get_current_user()
     conn = get_db()
@@ -125,13 +129,9 @@ def arretes_detail(id):
 
 @bp.route('/arretes-fiscaux/<int:id>/ajouter-rubrique', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_rubrique_arrete(id):
     """Ajoute une rubrique (et ses derniers tarifs) a un arrete fiscal."""
-    user = get_current_user()
-    if not user['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('config.arretes_detail', id=id))
-
     f = request.form
     rubrique_id = f.get('rubrique_id')
     copier_tarifs = f.get('copier_tarifs') == '1'
@@ -210,12 +210,9 @@ def ajouter_rubrique_arrete(id):
 
 @bp.route('/arretes-fiscaux/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_arrete(id):
     """Supprime un arrete fiscal avec verification de la question math."""
-    user = get_current_user()
-    if not user['peut_config']:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('config.arretes_fiscaux'))
     f = request.form
     # Verification de la reponse math
     try:
@@ -252,16 +249,14 @@ def supprimer_arrete(id):
 
 @bp.route('/tarifs')
 @login_required
+@permission_required('config')
 def tarifs():
     return redirect(url_for('config.arretes_fiscaux'))
 
 @bp.route('/tarifs/ajouter', methods=['POST'])
 @login_required
+@permission_required('config')
 def ajouter_tarif():
-    user = get_current_user()
-    if not user['peut_config']:
-        flash('Accès refusé', 'danger')
-        return redirect(url_for('config.arretes_fiscaux'))
     f = request.form
     libelle = f['libelle'].strip()
     rub_code = f.get('rub_code', '')
@@ -287,6 +282,7 @@ def ajouter_tarif():
 
 @bp.route('/tarifs/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_tarif(id):
     f = request.form
     conn = get_db()
@@ -306,6 +302,7 @@ def modifier_tarif(id):
 
 @bp.route('/tarifs/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('config')
 def supprimer_tarif(id):
     f = request.form
     conn = get_db()
@@ -320,6 +317,7 @@ def supprimer_tarif(id):
 
 @bp.route('/parametres')
 @login_required
+@permission_required('config')
 def parametres():
     user = get_current_user()
     conn = get_db()
@@ -335,6 +333,7 @@ def parametres():
 
 @bp.route('/parametres/modifier', methods=['POST'])
 @login_required
+@permission_required('config')
 def modifier_parametres():
     conn = get_db()
     for key, value in request.form.items():

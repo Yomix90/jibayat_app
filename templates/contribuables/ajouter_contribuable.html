@@ -2,41 +2,72 @@
 {% block title %}Nouveau Contribuable{% endblock %}
 {% block page_title %}👤 Nouveau Contribuable{% endblock %}
 {% block content %}
-<div class="card" style="max-width:900px;margin:0 auto">
-  <div class="card-header">
-    <h3>Enregistrer un Contribuable</h3>
-    <a href="{{ url_for('contribuables.contribuables') }}" class="btn btn-outline btn-sm">← Retour</a>
+<!-- ═══ HERO BANNER ═══════════════════════════════════════════════ -->
+<div class="module-hero hero-ctb no-print">
+  <span class="module-watermark">👤</span>
+  <div class="module-hero-left">
+    <div class="module-avatar">➕</div>
+    <div>
+      <h2 class="module-hero-title">Enregistrement d'un Nouveau Contribuable</h2>
+      <div class="module-hero-sub">
+        Création d'une fiche redevable centralisée avec identifiant unique (CIN / ICE) pour rattachement aux rôles et taxes communales.
+      </div>
+    </div>
   </div>
-  <div class="card-body">
+  <div class="module-hero-actions">
+    <a href="{{ url_for('contribuables.contribuables') }}" class="btn btn-outline btn-sm">← Retour à la liste</a>
+  </div>
+</div>
+
+<div class="card" style="max-width:920px;margin:0 auto;box-shadow:0 15px 35px -5px rgba(15,23,42,.12);border-radius:18px">
+  <div class="card-body" style="padding:28px 32px">
     <form method="post">
       <!-- Type -->
       <div class="form-group mb-3">
-        <label>Type de Personne</label>
-        <select name="type_personne" id="typePerso" onchange="toggleType(this.value)" style="max-width:280px">
+        <label style="font-weight:800;font-size:.92rem">Type de Personne / صفة الخاضع للضريبة</label>
+        <select name="type_personne" id="typePerso" onchange="toggleType(this.value)" style="max-width:340px;font-weight:700;height:44px">
           <option value="physique">Personne Physique — شخص طبيعي</option>
           <option value="morale">Personne Morale — شخص معنوي</option>
         </select>
       </div>
 
+      <!-- Identifiant Unique CIN -->
+      <div class="modal-section-title">🪪 1. Identifiant Unique Officiel</div>
+      <div class="form-grid mb-3">
+        <div class="form-group dossier-num-highlight" id="cin_group">
+          <label>N° CIN <span style="color:var(--danger);font-weight:800">*</span> <span style="font-size:.68rem;color:var(--muted);font-weight:400">(Identifiant unique officiel redevable)</span></label>
+          <input name="cin" id="cinInput" placeholder="Ex: JB123456" style="border:2px solid var(--primary);font-weight:800;letter-spacing:1px;text-transform:uppercase" required>
+        </div>
+        <div class="form-group" id="ice_group" style="display:none">
+          <label>N° ICE <span style="font-size:.68rem;color:var(--muted);font-weight:400">(Identifiant Commun Entreprise)</span></label>
+          <input name="ice" placeholder="Ex: 001234567000012">
+        </div>
+        <div class="form-group" id="rc_group" style="display:none">
+          <label>N° Registre de Commerce (RC)</label>
+          <input name="rc" placeholder="Ex: RC 12345">
+        </div>
+      </div>
+
       <!-- Section bilingue -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px">
+      <div class="modal-section-title">📝 2. Identité & Dénomination (Bilingue FR / AR)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:16px">
         <!-- Français -->
         <div>
-          <div style="font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary)">🇫🇷 Informations en Français</div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--primary)">🇫🇷 Informations en Français</div>
           <div id="physFr">
             <div class="form-grid mb-3">
-              <div class="form-group"><label>Nom *</label><input name="nom" required placeholder="Nom de famille"></div>
+              <div class="form-group"><label>Nom de famille *</label><input name="nom" required placeholder="Nom de famille"></div>
               <div class="form-group"><label>Prénom</label><input name="prenom" placeholder="Prénom"></div>
             </div>
           </div>
           <div id="moralFr" style="display:none">
-            <div class="form-group mb-3"><label>Raison Sociale *</label><input name="raison_sociale" placeholder="Dénomination sociale"></div>
+            <div class="form-group mb-3"><label>Raison Sociale *</label><input name="raison_sociale" placeholder="Dénomination commerciale"></div>
           </div>
           <div class="form-group mb-3"><label>Adresse</label><input name="adresse" placeholder="Adresse complète"></div>
         </div>
         <!-- Arabe -->
         <div>
-          <div style="font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-align:right">المعلومات بالعربية 🇲🇦</div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--accent);text-align:right">المعلومات بالعربية 🇲🇦</div>
           <div id="physAr">
             <div class="form-grid mb-3">
               <div class="form-group"><label>الاسم العائلي</label><input name="nom_ar" dir="rtl" placeholder="الاسم العائلي"></div>
@@ -46,33 +77,12 @@
           <div id="moralAr" style="display:none">
             <div class="form-group mb-3"><label>التسمية التجارية</label><input name="raison_sociale_ar" dir="rtl" placeholder="الاسم التجاري"></div>
           </div>
-          <div class="form-group mb-3"><label>العنوان</label><input name="adresse_ar" dir="rtl" placeholder="العنوان الكامل"></div>
+          <div class="form-group mb-3"><label>العنوان الكامل</label><input name="adresse_ar" dir="rtl" placeholder="العنوان الكامل"></div>
         </div>
       </div>
 
-      <hr>
-      <!-- Identifiants Uniques -->
-      <div style="font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
-        <span style="background:var(--primary);color:#fff;padding:2px 8px;border-radius:4px">🔑 Identifiants Uniques</span>
-        <span style="font-size:.66rem;color:var(--muted);font-weight:400;text-transform:none">Ces champs servent d'identifiants principaux du contribuable</span>
-      </div>
-      <div class="form-grid mb-3">
-        <div class="form-group" id="cin_group">
-          <label>CIN <span style="color:var(--danger)">*</span> <span style="font-size:.65rem;color:var(--muted);font-weight:400">(Personne physique)</span></label>
-          <input name="cin" placeholder="AB123456" style="border-color:var(--primary)">
-        </div>
-        <div class="form-group" id="ice_group" style="display:none">
-          <label>ICE <span style="font-size:.65rem;color:var(--muted);font-weight:400">(Identifiant Commun Entreprise)</span></label>
-          <input name="ice" placeholder="001234567000012">
-        </div>
-        <div class="form-group" id="rc_group" style="display:none">
-          <label>RC <span style="font-size:.65rem;color:var(--muted);font-weight:400">(Registre de Commerce)</span></label>
-          <input name="rc" placeholder="N° Registre Commerce">
-        </div>
-      </div>
-
-      <hr>
-      <div style="font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Coordonnées</div>
+      <!-- Coordonnées -->
+      <div class="modal-section-title">📞 3. Coordonnées & Contact</div>
       <div class="form-grid mb-3">
         <div class="form-group"><label>Ville</label><input name="ville" placeholder="Ville"></div>
         <div class="form-group"><label>Code Postal</label><input name="code_postal" placeholder="Code postal"></div>
@@ -80,9 +90,9 @@
         <div class="form-group"><label>Email</label><input name="email" type="email" placeholder="email@exemple.ma"></div>
       </div>
 
-      <div class="form-actions">
-        <a href="{{ url_for('contribuables.contribuables') }}" class="btn btn-outline">Annuler</a>
-        <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+      <div class="form-actions" style="margin-top:24px;display:flex;justify-content:flex-end;gap:12px">
+        <a href="{{ url_for('contribuables.contribuables') }}" class="btn btn-outline">✕ Annuler</a>
+        <button type="submit" class="btn btn-primary">💾 Enregistrer le Contribuable</button>
       </div>
     </form>
   </div>
@@ -93,6 +103,8 @@ function toggleType(v){
   ['moralFr','moralAr'].forEach(id=>document.getElementById(id).style.display=v==='morale'?'':'none');
   document.getElementById('ice_group').style.display = v==='physique' ? 'none' : '';
   document.getElementById('rc_group').style.display = v==='physique' ? 'none' : '';
+  const cinInp = document.getElementById('cinInput');
+  if (cinInp) cinInp.required = (v === 'physique');
 }
 </script>
 {% endblock %}

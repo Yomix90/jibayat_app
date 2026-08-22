@@ -3,7 +3,7 @@ from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, send_file, jsonify)
 from datetime import datetime, date
 from database import get_db
-from modules.helpers import login_required, get_current_user, gen_num
+from modules.helpers import login_required, get_current_user, gen_num, get_next_seq_num, permission_required
 import os, uuid
 
 bp = Blueprint('fou', __name__)
@@ -92,12 +92,13 @@ def fou_liste():
         'plus365':     sum(1 for i in items if i['plus365'] and i['statut'] not in ('sortie',)),
         'total_du':    round(sum(i['montant_du'] for i in items if i['statut'] != 'sortie'), 2),
     }
+    next_numero = get_next_seq_num('dossiers_fourriere', 'numero', conn)
     conn.close()
     return render_template('fourriere/fou_liste.html',
                            user=user, items=items, types_vh=types_vh,
                            deposants=deposants, stats=stats,
                            q=q, statut_f=statut_f, type_f=type_f,
-                           today=date.today().isoformat())
+                           today=date.today().isoformat(), next_numero=next_numero)
 
 
 # ════════════════════════════════════════════════════════════
@@ -105,6 +106,7 @@ def fou_liste():
 # ════════════════════════════════════════════════════════════
 @bp.route('/fourriere/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'fou')
 def fou_ajouter():
     user = get_current_user()
     f = request.form
@@ -112,9 +114,7 @@ def fou_ajouter():
 
     type_vh = f.get('type_vehicule', '')
     tarif   = _get_tarif(conn, type_vh)
-
-    n = conn.execute('SELECT COUNT(*) as c FROM dossiers_fourriere').fetchone()['c'] + 1
-    num = f"FOU{datetime.now().year}{n:05d}"
+    num = f.get('numero', '').strip() or get_next_seq_num('dossiers_fourriere', 'numero', conn)
 
     conn.execute('''INSERT INTO dossiers_fourriere
         (numero, commune_id, num_depot, type_vehicule, immatriculation,
@@ -134,7 +134,7 @@ def fou_ajouter():
          f.get('notes', '')))
     conn.commit()
     conn.close()
-    flash(f'Véhicule {num} mis en fourrière ✅', 'success')
+    flash(f'Véhicule N° {num} mis en fourrière ✅', 'success')
     return redirect(url_for('fou.fou_liste'))
 
 
@@ -181,6 +181,7 @@ def fou_detail(id):
 # ════════════════════════════════════════════════════════════
 @bp.route('/fourriere/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_modifier(id):
     f = request.form
     conn = get_db()
@@ -229,6 +230,7 @@ def fou_paiement(id):
 
 @bp.route('/fourriere/<int:id>/payer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def fou_payer(id):
     user = get_current_user()
     f = request.form
@@ -302,6 +304,7 @@ def fou_payer(id):
 # ════════════════════════════════════════════════════════════
 @bp.route('/fourriere/<int:id>/sortie', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_sortie(id):
     conn = get_db()
     # Vérifier qu'un bulletin est encaissé/validé
@@ -383,6 +386,7 @@ def fou_encheres():
 
 @bp.route('/fourriere/encheres/groupe/ajouter', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_groupe_ajouter():
     user = get_current_user()
     f = request.form
@@ -403,6 +407,7 @@ def fou_groupe_ajouter():
 
 @bp.route('/fourriere/encheres/groupe/<int:gid>/ajouter-vehicule', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_groupe_ajout_vh(gid):
     f = request.form
     conn = get_db()
@@ -428,6 +433,7 @@ def fou_groupe_ajout_vh(gid):
 
 @bp.route('/fourriere/encheres/groupe/<int:gid>/retirer/<int:vid>', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_groupe_retirer(gid, vid):
     conn = get_db()
     conn.execute('DELETE FROM fou_vehicules_enchere WHERE id=? AND groupe_id=?', (vid, gid))
@@ -438,6 +444,7 @@ def fou_groupe_retirer(gid, vid):
 
 @bp.route('/fourriere/encheres/groupe/<int:gid>/prix', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_groupe_prix(gid):
     conn = get_db()
     conn.execute('UPDATE fou_groupes_enchere SET prix_ouverture=?, date_enchere=?, lieu=? WHERE id=?',
@@ -485,6 +492,7 @@ def fou_groupe_imprimer(gid):
 # ════════════════════════════════════════════════════════════
 @bp.route('/fourriere/encheres/groupe/<int:gid>/vente', methods=['POST'])
 @login_required
+@permission_required('modifier', 'fou')
 def fou_vente_valider(gid):
     user = get_current_user()
     f = request.form
@@ -531,6 +539,7 @@ def fou_vente_valider(gid):
 # ════════════════════════════════════════════════════════════
 @bp.route('/fourriere/parametres', methods=['GET', 'POST'])
 @login_required
+@permission_required('config')
 def fou_parametres():
     user = get_current_user()
     conn = get_db()

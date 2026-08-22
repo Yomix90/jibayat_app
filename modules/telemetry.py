@@ -7,6 +7,8 @@ import os
 import threading
 import logging
 import socket
+import uuid
+import hashlib
 from datetime import datetime
 from typing import Dict, Any, Optional
 
@@ -34,6 +36,57 @@ def _get_config() -> Dict[str, Any]:
     return {}
 
 
+def get_mac_address() -> str:
+    """Obtient l'adresse MAC physique réelle de la machine."""
+    try:
+        mac_num = uuid.getnode()
+        mac_hex = f"{mac_num:012X}"
+        return ":".join(mac_hex[i:i+2] for i in range(0, 12, 2))
+    except Exception:
+        return "00:00:00:00:00:00"
+
+
+def get_unique_machine_id() -> str:
+    """Génère un identifiant unique universel pour ce PC (MAC + Hostname + MachineGuid)."""
+    cfg = _get_config()
+    if cfg.get('machine_id'):
+        return cfg['machine_id']
+
+    mac = get_mac_address()
+    host = socket.gethostname() if hasattr(socket, 'gethostname') else 'HOST'
+
+    guid = ""
+    if os.name == 'nt':
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography") as key:
+                guid, _ = winreg.QueryValueEx(key, "MachineGuid")
+        except Exception:
+            pass
+
+    clean_mac = mac.replace(':', '')[-6:]
+    raw = f"{mac}_{host}_{guid}".encode('utf-8')
+    h = hashlib.sha256(raw).hexdigest()[:8].upper()
+    unique_id = f"PC-{clean_mac}-{h}"
+
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                c = json.load(f)
+            c['machine_id'] = unique_id
+            c['mac_address'] = mac
+            c['installation_id'] = unique_id
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(c, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+    return unique_id
+
+
+def _get_installation_id() -> str:
+    return get_unique_machine_id()
+
+
 def _get_app_version() -> str:
     if os.path.exists(VERSION_FILE):
         try:
@@ -41,32 +94,59 @@ def _get_app_version() -> str:
                 return f.read().strip()
         except Exception:
             pass
-    return "1.0.0"
+    return "1.5.2"
 
 
 def _get_commune_info() -> Dict[str, str]:
-    """Récupère les informations de la commune depuis la DB ou config.json."""
+    """Récupère les informations réelles et authentiques de la commune depuis la DB ou config.json."""
+    nom = ""
+    nom_ar = ""
+    region = ""
+    province = ""
+    code = "COM-01"
+
+    # 1. Vérification dans la base SQLite
     try:
         from database import get_db
         conn = get_db()
-        c = conn.execute("SELECT nom, region, province, code FROM communes WHERE id=1").fetchone()
+        c = conn.execute("SELECT nom, nom_ar, region, province, code FROM communes WHERE id=1").fetchone()
         if c:
-            return {
-                'nom': c['nom'] or 'Commune',
-                'region': c['region'] or '',
-                'province': c['province'] or '',
-                'code': c['code'] or 'COM-01'
-            }
+            db_nom = (c['nom'] or '').strip()
+            if db_nom and db_nom.lower() not in ('ma commune', 'commune', 'ma_commune', 'mon commune'):
+                nom = db_nom
+            nom_ar = c['nom_ar'] or ''
+            region = c['region'] or ''
+            province = c['province'] or ''
+            code = c['code'] or 'COM-01'
     except Exception:
         pass
 
+    # 2. Compléter depuis config.json si absent
     cfg = _get_config()
     cm = cfg.get('commune', {})
+    if not nom:
+        cfg_nom = cm.get('nom', '').strip()
+        if cfg_nom and cfg_nom.lower() not in ('ma commune', 'commune', 'ma_commune', 'mon commune'):
+            nom = cfg_nom
+    if not nom_ar:
+        nom_ar = cm.get('nom_ar', '')
+    if not region:
+        region = cm.get('region', '')
+    if not province:
+        province = cm.get('province', '')
+    if not code:
+        code = cm.get('code', 'COM-01')
+
+    # Fallback propre
+    if not nom:
+        nom = "Commune Non Configurée"
+
     return {
-        'nom': cm.get('nom', 'Commune'),
-        'region': cm.get('region', ''),
-        'province': cm.get('province', ''),
-        'code': cm.get('code', 'COM-01')
+        'nom': nom,
+        'nom_ar': nom_ar,
+        'region': region,
+        'province': province,
+        'code': code
     }
 
 
@@ -127,21 +207,29 @@ def sync_installation_status(action: str = 'ping'):
     def _worker():
         try:
             cfg = _get_config()
-            webhook_url = cfg.get('telemetry_webhook_url', DEFAULT_WEBHOOK_URL)
+            webhook_url = cfg.get('telemetry_webhook_url') or cfg.get('feedback_webhook') or DEFAULT_WEBHOOK_URL
             if not webhook_url:
                 return
 
             from modules.licensing import get_license_status
             lic = get_license_status()
             commune = _get_commune_info()
+            inst_id = get_unique_machine_id()
+            mac = get_mac_address()
 
             payload = {
                 'action': action,
+                'machine_id': inst_id,
+                'mac_address': mac,
+                'installation_id': inst_id,
                 'commune_nom': commune.get('nom'),
+                'commune_nom_ar': commune.get('nom_ar'),
                 'commune_code': commune.get('code'),
                 'region': commune.get('region'),
                 'province': commune.get('province'),
+                'hostname': socket.gethostname() if hasattr(socket, 'gethostname') else '',
                 'version': _get_app_version(),
+                'modules_actifs': ", ".join(cfg.get('modules', [])) if isinstance(cfg.get('modules'), list) else '',
                 'is_activated': lic.get('is_activated', False),
                 'in_trial': lic.get('in_trial', False),
                 'license_state': 'Activé' if lic.get('is_activated') else ('Essai' if lic.get('in_trial') else 'Expiré'),
@@ -161,20 +249,29 @@ def sync_installation_status(action: str = 'ping'):
 
 def send_feedback_to_sheet(nom: str, email: str, message: str, type_feedback: str = 'Suggestion', note: str = ''):
     """
-    Transmet un avis ou une suggestion d'un utilisateur vers Google Sheets.
+    Transmet un avis ou une suggestion d'un utilisateur vers Google Sheets avec le nom de sa commune.
     Appel asynchrone non-bloquant.
     """
     def _worker():
         try:
             cfg = _get_config()
-            webhook_url = cfg.get('telemetry_webhook_url', DEFAULT_WEBHOOK_URL)
+            webhook_url = cfg.get('telemetry_webhook_url') or cfg.get('feedback_webhook') or DEFAULT_WEBHOOK_URL
             if not webhook_url:
                 return
 
             commune = _get_commune_info()
+            inst_id = get_unique_machine_id()
+            mac = get_mac_address()
+
             payload = {
                 'action': 'feedback',
+                'machine_id': inst_id,
+                'mac_address': mac,
+                'installation_id': inst_id,
                 'commune_nom': commune.get('nom'),
+                'commune_nom_ar': commune.get('nom_ar'),
+                'region': commune.get('region'),
+                'province': commune.get('province'),
                 'nom': nom,
                 'email': email,
                 'type_feedback': type_feedback,

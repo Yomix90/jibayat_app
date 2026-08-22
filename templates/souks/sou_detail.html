@@ -1,399 +1,435 @@
 {% extends 'base.html' %}
-{% block title %}Détail Affermage — {{ item.nom_souk }}{% endblock %}
-{% block page_title %}🛒 {{ item.nom_souk }}{% endblock %}
+{% block title %}Dossier N° {{ item.numero }} — {{ item.nom_souk }}{% endblock %}
+{% block page_title %}🛒 Fiche Affermage Souk{% endblock %}
 {% block extra_head %}
 <style>
-/* ── Layout ───────────────────────────────── */
-.detail-hero{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-l) 60%,#2a5296 100%);border-radius:16px;padding:24px 28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
-.detail-hero::before{content:'🛒';position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:5rem;opacity:.12}
-.hero-title{font-size:1.6rem;font-weight:900;margin-bottom:4px}
-.hero-sub{opacity:.8;font-size:.85rem}
-.hero-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.hero-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:.73rem;font-weight:700;backdrop-filter:blur(4px)}
-.hero-badge.warn{background:rgba(255,193,7,.3)}
-.hero-badge.danger{background:rgba(220,53,69,.35)}
-.hero-badge.ok{background:rgba(40,167,69,.3)}
-
-.detail-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:18px;align-items:start}
-@media(max-width:900px){.detail-grid{grid-template-columns:1fr}}
-
-/* ── Action bar ──────────────────────────── */
-.action-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:var(--bg);border-radius:12px;margin-bottom:18px;align-items:center;box-shadow:var(--shadow)}
-.action-bar .sep{width:1px;height:24px;background:var(--border);margin:0 2px}
-
-/* ── Info cards ──────────────────────────── */
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px}
-.info-row{display:flex;flex-direction:column;gap:2px;padding:8px 10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--primary)}
-.info-row .lbl{font-size:.6rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-.info-row .val{font-size:.88rem;font-weight:700;color:var(--text)}
-.info-row.accent .val{color:var(--accent)}.info-row.ok .val{color:var(--ok)}.info-row.danger .val{color:var(--danger)}
-.info-row.ok{border-left-color:var(--ok)}.info-row.danger{border-left-color:var(--danger)}.info-row.accent{border-left-color:var(--accent)}
-
-/* ── KPI strip ───────────────────────────── */
-.kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.kpi{background:var(--card);border-radius:12px;padding:14px;text-align:center;box-shadow:var(--shadow);border-top:4px solid var(--primary)}
-.kpi.red{border-top-color:var(--danger)}.kpi.green{border-top-color:var(--ok)}.kpi.gold{border-top-color:var(--accent)}
-.kpi .kv{font-size:1.4rem;font-weight:900;line-height:1}
-.kpi.red .kv{color:var(--danger)}.kpi.green .kv{color:var(--ok)}.kpi.gold .kv{color:var(--accent)}
-.kpi .kl{font-size:.62rem;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:4px}
-
-/* ── Timeline renouvellements ────────────── */
-.rnv-list{display:flex;flex-direction:column;gap:5px;padding:10px 14px}
-.rnv-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--bg);border-left:4px solid var(--border)}
-.rnv-item.cur{border-left-color:var(--ok);background:rgba(40,167,69,.06)}
-.rnv-badge{font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:12px;background:var(--primary);color:#fff;flex-shrink:0}
+.rnv-list{display:flex;flex-direction:column;gap:8px}
+.rnv-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:#f8fafc;border:1px solid var(--line);border-left:4px solid var(--muted)}
+.rnv-item.cur{border-left-color:var(--ok);background:#f0fdf4}
+.rnv-badge{font-size:.65rem;font-weight:800;padding:3px 9px;border-radius:99px;background:var(--primary);color:#fff;flex-shrink:0}
 .rnv-item.cur .rnv-badge{background:var(--ok)}
-.rnv-rev{font-size:.92rem;font-weight:900;color:var(--primary)}
+.rnv-rev{font-size:.95rem;font-weight:900;color:var(--primary)}
 .rnv-item.cur .rnv-rev{color:var(--ok)}
-.rnv-dates{font-size:.64rem;color:var(--muted)}
-.rnv-aug{font-size:.62rem;background:#d4edda;color:#155724;border-radius:4px;padding:1px 6px;font-weight:700;margin-left:auto}
+.rnv-dates{font-size:.72rem;color:var(--muted)}
+.rnv-aug{font-size:.68rem;background:#d4edda;color:#155724;border-radius:6px;padding:2px 8px;font-weight:800;margin-left:auto}
 
-/* ── Historique paiements ────────────────── */
-.pmt-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.pmt-row{display:grid;grid-template-columns:1.2fr 1fr auto;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
 .pmt-row:last-child{border-bottom:none}
-.pmt-bull{font-size:.78rem;font-weight:700;color:var(--primary)}
-.pmt-mois{display:flex;flex-wrap:wrap;gap:3px}
-.pmt-mois-tag{font-size:.56rem;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 4px;font-weight:600}
-.pmt-statut{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.pmt-bull{font-size:.85rem;font-weight:800;color:var(--primary)}
+.pmt-mois{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.pmt-mois-tag{font-size:.62rem;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-weight:700}
+.pmt-statut{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 
-/* ── Documents ───────────────────────────── */
-.doc-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)}
+.doc-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .doc-item:last-child{border-bottom:none}
-.doc-icon{font-size:1.3rem;flex-shrink:0}
+.doc-icon{font-size:1.6rem;flex-shrink:0}
 .doc-info{flex:1;min-width:0}
-.doc-name{font-size:.8rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.doc-meta{font-size:.63rem;color:var(--muted)}
-.doc-type-badge{font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--primary-l);color:var(--primary)}
+.doc-name{font-size:.84rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.doc-type-badge{font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:99px;background:#e0f2fe;color:#0284c7}
 
-.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin:10px 14px}
-.upload-zone:hover{border-color:var(--primary);background:rgba(30,58,95,.04)}
+.upload-zone{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:all .2s;margin:12px 16px;background:#fbfcfe}
+.upload-zone:hover{border-color:var(--accent);background:#fffdfa}
 .upload-zone input[type=file]{display:none}
-.upload-zone label{cursor:pointer;font-size:.8rem;color:var(--muted)}
+.upload-zone label{cursor:pointer;font-size:.84rem;color:var(--muted)}
 
-/* ── Avis ────────────────────────────────── */
-.avis-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:.78rem}
+.avis-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);font-size:.84rem}
 .avis-row:last-child{border-bottom:none}
 
-/* ── Modale encaissement ─────────────────── */
-.encaiss-inline{background:linear-gradient(135deg,#d4edda,#c3e6cb);border-radius:8px;padding:10px 12px;margin-top:6px;display:none}
+.encaiss-inline{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin:4px 16px 12px;display:none}
 .encaiss-inline.show{display:block}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="df gap-2 mb-3">
-  <a href="{{ url_for('sou.sou_liste') }}" class="btn btn-outline btn-sm">← Liste Souks</a>
-  <a href="{{ url_for('sou.sou_paiement', id=ref_id) }}" class="btn btn-accent btn-sm">💳 Page Paiement</a>
-</div>
-
-<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
-<div class="detail-hero">
-  <div class="hero-title">{{ item.nom_souk }}{% if item.num_emplacement %} — Empl. {{ item.num_emplacement }}{% endif %}</div>
-  <div class="hero-sub">{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }} · {{ item.ctb_num }}</div>
-  <div class="hero-badges">
-    <span class="hero-badge {{ 'ok' if item.statut=='actif' else 'danger' }}">{{ item.statut|upper }}</span>
-    <span class="hero-badge">{{ item.numero }}</span>
-    {% if item.type_activite %}<span class="hero-badge">{{ item.type_activite }}</span>{% endif %}
-    {% if nb_mois_impaye > 0 %}
-    <span class="hero-badge danger">⚠️ {{ nb_mois_impaye }} mois impayés — {{ "%.2f"|format(total_impaye) }} DH</span>
-    {% else %}
-    <span class="hero-badge ok">✅ Paiements à jour</span>
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ url_for('sou.sou_liste') }}" class="btn btn-outline btn-sm">← Liste Souks</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    {% if item.statut == 'actif' and (can_bulletin() or can_pay()) %}
+    <a href="{{ url_for('sou.sou_paiement', id=ref_id) }}" class="btn btn-accent btn-sm">💳 Saisir Paiement</a>
+    {% endif %}
+    {% if can_edit('sou') %}
+    <button onclick="openModal('modalModifier')" class="btn btn-primary btn-sm">✏️ Modifier</button>
+    {% endif %}
+    {% if can_bulletin() %}
+    <form method="post" action="{{ url_for('sou.sou_creer_avis', id=ref_id) }}" style="display:inline"
+          onsubmit="return confirmForm(this, {title:'Avis de non-paiement',msg:'Créer un avis de non-paiement pour <strong>{{ nb_mois_impaye }} mois</strong> ?',detail:'Montant total impayé : <strong>{{ '%.2f'|format(total_impaye) }} DH</strong>',type:'warning',confirmText:'📋 Créer avis',icon:'📋'})">
+      <button type="submit" class="btn btn-sm" style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba" {% if total_impaye==0 %}disabled{% endif %}>
+        📋 Avis non-paiement
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="dossier-actions-right">
+    {% if can_delete('sou') %}
+    <form method="post" action="{{ url_for('sou.sou_supprimer', id=ref_id) }}" style="display:inline"
+          onsubmit="return confirmForm(this, {title:'Archiver l\'affermage',msg:'Archiver cet affermage ? Il ne sera plus actif.',type:'warning',confirmText:'🗃️ Archiver',icon:'🗃️'})">
+      <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Archiver</button>
+    </form>
     {% endif %}
   </div>
 </div>
 
-<!-- ═══ BARRE D'ACTIONS ══════════════════════════════════════════ -->
-<div class="action-bar">
-  <button onclick="openModal('modalModifier')" class="btn btn-primary btn-sm">✏️ Modifier</button>
-  <div class="sep"></div>
-  {% if item.statut == 'actif' %}
-  <a href="{{ url_for('sou.sou_paiement', id=ref_id) }}" class="btn btn-accent btn-sm">💳 Paiement</a>
-  {% endif %}
-  <div class="sep"></div>
-  <form method="post" action="{{ url_for('sou.sou_creer_avis', id=ref_id) }}" style="display:inline"
-        onsubmit="return confirm('Créer un avis de non-paiement pour {{ nb_mois_impaye }} mois ({{ "%.2f"|format(total_impaye) }} DH) ?')">
-    <button type="submit" class="btn btn-sm" style="background:#fd7e14;color:#fff" {% if total_impaye==0 %}disabled{% endif %}>
-      📋 Avis non-paiement
-    </button>
-  </form>
-  <div class="sep"></div>
-  <form method="post" action="{{ url_for('sou.sou_supprimer', id=ref_id) }}" style="display:inline"
-        onsubmit="return confirmForm(this, {title:'Archiver l\'affermage',msg:'Archiver cet affermage ? Il ne sera plus actif.',type:'warning',confirmText:'🗃️ Archiver',icon:'🗃️'})">
-    <button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger)">🗑 Archiver</button>
-  </form>
-</div>
-
-<!-- ═══ KPI ══════════════════════════════════════════════════════ -->
-<div class="kpi-strip">
-  <div class="kpi gold">
-    <div class="kv">{{ "%.2f"|format(redevance_actuelle) }}</div>
-    <div class="kl">DH/mois actuel</div>
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-souk">
+  <span class="dossier-hero-watermark">🛒</span>
+  <div class="dossier-avatar">🛒</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">{{ item.nom_souk }}{% if item.num_emplacement %} — Emplacement {{ item.num_emplacement }}{% endif %}</h2>
+    <div class="dossier-sub">
+      <span>👤 {{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</span>
+      <span>·</span>
+      <span>🪪 CIN / Ref : <strong>{{ item.ctb_num }}</strong></span>
+      {% if item.type_activite %}<span>·</span><span>💼 {{ item.type_activite }}</span>{% endif %}
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Dossier : {{ item.numero }}</span>
+      <span class="dossier-badge {{ 'ok' if item.statut=='actif' else 'danger' }}">
+        {{ '✅ Actif' if item.statut=='actif' else ('❌ Résilié' if item.statut=='resilie' else item.statut) }}
+      </span>
+      {% if nb_mois_impaye > 0 %}
+      <span class="dossier-badge danger">⚠️ {{ nb_mois_impaye }} mois impayés ({{ "%.2f"|format(total_impaye) }} DH)</span>
+      {% else %}
+      <span class="dossier-badge ok">✅ Paiements à jour</span>
+      {% endif %}
+    </div>
   </div>
-  <div class="kpi red">
-    <div class="kv">{{ "%.2f"|format(total_impaye) }}</div>
-    <div class="kl">Total impayé (DH)</div>
-  </div>
-  <div class="kpi green">
-    <div class="kv">{{ "%.2f"|format(total_encaisse) }}</div>
-    <div class="kl">Total encaissé (DH)</div>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Création dossier</div>
+    <div style="font-weight:800;font-size:.88rem">{{ (item.date_creation or '')[:10] }}</div>
   </div>
 </div>
 
-<!-- ═══ GRILLE PRINCIPALE ════════════════════════════════════════ -->
-<div class="detail-grid">
+<!-- ═══ KPIS ══════════════════════════════════════════════════════ -->
+<div class="dossier-kpis">
+  <div class="dossier-kpi warn">
+    <div class="kpi-val">{{ "%.2f"|format(redevance_actuelle) }} <span style="font-size:.8rem">DH</span></div>
+    <div class="kpi-lbl">DH / Mois actuel</div>
+    <div class="kpi-sub">Période contractuelle</div>
+  </div>
+  <div class="dossier-kpi {{ 'danger' if total_impaye > 0 else 'ok' }}">
+    <div class="kpi-val">{{ "%.2f"|format(total_impaye) }} <span style="font-size:.8rem">DH</span></div>
+    <div class="kpi-lbl">Total Impayé</div>
+    <div class="kpi-sub">{{ nb_mois_impaye }} mois en retard</div>
+  </div>
+  <div class="dossier-kpi ok">
+    <div class="kpi-val">{{ "%.2f"|format(total_encaisse) }} <span style="font-size:.8rem">DH</span></div>
+    <div class="kpi-lbl">Total Encaissé</div>
+    <div class="kpi-sub">{{ historique_paiements|length }} paiement(s)</div>
+  </div>
+  <div class="dossier-kpi info">
+    <div class="kpi-val">{{ item.duree_contrat or 1 }} <span style="font-size:.8rem">an(s)</span></div>
+    <div class="kpi-lbl">Durée de Contrat</div>
+    <div class="kpi-sub">+{{ item.taux_augmentation or 5 }}% / renouvellement</div>
+  </div>
+</div>
 
-  <!-- COLONNE GAUCHE -->
-  <div>
+<!-- ─── TABS ─── -->
+<div class="dossier-tabs" id="soukTabs">
+  <button class="dossier-tab-btn active" onclick="switchTab(this, 'tabInfo')">📋 Informations & Redevable</button>
+  <button class="dossier-tab-btn" onclick="switchTab(this, 'tabPmt')">💳 Paiements & Encaissements
+    {% if historique_paiements %}<span class="badge b-primary" style="font-size:.65rem">{{ historique_paiements|length }}</span>{% endif %}
+  </button>
+  <button class="dossier-tab-btn" onclick="switchTab(this, 'tabRnv')">🔄 Renouvellements & Avis
+    {% if avis_list %}<span class="badge b-danger" style="font-size:.65rem">{{ avis_list|length }}</span>{% endif %}
+  </button>
+  <button class="dossier-tab-btn" onclick="switchTab(this, 'tabDocs')">📁 Documents & Pièces
+    {% if documents %}<span class="badge b-sec" style="font-size:.65rem">{{ documents|length }}</span>{% endif %}
+  </button>
+</div>
 
-    <!-- Informations contrat -->
-    <div class="card mb-3">
-      <div class="card-header"><h3>📋 Informations Contrat</h3></div>
-      <div class="info-grid">
-        <div class="info-row"><span class="lbl">N° Contrat</span><span class="val" style="color:var(--primary)">{{ item.numero }}</span></div>
-        <div class="info-row"><span class="lbl">Souk</span><span class="val">{{ item.nom_souk }}</span></div>
-        <div class="info-row"><span class="lbl">Emplacement</span><span class="val">{{ item.num_emplacement or '—' }}</span></div>
-        <div class="info-row"><span class="lbl">Activité</span><span class="val">{{ item.type_activite or '—' }}</span></div>
-        <div class="info-row accent"><span class="lbl">Redevance mensuelle</span><span class="val">{{ "%.2f"|format(rev_mens) }} DH</span></div>
-        <div class="info-row"><span class="lbl">Redevance annuelle</span><span class="val">{{ "%.2f"|format(rev_mens * 12) }} DH</span></div>
-        <div class="info-row"><span class="lbl">Durée contrat</span><span class="val">{{ item.duree_contrat or 1 }} an(s)</span></div>
-        <div class="info-row"><span class="lbl">Augmentation renouvellement</span><span class="val" style="color:var(--ok)">+{{ item.taux_augmentation or 5 }}%</span></div>
-        <div class="info-row"><span class="lbl">Date début</span><span class="val">{{ item.date_debut or '—' }}</span></div>
-        <div class="info-row {{ 'danger' if item.statut=='resilie' else 'ok' }}">
-          <span class="lbl">Date fin</span><span class="val">{{ item.date_fin or 'Indéterminée' }}</span>
-        </div>
-        <div class="info-row {{ 'ok' if item.statut=='actif' else 'danger' }}">
-          <span class="lbl">Statut</span>
-          <span class="val"><span class="badge {{ 'b-ok' if item.statut=='actif' else 'b-danger' }}">{{ item.statut }}</span></span>
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="tabInfo" class="dossier-tab-pane active">
+  <div class="dossier-grid">
+    <!-- Carte Contrat -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>🛒 Informations de l'Affermage</h3>
+        <span class="badge {{ 'b-ok' if item.statut=='actif' else 'b-danger' }}">{{ item.statut|upper }}</span>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° de Dossier</span>
+            <span class="fval">{{ item.numero }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nom du Souk</span>
+            <span class="fval">{{ item.nom_souk }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">N° Emplacement</span>
+            <span class="fval">{{ item.num_emplacement or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Activité</span>
+            <span class="fval">{{ item.type_activite or '—' }}</span>
+          </div>
+          <div class="field-box primary-box">
+            <span class="flbl">Redevance Mensuelle Initiale</span>
+            <span class="fval">{{ "%.2f"|format(rev_mens) }} DH</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Redevance Annuelle</span>
+            <span class="fval">{{ "%.2f"|format(rev_mens * 12) }} DH</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Durée du contrat</span>
+            <span class="fval">{{ item.duree_contrat or 1 }} an(s)</span>
+          </div>
+          <div class="field-box ok-box">
+            <span class="flbl">Taux Augmentation</span>
+            <span class="fval">+{{ item.taux_augmentation or 5 }}%</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date Début</span>
+            <span class="fval">{{ item.date_debut or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date Fin</span>
+            <span class="fval">{{ item.date_fin or 'Indéterminée' }}</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Fermier -->
-    <div class="card mb-3">
-      <div class="card-header"><h3>👤 Fermier</h3></div>
-      <div class="info-grid">
-        <div class="info-row"><span class="lbl">N° Contribuable</span><span class="val" style="color:var(--primary)">{{ item.ctb_num }}</span></div>
-        <div class="info-row"><span class="lbl">Nom</span><span class="val">{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</span></div>
-        {% if item.telephone %}
-        <div class="info-row"><span class="lbl">Téléphone</span><span class="val">{{ item.telephone }}</span></div>
+    <!-- Carte Redevable / Fermier -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>👤 Redevable / Fermier</h3>
+        <a href="{{ url_for('contribuables.ctb_detail', id=item.contribuable_id) }}" class="btn btn-outline btn-xs">Voir fiche complète →</a>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">CIN / Identifiant</span>
+            <span class="fval">{{ item.cin or item.ctb_num }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nom & Prénom / Raison</span>
+            <span class="fval">{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Téléphone</span>
+            <span class="fval">{{ item.telephone or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Adresse</span>
+            <span class="fval">{{ item.adresse or '—' }}</span>
+          </div>
+        </div>
+
+        {% if nb_mois_impaye > 0 %}
+        <div class="dossier-alert-box danger" style="margin-top:16px;margin-bottom:0">
+          <div>
+            <strong>⚠️ Situation financière en retard</strong>
+            <div style="font-size:.78rem">{{ nb_mois_impaye }} mois impayés pour un total de <strong>{{ "%.2f"|format(total_impaye) }} DH</strong></div>
+          </div>
+          <a href="{{ url_for('sou.sou_paiement', id=ref_id) }}" class="btn btn-accent btn-sm">💳 Régulariser →</a>
+        </div>
         {% endif %}
-        {% if item.adresse %}
-        <div class="info-row" style="grid-column:span 2"><span class="lbl">Adresse</span><span class="val">{{ item.adresse }}</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PANE 2 : PAIEMENTS ─── -->
+<div id="tabPmt" class="dossier-tab-pane">
+  <!-- Détail impayés -->
+  {% if groupes_impaye %}
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3 style="color:var(--danger)">⚠️ Détail des Périodes Impayées</h3>
+      <span class="badge b-danger">{{ nb_mois_impaye }} mois — {{ "%.2f"|format(total_impaye) }} DH</span>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead><tr><th>Période Contractuelle</th><th>Redevance Mensuelle</th><th>Nb Mois</th><th>Montant Dû</th></tr></thead>
+        <tbody>
+          {% for g in groupes_impaye %}
+          <tr>
+            <td><span class="badge b-primary">R{{ g.renouvellement }}</span> {{ g.mois_debut }} → {{ g.mois_fin }}</td>
+            <td><strong>{{ "%.2f"|format(g.redevance_mensuelle) }} DH</strong></td>
+            <td><span class="badge b-info">{{ g.nb_mois }}</span></td>
+            <td><strong style="color:var(--danger)">{{ "%.2f"|format(g.montant) }} DH</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Historique des paiements -->
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>💳 Historique des Paiements & Bulletins</h3>
+      <a href="{{ url_for('sou.sou_paiement', id=ref_id) }}" class="btn btn-accent btn-sm">+ Nouveau Paiement</a>
+    </div>
+    {% if historique_paiements %}
+    {% for h in historique_paiements %}
+    <div class="pmt-row">
+      <div>
+        <div class="pmt-bull">{{ h.numero_bulletin or h.numero or '—' }}</div>
+        <div style="font-size:.7rem;color:var(--muted)">Émis le : {{ (h.date_creation or '')[:10] }}</div>
+        <div class="pmt-mois">
+          {% if h.notes %}
+            {% for p in h.notes.split('|')[0].strip().split(',') %}
+              {% set mp = p.strip() %}
+              {% if mp and mp|length == 7 %}<span class="pmt-mois-tag">{{ mp }}</span>{% endif %}
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <strong style="font-size:1rem;color:var(--text)">{{ "%.2f"|format(h.montant_total|float) }} DH</strong>
+        {% if h.numero_versement %}
+        <div style="font-size:.7rem;color:var(--ok);font-weight:700">BV: {{ h.numero_versement }}</div>
+        <div style="font-size:.65rem;color:var(--muted)">{{ h.date_encaissement or '' }}</div>
         {% endif %}
-        {% if item.cin %}
-        <div class="info-row"><span class="lbl">CIN</span><span class="val">{{ item.cin }}</span></div>
+      </div>
+      <div class="pmt-statut">
+        <span class="badge {% if h.bull_statut=='encaisse' %}b-ok{% elif h.bull_statut=='valide' %}b-info{% elif h.bull_statut=='paye' %}b-ok{% else %}b-warn{% endif %}">
+          {{ h.bull_statut or h.statut }}
+        </span>
+        {% if h.bull_id and h.bull_statut in ('valide', None, '') and can_pay() %}
+        <button onclick="toggleEncaiss({{ h.bull_id }})" class="btn btn-xs btn-outline" style="font-size:.65rem">
+          🏦 Encaisser
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% if h.bull_id and h.bull_statut in ('valide', None, '') %}
+    <div class="encaiss-inline" id="encaiss_{{ h.bull_id }}">
+      <form method="post" action="{{ url_for('sou.sou_encaisser', bull_id=h.bull_id) }}">
+        <input type="hidden" name="ref_id" value="{{ ref_id }}">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="font-size:.78rem;font-weight:800;color:#155724">🏦 N° Bulletin de versement :</div>
+          <input type="text" name="numero_versement" placeholder="Ex: BV-2026-0042" required
+                 style="flex:1;min-width:140px;padding:6px 10px;border:1.5px solid #28a745;border-radius:8px;font-size:.8rem">
+          <input type="date" name="date_encaissement" value="{{ today }}"
+                 style="padding:6px 10px;border:1.5px solid #28a745;border-radius:8px;font-size:.8rem">
+          <button type="submit" class="btn btn-sm" style="background:#28a745;color:#fff">✅ Valider Encaissement</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    <div class="empty-state"><span class="ei">💳</span>Aucun paiement enregistré pour cet affermage</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ─── PANE 3 : RENOUVELLEMENTS & AVIS ─── -->
+<div id="tabRnv" class="dossier-tab-pane">
+  <div class="dossier-grid">
+    <!-- Périodes -->
+    <div class="dossier-card">
+      <div class="dossier-card-head"><h3>🔄 Périodes de Renouvellement</h3></div>
+      <div class="dossier-card-body">
+        {% if periodes %}
+        <div class="rnv-list">
+          {% for p in periodes %}
+          <div class="rnv-item {{ 'cur' if loop.last else '' }}">
+            <span class="rnv-badge">{% if loop.first %}Période Initiale{% else %}Renouv. {{ loop.index0 }}{% endif %}</span>
+            <div style="flex:1">
+              <div class="rnv-rev">{{ "%.2f"|format(p.redevance_mensuelle) }} DH <span style="font-weight:400;font-size:.72rem;color:var(--muted)">/ mois</span></div>
+              <div class="rnv-dates">{{ p.date_debut.strftime('%d/%m/%Y') }} → {{ p.date_fin.strftime('%d/%m/%Y') }}</div>
+            </div>
+            {% if not loop.first %}<span class="rnv-aug">▲ +{{ item.taux_augmentation or 5 }}%</span>{% endif %}
+            {% if loop.last %}<span class="badge b-ok">En cours</span>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><span class="ei">🔄</span>Aucun renouvellement</div>
         {% endif %}
       </div>
     </div>
 
     <!-- Avis de non-paiement -->
-    <div class="card mb-3">
-      <div class="card-header">
-        <h3>📋 Avis de non-paiement</h3>
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>📋 Avis de Non-Paiement Émis</h3>
         {% if avis_list %}<span class="badge b-danger">{{ avis_list|length }}</span>{% endif %}
       </div>
       {% if avis_list %}
       {% for av in avis_list %}
       <div class="avis-row">
         <div>
-          <div style="font-weight:700;color:{{ 'var(--ok)' if av.statut=='regle' else 'var(--danger)' }}">{{ av.numero_avis }}</div>
-          <div style="font-size:.63rem;color:var(--muted)">{{ av.date_emission }} · Année {{ av.annee }}</div>
+          <div style="font-weight:800;color:{{ 'var(--ok)' if av.statut=='regle' else 'var(--danger)' }}">{{ av.numero_avis }}</div>
+          <div style="font-size:.7rem;color:var(--muted)">Émis le : {{ av.date_emission }} · Année {{ av.annee }}</div>
         </div>
         <div style="text-align:right">
           <strong style="color:var(--danger)">{{ "%.2f"|format(av.montant_du) }} DH</strong>
-          <br><span class="badge {{ 'b-ok' if av.statut=='regle' else 'b-danger' }}">{{ av.statut }}</span>
+          <div><span class="badge {{ 'b-ok' if av.statut=='regle' else 'b-danger' }}">{{ av.statut }}</span></div>
         </div>
       </div>
       {% endfor %}
       {% else %}
-      <div class="empty-state" style="padding:18px"><span class="ei">📋</span>Aucun avis émis</div>
+      <div class="empty-state"><span class="ei">📋</span>Aucun avis émis</div>
       {% endif %}
     </div>
-
-    <!-- Périodes de renouvellement -->
-    {% if periodes %}
-    <div class="card">
-      <div class="card-header"><h3>🔄 Périodes de renouvellement</h3></div>
-      <div class="rnv-list">
-        {% for p in periodes %}
-        <div class="rnv-item {{ 'cur' if loop.last else '' }}">
-          <span class="rnv-badge">{% if loop.first %}Init.{% else %}R{{ loop.index0 }}{% endif %}</span>
-          <div style="flex:1">
-            <div class="rnv-rev">{{ "%.2f"|format(p.redevance_mensuelle) }} DH<span style="font-weight:400;font-size:.7rem;color:inherit;opacity:.8">/mois</span></div>
-            <div class="rnv-dates">{{ p.date_debut.strftime('%d/%m/%Y') }} → {{ p.date_fin.strftime('%d/%m/%Y') }}</div>
-          </div>
-          {% if not loop.first %}<span class="rnv-aug">▲ +{{ item.taux_augmentation or 5 }}%</span>{% endif %}
-          {% if loop.last %}<span class="badge b-ok" style="white-space:nowrap">En cours</span>{% endif %}
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
   </div>
+</div>
 
-  <!-- COLONNE DROITE -->
-  <div>
+<!-- ─── PANE 4 : DOCUMENTS ─── -->
+<div id="tabDocs" class="dossier-tab-pane">
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>📁 Documents & Pièces Justificatives</h3>
+      {% if documents %}<span style="font-size:.78rem;color:var(--muted)">{{ documents|length }} fichier(s)</span>{% endif %}
+    </div>
 
-    <!-- Historique des paiements AVEC encaissement régisseur -->
-    <div class="card mb-3">
-      <div class="card-header">
-        <h3>💳 Historique des paiements</h3>
-        {% if historique_paiements %}<span style="font-size:.72rem;color:var(--muted)">{{ historique_paiements|length }} opération(s)</span>{% endif %}
-      </div>
-      {% if historique_paiements %}
-      {% for h in historique_paiements %}
-      <div class="pmt-row">
-        <div>
-          <div class="pmt-bull">{{ h.numero_bulletin or h.numero or '—' }}</div>
-          <div style="font-size:.63rem;color:var(--muted)">{{ (h.date_creation or '')[:10] }}</div>
-          <div class="pmt-mois" style="margin-top:4px">
-            {% if h.notes %}
-              {% for p in h.notes.split('|')[0].strip().split(',') %}
-                {% set mp = p.strip() %}
-                {% if mp and mp|length == 7 %}
-                <span class="pmt-mois-tag">{{ mp }}</span>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-          </div>
-        </div>
-        <div style="font-size:.82rem">
-          <strong>{{ "%.2f"|format(h.montant_total|float) }} DH</strong>
-          {% if h.numero_versement %}
-          <div style="font-size:.63rem;color:var(--ok)">Versement: {{ h.numero_versement }}</div>
-          <div style="font-size:.63rem;color:var(--muted)">{{ h.date_encaissement or '' }}</div>
-          {% endif %}
-        </div>
-        <div class="pmt-statut">
-          <span class="badge {% if h.bull_statut=='encaisse' %}b-ok{% elif h.bull_statut=='valide' %}b-info{% elif h.bull_statut=='paye' %}b-ok{% else %}b-warn{% endif %}">
-            {{ h.bull_statut or h.statut }}
-          </span>
-          {% if h.bull_id and h.bull_statut in ('valide', None, '') %}
-          <button onclick="toggleEncaiss({{ h.bull_id }})" class="btn btn-xs btn-outline" style="font-size:.6rem;margin-top:3px">
-            🏦 Encaisser
-          </button>
-          {% endif %}
+    {% if documents %}
+    {% for doc in documents %}
+    {% set ext = doc.nom_fichier.rsplit('.',1)[-1].lower() if '.' in doc.nom_fichier else '' %}
+    {% set icon = '📄' if ext=='pdf' else ('🖼' if ext in ('jpg','jpeg','png') else ('📊' if ext in ('xls','xlsx') else '📝')) %}
+    <div class="doc-item">
+      <span class="doc-icon">{{ icon }}</span>
+      <div class="doc-info">
+        <div class="doc-name" title="{{ doc.nom_fichier }}">{{ doc.nom_fichier }}</div>
+        <div class="doc-meta">
+          <span class="doc-type-badge">{{ doc.type_doc }}</span>
+          · Ajouté le {{ (doc.date_upload or '')[:10] }}
         </div>
       </div>
-      <!-- Formulaire encaissement inline -->
-      {% if h.bull_id and h.bull_statut in ('valide', None, '') %}
-      <div class="encaiss-inline" id="encaiss_{{ h.bull_id }}" style="margin:0 14px 8px">
-        <form method="post" action="{{ url_for('sou.sou_encaisser', bull_id=h.bull_id) }}">
-          <input type="hidden" name="ref_id" value="{{ ref_id }}">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <div style="font-size:.72rem;font-weight:700;color:#155724">🏦 N° Bulletin de versement :</div>
-            <input type="text" name="numero_versement" placeholder="Ex: BV-2026-0042"
-                   style="flex:1;min-width:120px;padding:4px 8px;border:1.5px solid #28a745;border-radius:6px;font-size:.74rem" required>
-            <input type="date" name="date_encaissement" value="{{ today }}"
-                   style="padding:4px 8px;border:1.5px solid #28a745;border-radius:6px;font-size:.74rem">
-            <button type="submit" class="btn btn-sm" style="background:#28a745;color:#fff;padding:4px 12px">✅ Valider</button>
-          </div>
+      <div class="df gap-2">
+        <a href="{{ url_for('sou.sou_telecharger_doc', id=ref_id, doc_id=doc.id) }}" class="btn btn-xs btn-outline" title="Télécharger">⬇️ Télécharger</a>
+        <form method="post" action="{{ url_for('sou.sou_supprimer_doc', id=ref_id, doc_id=doc.id) }}"
+              onsubmit="return confirmForm(this, {title:'Supprimer le document',msg:'Ce document sera supprimé définitivement.',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})" style="display:inline">
+          <button type="submit" class="btn btn-xs btn-danger">✕</button>
         </form>
       </div>
-      {% endif %}
-      {% endfor %}
-
-      <div style="padding:8px 14px;background:var(--bg);border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="font-size:.73rem;color:var(--muted)">Total encaissé : <strong class="text-ok">{{ "%.2f"|format(total_encaisse) }} DH</strong></div>
-        <div style="font-size:.73rem;color:var(--muted);text-align:right">Impayé : <strong class="text-danger">{{ "%.2f"|format(total_impaye) }} DH</strong></div>
-      </div>
-
-      {% else %}
-      <div class="empty-state" style="padding:22px"><span class="ei">💳</span>Aucun paiement enregistré</div>
-      {% endif %}
     </div>
-
-    <!-- Détail des impayés -->
-    {% if groupes_impaye %}
-    <div class="card mb-3">
-      <div class="card-header">
-        <h3>⚠️ Détail des impayés</h3>
-        <span class="badge b-danger">{{ nb_mois_impaye }} mois — {{ "%.2f"|format(total_impaye) }} DH</span>
-      </div>
-      <div class="table-responsive">
-        <table>
-          <thead><tr><th>Période</th><th>DH/mois</th><th>Nb mois</th><th>Sous-total</th></tr></thead>
-          <tbody>
-            {% for g in groupes_impaye %}
-            <tr>
-              <td style="font-size:.73rem">
-                <span class="badge b-primary">R{{ g.renouvellement }}</span>
-                {{ g.mois_debut }} → {{ g.mois_fin }}
-              </td>
-              <td><strong style="color:var(--primary)">{{ "%.2f"|format(g.redevance_mensuelle) }}</strong></td>
-              <td><span class="badge b-info">{{ g.nb_mois }}</span></td>
-              <td><strong style="color:var(--danger)">{{ "%.2f"|format(g.montant) }} DH</strong></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div style="padding:8px 14px;text-align:right;font-size:.8rem;border-top:1px solid var(--border)">
-        Total : <strong style="color:var(--danger);font-size:1rem">{{ "%.2f"|format(total_impaye) }} DH</strong>
-        &nbsp;·&nbsp;
-        <a href="{{ url_for('sou.sou_paiement', id=ref_id) }}" class="btn btn-accent btn-sm">💳 Payer maintenant</a>
-      </div>
-    </div>
+    {% endfor %}
     {% endif %}
 
-    <!-- Documents -->
-    <div class="card">
-      <div class="card-header">
-        <h3>📁 Documents & Contrats</h3>
-        {% if documents %}<span style="font-size:.72rem;color:var(--muted)">{{ documents|length }} fichier(s)</span>{% endif %}
+    <!-- Zone upload -->
+    <form method="post" action="{{ url_for('sou.sou_upload_doc', id=ref_id) }}" enctype="multipart/form-data">
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" name="fichier" onchange="updateFileName(this)">
+        <label for="fileInput">
+          <div style="font-size:1.8rem;margin-bottom:6px">📎</div>
+          <div id="fileLabel" style="font-weight:700">Cliquer ou glisser-déposer pour joindre un document</div>
+          <div style="font-size:.72rem;margin-top:4px;color:var(--muted)">PDF, Word, Excel, Images — max 10 Mo</div>
+        </label>
       </div>
-
-      {% if documents %}
-      {% for doc in documents %}
-      {% set ext = doc.nom_fichier.rsplit('.',1)[-1].lower() if '.' in doc.nom_fichier else '' %}
-      {% set icon = '📄' if ext=='pdf' else ('🖼' if ext in ('jpg','jpeg','png') else ('📊' if ext in ('xls','xlsx') else '📝')) %}
-      <div class="doc-item">
-        <span class="doc-icon">{{ icon }}</span>
-        <div class="doc-info">
-          <div class="doc-name" title="{{ doc.nom_fichier }}">{{ doc.nom_fichier }}</div>
-          <div class="doc-meta">
-            <span class="doc-type-badge">{{ doc.type_doc }}</span>
-            · {{ (doc.date_upload or '')[:10] }}
-          </div>
-        </div>
-        <div class="df gap-2">
-          <a href="{{ url_for('sou.sou_telecharger_doc', id=ref_id, doc_id=doc.id) }}"
-             class="btn btn-xs btn-outline" title="Télécharger">⬇️</a>
-          <form method="post" action="{{ url_for('sou.sou_supprimer_doc', id=ref_id, doc_id=doc.id) }}"
-                onsubmit="return confirmForm(this, {title:'Supprimer le document',msg:'Ce document sera supprimé définitivement.',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})" style="display:inline">
-            <button type="submit" class="btn btn-xs" style="background:var(--danger);color:#fff">✕</button>
-          </form>
-        </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;padding:0 18px 16px">
+        <select name="type_doc" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:.82rem">
+          <option value="contrat">📄 Contrat d'affermage</option>
+          <option value="avenant">📝 Avenant</option>
+          <option value="quittance">🧾 Quittance / Reçu</option>
+          <option value="justificatif">📋 Pièce Justificative</option>
+          <option value="autre">📁 Autre Document</option>
+        </select>
+        <div></div>
+        <button type="submit" class="btn btn-primary btn-sm" id="uploadBtn" disabled>⬆️ Uploader le document</button>
       </div>
-      {% endfor %}
-      {% endif %}
-
-      <!-- Zone upload -->
-      <form method="post" action="{{ url_for('sou.sou_upload_doc', id=ref_id) }}"
-            enctype="multipart/form-data">
-        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-          <input type="file" id="fileInput" name="fichier" onchange="updateFileName(this)">
-          <label for="fileInput">
-            <div style="font-size:1.5rem;margin-bottom:6px">📎</div>
-            <div id="fileLabel">Cliquer pour ajouter un document</div>
-            <div style="font-size:.63rem;margin-top:3px;color:var(--muted)">PDF, Word, Excel, Image — max 10 Mo</div>
-          </label>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;padding:0 14px 12px">
-          <select name="type_doc" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.78rem">
-            <option value="contrat">📄 Contrat</option>
-            <option value="avenant">📝 Avenant</option>
-            <option value="quittance">🧾 Quittance</option>
-            <option value="justificatif">📋 Justificatif</option>
-            <option value="autre">📁 Autre</option>
-          </select>
-          <div></div>
-          <button type="submit" class="btn btn-primary btn-sm" id="uploadBtn" disabled>⬆️ Uploader</button>
-        </div>
-      </form>
-    </div>
-
+    </form>
   </div>
 </div>
 
@@ -417,8 +453,7 @@
         <div class="form-grid mb-3">
           <div class="form-group">
             <label>Redevance mensuelle initiale (DH)</label>
-            <input type="number" name="redevance_mensuelle" step="0.01" min="0"
-                   value="{{ "%.2f"|format(rev_mens) }}">
+            <input type="number" name="redevance_mensuelle" step="0.01" min="0" value="{{ "%.2f"|format(rev_mens) }}">
           </div>
           <div class="form-group"><label>Durée contrat (ans)</label>
             <input type="number" name="duree_contrat" min="1" max="20" value="{{ item.duree_contrat or 1 }}">
@@ -439,7 +474,7 @@
           <div class="form-group"><label>Date début</label><input type="date" name="date_debut" value="{{ item.date_debut or '' }}"></div>
           <div class="form-group"><label>Date fin</label><input type="date" name="date_fin" value="{{ item.date_fin or '' }}"></div>
         </div>
-        <div class="modal-footer" style="border-top:1px solid var(--border);margin:0 -20px -20px;padding:14px 20px">
+        <div class="modal-footer" style="border-top:1px solid var(--line);margin:0 -20px -20px;padding:14px 20px">
           <button type="button" class="btn btn-outline" onclick="closeModal('modalModifier')">Annuler</button>
           <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
         </div>
@@ -449,37 +484,26 @@
 </div>
 
 <script>
+function switchTab(btn, paneId) {
+  document.querySelectorAll('#soukTabs .dossier-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dossier-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+
 function updateFileName(input) {
   const label = document.getElementById('fileLabel');
   const btn = document.getElementById('uploadBtn');
   if (input.files && input.files[0]) {
     label.textContent = '📎 ' + input.files[0].name;
     btn.disabled = false;
-    btn.style.opacity = '1';
   }
 }
 
 function toggleEncaiss(bullId) {
   const el = document.getElementById('encaiss_' + bullId);
-  if (el) {
-    el.classList.toggle('show');
-  }
-}
-
-// Drag & drop
-const zone = document.querySelector('.upload-zone');
-if (zone) {
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--primary)'; });
-  zone.addEventListener('dragleave', () => { zone.style.borderColor = 'var(--border)'; });
-  zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.style.borderColor = 'var(--border)';
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      document.getElementById('fileInput').files = files;
-      updateFileName(document.getElementById('fileInput'));
-    }
-  });
+  if (el) el.classList.toggle('show');
 }
 </script>
 {% endblock %}

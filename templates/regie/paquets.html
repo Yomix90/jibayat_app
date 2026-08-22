@@ -62,7 +62,10 @@
         {% if p.statut == 'recu' %}
         <div style="display:flex;gap:4px">
           <form method="POST" action="{{ url_for('regie.ouvrir_paquet', pid=p.id) }}"
-                onsubmit="return confirm('Ouvrir le paquet et générer les carnets ?')">
+                data-confirm="info"
+                data-confirm-title="Ouvrir le paquet"
+                data-confirm-msg="Ouvrir le paquet <strong>{{ p.numero_paquet }}</strong> et générer l'ensemble des carnets associés ?"
+                data-confirm-btn="📂 Ouvrir et générer">
             <button type="submit" class="btn btn-outline" style="font-size:.72rem;padding:4px 10px">📂 Ouvrir</button>
           </form>
           <button type="button" class="btn btn-outline" style="font-size:.72rem;padding:4px 10px" 

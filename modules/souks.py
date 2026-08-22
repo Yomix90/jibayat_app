@@ -7,9 +7,8 @@ import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
-from werkzeug.utils import secure_filename
 from database import get_db
-from modules.helpers import login_required, get_current_user, gen_num
+from modules.helpers import login_required, get_current_user, gen_num, get_next_seq_num, permission_required
 
 bp = Blueprint('sou', __name__)
 
@@ -175,8 +174,9 @@ def sou_liste():
            WHERE a.actif=1 ORDER BY a.date_creation DESC'''
     ).fetchall()
     contribuables = conn.execute(
-        'SELECT id,numero,nom,prenom,raison_sociale FROM contribuables WHERE actif=1'
+        'SELECT id,numero,nom,prenom,raison_sociale,cin FROM contribuables WHERE actif=1'
     ).fetchall()
+    next_numero = get_next_seq_num('affermages', 'numero', conn)
     conn.close()
 
     # Calcul total impayé pour chaque affermage
@@ -196,7 +196,7 @@ def sou_liste():
 
     return render_template('souks/sou_liste.html',
                            user=user, items=items, items_data=items_data,
-                           contribuables=contribuables)
+                           contribuables=contribuables, next_numero=next_numero)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -205,11 +205,11 @@ def sou_liste():
 
 @bp.route('/souks/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'sou')
 def sou_ajouter():
     f = request.form
     conn = get_db()
-    n = conn.execute('SELECT COUNT(*) as c FROM affermages').fetchone()['c'] + 1
-    num = f"SOU{datetime.now().year}{n:05d}"
+    num = f.get('numero', '').strip() or get_next_seq_num('affermages', 'numero', conn)
 
     duree = int(f.get('duree_contrat', 1) or 1)
     rev_mens = round(float(f.get('redevance_mensuelle', 0) or 0), 2)
@@ -238,12 +238,13 @@ def sou_ajouter():
     )
     conn.commit()
     conn.close()
-    flash(f'Affermage {num} ajouté ✅', 'success')
+    flash(f'Affermage N° {num} ajouté ✅', 'success')
     return redirect(url_for('sou.sou_liste'))
 
 
 @bp.route('/souks/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'sou')
 def sou_modifier(id):
     f = request.form
     duree = int(f.get('duree_contrat', 1) or 1)
@@ -280,6 +281,7 @@ def sou_modifier(id):
 
 @bp.route('/souks/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'sou')
 def sou_supprimer(id):
     conn = get_db()
     conn.execute("UPDATE affermages SET actif=0 WHERE id=?", (id,))
@@ -295,6 +297,7 @@ def sou_supprimer(id):
 
 @bp.route('/souks/<int:id>/renouveler', methods=['POST'])
 @login_required
+@permission_required('modifier', 'sou')
 def sou_renouveler(id):
     conn = get_db()
     aff = conn.execute('SELECT * FROM affermages WHERE id=?', (id,)).fetchone()
@@ -335,6 +338,7 @@ def sou_renouveler(id):
 
 @bp.route('/souks/<int:id>/terminer', methods=['POST'])
 @login_required
+@permission_required('modifier', 'sou')
 def sou_terminer(id):
     date_resil = request.form.get('date_resiliation', date.today().isoformat())
     motif = request.form.get('motif_resiliation', '')
@@ -352,6 +356,7 @@ def sou_terminer(id):
 
 @bp.route('/souks/<int:id>/upload-doc', methods=['POST'])
 @login_required
+@permission_required('modifier', 'sou')
 def sou_upload_doc(id):
     user = get_current_user()
     f = request.files.get('fichier')
@@ -393,6 +398,7 @@ def sou_telecharger_doc(id, doc_id):
 
 @bp.route('/souks/<int:id>/supprimer-doc/<int:doc_id>', methods=['POST'])
 @login_required
+@permission_required('modifier', 'sou')
 def sou_supprimer_doc(id, doc_id):
     conn = get_db()
     doc = conn.execute('SELECT * FROM affermage_docs WHERE id=?', (doc_id,)).fetchone()
@@ -415,6 +421,7 @@ def sou_supprimer_doc(id, doc_id):
 
 @bp.route('/souks/<int:id>/creer-avis', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def sou_creer_avis(id):
     conn = get_db()
     aff = conn.execute(
@@ -565,6 +572,7 @@ def sou_paiement(id):
 
 @bp.route('/souks/<int:id>/payer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def sou_payer(id):
     """Enregistre une déclaration en 'emis' et un bulletin 'en_attente'.
     L'agent saisit le numéro de bulletin de versement; le régisseur valide dans /paiements."""
@@ -683,6 +691,7 @@ def sou_payer(id):
 
 @bp.route('/souks/bulletin/<int:bull_id>/encaisser', methods=['POST'])
 @login_required
+@permission_required('valider_paiement')
 def sou_encaisser(bull_id):
     """Le régisseur encaisse le bulletin avec numéro de versement."""
     user = get_current_user()

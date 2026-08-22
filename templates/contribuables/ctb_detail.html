@@ -154,9 +154,9 @@
     {% elif contrib.raison_sociale_ar %}
     <div class="name-ar">{{ contrib.raison_sociale_ar }}</div>
     {% endif %}
-    <div class="sub">N° {{ contrib.numero }} · {{ contrib.type_personne or 'physique' }} · {{ contrib.commune_nom or '—' }}</div>
+    <div class="sub">🪪 CIN : <strong>{{ contrib.cin or contrib.numero }}</strong> · {{ contrib.type_personne or 'physique' }} · {{ contrib.commune_nom or '—' }}</div>
     <div class="hero-badges">
-      {% if contrib.cin %}<span class="hero-badge">🪪 {{ contrib.cin }}</span>{% endif %}
+      {% if contrib.cin %}<span class="hero-badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-weight:800;">🪪 CIN: {{ contrib.cin }}</span>{% endif %}
       {% if contrib.ice %}<span class="hero-badge">🏭 ICE: {{ contrib.ice }}</span>{% endif %}
       {% if contrib.telephone %}<span class="hero-badge">📞 {{ contrib.telephone }}</span>{% endif %}
       {% if contrib.ville %}<span class="hero-badge">🏙️ {{ contrib.ville }}</span>{% endif %}
@@ -197,28 +197,32 @@
 
 <!-- ─── Actions ─── -->
 <div class="action-bar">
+  {% if can_edit('contribuables') %}
   <a href="{{ url_for('contribuables.modifier_contribuable', id=contrib.id) }}" class="btn btn-primary btn-sm">✏️ Modifier</a>
-  {% if total_impaye > 0 %}
+  {% endif %}
+  {% if total_impaye > 0 and can_bulletin() %}
   <a href="{{ url_for('contribuables.ctb_avis_non_paiement', id=contrib.id) }}"
      target="_blank" class="btn btn-sm" style="background:#fd7e14;color:#fff">
     📋 Avis de non-paiement
   </a>
   {% endif %}
   {% for m in modules %}
-    {% if m.code == 'TNB' %}<a href="{{ url_for('tnb.tnb_liste') }}" class="btn btn-outline btn-xs">🏗️ TNB</a>{% endif %}
-    {% if m.code == 'AFFERMAGE_SOUKS' %}<a href="{{ url_for('sou.sou_liste') }}" class="btn btn-outline btn-xs">🛒 Souks</a>{% endif %}
-    {% if m.code == 'LOCATION' %}<a href="{{ url_for('loc.loc_liste') }}" class="btn btn-outline btn-xs">🏢 Location</a>{% endif %}
-    {% if m.code == 'STATIONNEMENT' %}<a href="{{ url_for('sta.sta_liste') }}" class="btn btn-outline btn-xs">🚗 Stationnement</a>{% endif %}
-    {% if m.code == 'ODP' %}<a href="{{ url_for('odp.odp_liste') }}" class="btn btn-outline btn-xs">🎪 ODP</a>{% endif %}
-    {% if m.code == 'FOURRIERE' %}<a href="{{ url_for('fou.fou_liste') }}" class="btn btn-outline btn-xs">🔑 Fourrière</a>{% endif %}
-    {% if m.code == 'TDB' %}<a href="{{ url_for('tdb.tdb_liste') }}" class="btn btn-outline btn-xs">🍺 TDB</a>{% endif %}
+    {% if m.code == 'TNB' and can_view('tnb') %}<a href="{{ url_for('tnb.tnb_liste') }}" class="btn btn-outline btn-xs">🏗️ TNB</a>{% endif %}
+    {% if m.code == 'AFFERMAGE_SOUKS' and can_view('sou') %}<a href="{{ url_for('sou.sou_liste') }}" class="btn btn-outline btn-xs">🛒 Souks</a>{% endif %}
+    {% if m.code == 'LOCATION' and can_view('loc') %}<a href="{{ url_for('loc.loc_liste') }}" class="btn btn-outline btn-xs">🏢 Location</a>{% endif %}
+    {% if m.code == 'STATIONNEMENT' and can_view('sta') %}<a href="{{ url_for('sta.sta_liste') }}" class="btn btn-outline btn-xs">🚗 Stationnement</a>{% endif %}
+    {% if m.code == 'ODP' and can_view('odp') %}<a href="{{ url_for('odp.odp_liste') }}" class="btn btn-outline btn-xs">🎪 ODP</a>{% endif %}
+    {% if m.code == 'FOURRIERE' and can_view('fou') %}<a href="{{ url_for('fou.fou_liste') }}" class="btn btn-outline btn-xs">🔑 Fourrière</a>{% endif %}
+    {% if m.code == 'TDB' and can_view('tdb') %}<a href="{{ url_for('tdb.tdb_liste') }}" class="btn btn-outline btn-xs">🍺 TDB</a>{% endif %}
   {% endfor %}
   <!-- Supprimer le contribuable (droits requis) -->
+  {% if can_delete('contribuables') %}
   <form method="post" action="{{ url_for('contribuables.supprimer_contribuable', id=contrib.id) }}"
         style="margin-left:auto"
         onsubmit="return confirmForm(this, {title:'Supprimer le contribuable',msg:'Archiver <strong>{{ contrib.nom }} {{ contrib.prenom or contrib.raison_sociale or '' }}</strong> ? Il ne sera plus visible dans la liste. Ses déclarations seront conservées.',type:'danger',confirmText:'🗑️ Supprimer le contribuable',icon:'🗑️'})">
     <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Supprimer</button>
   </form>
+  {% endif %}
 </div>
 
 <!-- ─── TABS ─── -->
@@ -264,11 +268,10 @@
         </tr>
         {% endif %}
         <tr>
-          <td>N° Contribuable</td>
-          <td><strong style="color:var(--primary);font-size:.95rem">{{ contrib.numero }}</strong></td>
+          <td>🪪 CIN (Identifiant Unique)</td>
+          <td><strong style="color:var(--primary);font-size:.95rem;font-family:monospace;">{{ contrib.cin or contrib.numero }}</strong></td>
         </tr>
-        <tr><td>CIN</td><td>{{ contrib.cin or '—' }}</td></tr>
-        <tr><td>ICE</td><td>{{ contrib.ice or '—' }}</td></tr>
+        {% if contrib.ice %}<tr><td>ICE</td><td>{{ contrib.ice }}</td></tr>{% endif %}
         {% if contrib.rc %}<tr><td>RC</td><td>{{ contrib.rc }}</td></tr>{% endif %}
         <tr><td>Enregistré le</td><td>{{ (contrib.date_creation or '')[:10] }}</td></tr>
       </table>

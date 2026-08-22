@@ -10,11 +10,24 @@ from modules.security import check_login_rate_limit, record_failed_login, reset_
 logger = logging.getLogger('jibayat.auth')
 bp = Blueprint('auth', __name__)
 
+def _read_version():
+    import os
+    try:
+        if os.path.exists('version.txt'):
+            with open('version.txt', 'r', encoding='utf-8') as f:
+                return f.read().strip()
+    except Exception:
+        pass
+    return "1.5.2"
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     conn = get_db()
-    commune = conn.execute('SELECT nom, logo FROM communes WHERE id=1').fetchone()
-    commune_nom = commune['nom'] if commune else 'COMMUNE'
+    commune = conn.execute('SELECT * FROM communes WHERE id=1').fetchone()
+    commune_nom = (commune['nom'] if commune and commune['nom'] else 'COMMUNE').upper()
+    commune_nom_ar = commune['nom_ar'] if commune and commune['nom_ar'] else ''
+    commune_logo = commune['logo'] if commune and commune['logo'] else 'img/logo.png'
+    app_version = _read_version()
     ip_addr = request.headers.get('X-Forwarded-For', request.remote_addr or '127.0.0.1').split(',')[0].strip()
     
     if request.method == 'POST':
@@ -25,12 +38,18 @@ def login():
             return render_template(
                 'login.html',
                 error=f"Trop de tentatives infructueuses. Veuillez patienter {wait_sec} secondes.",
-                commune_nom=commune_nom
+                commune_nom=commune_nom,
+                commune_nom_ar=commune_nom_ar,
+                commune_logo=commune_logo,
+                app_version=app_version
             ), 429
 
-        email = request.form.get('email', '').strip()
+        username_input = (request.form.get('username') or request.form.get('email') or '').strip()
         pwd_submitted = request.form.get('password', '')
-        user = conn.execute('SELECT * FROM utilisateurs WHERE email=? AND actif=1', (email,)).fetchone()
+        user = conn.execute(
+            'SELECT * FROM utilisateurs WHERE (username=? OR email=?) AND actif=1',
+            (username_input, username_input)
+        ).fetchone()
         
         if user:
             # 1. Vérification werkzeug.security
@@ -54,9 +73,12 @@ def login():
                 return redirect(url_for('index'))
             
         record_failed_login(ip_addr)
-        return render_template('login.html', error='Email ou mot de passe incorrect', commune_nom=commune_nom)
+        return render_template('login.html', error='Nom d\'utilisateur ou mot de passe incorrect', 
+                               commune_nom=commune_nom, commune_nom_ar=commune_nom_ar, 
+                               commune_logo=commune_logo, app_version=app_version)
         
-    return render_template('login.html', commune_nom=commune_nom)
+    return render_template('login.html', commune_nom=commune_nom, commune_nom_ar=commune_nom_ar, 
+                           commune_logo=commune_logo, app_version=app_version)
 
 @bp.route('/logout')
 def logout():

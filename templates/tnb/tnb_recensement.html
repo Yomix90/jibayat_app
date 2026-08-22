@@ -184,14 +184,20 @@
         Vous pourrez le transférer ultérieurement vers la liste principale.
       </div>
       <form method="post" action="{{ url_for('tnb.tnb_recensement_ajouter') }}">
-        <div class="form-group" style="margin-bottom:14px">
-          <label>Redevable / Contribuable *</label>
-          <select name="contribuable_id" required>
-            <option value="">— Sélectionner —</option>
-            {% for c in contribuables %}
-            <option value="{{ c.id }}">{{ c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}{% if c.cin %} ({{ c.cin }}){% endif %}</option>
-            {% endfor %}
-          </select>
+        <div class="form-grid" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>N° Terrain * <span style="font-size:.7rem;color:var(--muted);font-weight:normal">(Généré auto, modifiable)</span></label>
+            <input name="numero_terrain" value="{{ next_numero_terrain }}" required style="font-weight:700;color:var(--primary)">
+          </div>
+          <div class="form-group">
+            <label>Redevable / Contribuable *</label>
+            <select name="contribuable_id" required>
+              <option value="">— Sélectionner —</option>
+              {% for c in contribuables %}
+              <option value="{{ c.id }}">{{ c.cin or c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
         <div class="form-grid">
           <div class="form-group"><label>Adresse terrain *</label><input name="adresse" required></div>

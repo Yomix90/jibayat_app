@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from datetime import datetime, date
 from database import get_db
-from modules.helpers import login_required, get_current_user, get_tarifs_module, get_param, calculer_penalites, gen_num
+from modules.helpers import login_required, get_current_user, get_tarifs_module, get_param, calculer_penalites, gen_num, get_next_seq_num, permission_required
 
 bp = Blueprint('tdb', __name__)
 
@@ -117,9 +117,10 @@ def tdb_liste():
         'SELECT id,numero,nom,prenom,raison_sociale,cin,rc,telephone,email,adresse FROM contribuables WHERE actif=1'
     ).fetchall()
     tarifs = get_tarifs_module('DEBITS_BOISSONS')
+    next_numero = get_next_seq_num('etablissements_boissons', 'numero', conn)
     conn.close()
     return render_template('tdb/tdb_liste.html', user=user, items=items,
-                           contribuables=contribuables, tarifs=tarifs, q=q)
+                           contribuables=contribuables, tarifs=tarifs, q=q, next_numero=next_numero)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -127,11 +128,11 @@ def tdb_liste():
 # ═══════════════════════════════════════════════════════════
 @bp.route('/debits-boissons/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'tdb')
 def tdb_ajouter():
     f = request.form
     conn = get_db()
-    n = conn.execute('SELECT COUNT(*) as c FROM etablissements_boissons').fetchone()['c'] + 1
-    num = f"TDB{datetime.now().year}{n:05d}"
+    num = f.get('numero', '').strip() or get_next_seq_num('etablissements_boissons', 'numero', conn)
     conn.execute(
         '''INSERT INTO etablissements_boissons
         (numero,contribuable_id,commune_id,nom_etablissement,type_etablissement,adresse,superficie,numero_autorisation,date_autorisation)
@@ -140,7 +141,7 @@ def tdb_ajouter():
          f.get('type_etablissement', 'cafe'), f.get('adresse', ''), f.get('superficie', 0),
          f.get('numero_autorisation', ''), f.get('date_autorisation', '')))
     conn.commit(); conn.close()
-    flash('Établissement ajouté ✅', 'success')
+    flash(f'Établissement N° {num} ajouté ✅', 'success')
     return redirect(url_for('tdb.tdb_liste'))
 
 
@@ -173,6 +174,7 @@ def tdb_detail(id):
 # ═══════════════════════════════════════════════════════════
 @bp.route('/debits-boissons/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tdb')
 def tdb_modifier(id):
     f = request.form
     conn = get_db()
@@ -258,6 +260,7 @@ def tdb_paiement(id):
 # ═══════════════════════════════════════════════════════════
 @bp.route('/debits-boissons/<int:id>/declarer', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def tdb_declarer(id):
     user = get_current_user()
     f = request.form
@@ -494,6 +497,7 @@ def tdb_avis(id):
 # ═══════════════════════════════════════════════════════════
 @bp.route('/debits-boissons/<int:id>/cessation', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tdb')
 def tdb_cessation(id):
     conn = get_db()
     conn.execute("UPDATE etablissements_boissons SET statut='cesse' WHERE id=?", (id,))
@@ -544,6 +548,7 @@ def tdb_pdf_creation_cessation(type_decl):
 # ═══════════════════════════════════════════════════════════
 @bp.route('/debits-boissons/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'tdb')
 def tdb_supprimer(id):
     user = get_current_user()
     if not user['peut_supprimer']:

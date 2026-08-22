@@ -123,11 +123,6 @@
   <button class="btn-sel-annuler" onclick="clearSelection()">✕ Annuler</button>
 </div>
 
-<!-- Info rôle -->
-<div class="alert alert-info" style="margin-bottom:14px;font-size:.85rem">
-  ℹ️ Rôle: <strong>{{ user.role_nom }}</strong>
-  {% if user.peut_valider_paiement %}<span class="badge b-ok ml-1">✅ Validation activée</span>{% endif %}
-</div>
 
 <!-- Stats -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">
@@ -443,7 +438,7 @@ function openReject(id, num){
 
 function openMasse(){
   const sel = getSelected();
-  if(!sel.length){ alert('Aucun bulletin sélectionné'); return; }
+  if(!sel.length){ showAlert('Veuillez sélectionner au moins un bulletin de paiement.', {type: 'warning', title: 'Sélection requise'}); return; }
   // Injecter les IDs cachés
   const hiddenDiv = document.getElementById('masse-hidden-ids');
   hiddenDiv.innerHTML = '';

@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}Dossier N° {{ item.numero }} — Bail Commercial {{ item.ref_local or item.boutique_numero }}{% endblock %}
+{% block page_title %}🏢 Fiche Bail Commercial — Location des Biens Communaux{% endblock %}
+
+{% block content %}
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ url_for('loc.loc_liste') }}" class="btn btn-outline btn-sm">← Liste des Baux</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    {% if can_bulletin() or can_pay() %}
+    <a href="{{ url_for('loc.loc_paiement', id=item.id) }}" class="btn btn-accent btn-sm">💳 Saisir Paiement & Quittance</a>
+    {% endif %}
+    {% if can_edit('loc') %}
+    <button onclick="openModal('editBail')" class="btn btn-primary btn-sm">✏️ Modifier</button>
+    {% endif %}
+  </div>
+  <div class="dossier-actions-right">
+    {% if can_delete('loc') %}
+    <form method="post" action="{{ url_for('loc.loc_supprimer', id=item.id) }}" style="display:inline"
+          onsubmit="return confirmForm(this, {title:'Résilier / Supprimer le bail',msg:'Supprimer ou résilier le bail <strong>{{ item.numero }}</strong> ?',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})">
+      <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Supprimer / Résilier</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-loc">
+  <span class="dossier-hero-watermark">🏢</span>
+  <div class="dossier-avatar">🏢</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">
+      {% if item.boutique_numero %}Boutique N° {{ item.boutique_numero }} — {% endif %}{{ item.ref_local or 'Local Commercial' }}
+    </h2>
+    <div class="dossier-sub">
+      <span>👤 Locataire : <strong>{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</strong></span>
+      <span>·</span>
+      <span>🪪 CIN / Ref : <strong>{{ item.cin or item.ctb_num }}</strong></span>
+      <span>·</span>
+      <span>📍 {{ item.secteur_libelle or item.adresse or 'Patrimoine Communal' }}</span>
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Bail : {{ item.numero }}</span>
+      <span class="dossier-badge {{ 'ok' if item.statut=='actif' else ('danger' if item.statut in ('resilie','expire') else 'warn') }}">
+        {{ '✅ Actif' if item.statut=='actif' else ('❌ Résilié' if item.statut=='resilie' else ('⚠️ Expiré' if item.statut=='expire' else item.statut)) }}
+      </span>
+      <span class="dossier-badge light">📅 Fin de bail : {{ item.date_fin or 'Indéterminée' }}</span>
+    </div>
+  </div>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Loyer Mensuel Fixé</div>
+    <div style="font-size:1.4rem;font-weight:900;line-height:1.2">{{ "%.2f"|format(item.loyer_mensuel or 0) }} DH</div>
+  </div>
+</div>
+
+<!-- ═══ KPIS ══════════════════════════════════════════════════════ -->
+<div class="dossier-kpis">
+  <div class="dossier-kpi ok">
+    <div class="kpi-val">{{ "%.2f"|format(item.loyer_mensuel or 0) }} <span style="font-size:.8rem">DH</span></div>
+    <div class="kpi-lbl">Loyer Mensuel</div>
+    <div class="kpi-sub">Échéance mensuelle</div>
+  </div>
+  <div class="dossier-kpi purple">
+    <div class="kpi-val">{{ item.boutique_numero or item.ref_local or '—' }}</div>
+    <div class="kpi-lbl">Local / Boutique</div>
+    <div class="kpi-sub">{{ item.superficie or '—' }} {% if item.superficie %}m²{% endif %}</div>
+  </div>
+  <div class="dossier-kpi info">
+    <div class="kpi-val">{{ declarations|length }}</div>
+    <div class="kpi-lbl">Quittances Émises</div>
+    <div class="kpi-sub">Historique loyers payés</div>
+  </div>
+  <div class="dossier-kpi warn">
+    <div class="kpi-val">{{ item.secteur_libelle or 'Commune' }}</div>
+    <div class="kpi-lbl">Secteur / Emplacement</div>
+    <div class="kpi-sub">Bail du {{ item.date_debut or '—' }}</div>
+  </div>
+</div>
+
+<!-- ─── TABS ─── -->
+<div class="dossier-tabs" id="locTabs">
+  <button class="dossier-tab-btn active" onclick="switchLocTab(this, 'paneInfo')">📋 Infos Bail & Locataire</button>
+  <button class="dossier-tab-btn" onclick="switchLocTab(this, 'paneDecls')">💳 Quittances & Règlements
+    {% if declarations %}<span class="badge b-primary" style="font-size:.65rem">{{ declarations|length }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="paneInfo" class="dossier-tab-pane active">
+  <div class="dossier-grid">
+    <!-- Carte Bail -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>🏢 Détails du Local & du Bail</h3>
+        <span class="badge {{ 'b-ok' if item.statut=='actif' else 'b-danger' }}">{{ item.statut }}</span>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° de Bail</span>
+            <span class="fval">{{ item.numero }}</span>
+          </div>
+          <div class="field-box primary-box">
+            <span class="flbl">Référence Local</span>
+            <span class="fval">{{ item.ref_local or item.boutique_numero or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Boutique</span>
+            <span class="fval">{% if item.boutique_numero %}N° {{ item.boutique_numero }} — {{ item.boutique_libelle or '' }}{% else %}—{% endif %}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Secteur</span>
+            <span class="fval">{{ item.secteur_libelle or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Superficie</span>
+            <span class="fval">{{ item.superficie or '—' }} {% if item.superficie %}m²{% endif %}</span>
+          </div>
+          <div class="field-box ok-box">
+            <span class="flbl">Loyer Mensuel</span>
+            <span class="fval">{{ "%.2f"|format(item.loyer_mensuel or 0) }} DH</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date Début</span>
+            <span class="fval">{{ item.date_debut or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date Fin</span>
+            <span class="fval">{{ item.date_fin or 'Indéterminée' }}</span>
+          </div>
+          <div class="field-box" style="grid-column:1/-1">
+            <span class="flbl">Adresse</span>
+            <span class="fval">{{ item.adresse or '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte Locataire -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>👤 Locataire / Preneur</h3>
+        <a href="{{ url_for('contribuables.ctb_detail', id=item.contribuable_id) }}" class="btn btn-outline btn-xs">Voir fiche complète →</a>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° Contribuable / CIN</span>
+            <span class="fval">{{ item.cin or item.ctb_num }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nom & Prénom / Raison Sociale</span>
+            <span class="fval">{{ item.nom }} {{ item.prenom or item.raison_sociale or '' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">CIN / RC</span>
+            <span class="fval">{{ item.cin or item.rc or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Téléphone</span>
+            <span class="fval">{{ item.telephone or '—' }}</span>
+          </div>
+        </div>
+
+        <div class="dossier-alert-box info" style="margin-top:16px;margin-bottom:0">
+          <div>
+            <strong>Gestion locative communale</strong>
+            <div style="font-size:.78rem;margin-top:2px">Saisir les quittances mensuelles ou trimestrielles directement via le module de paiement.</div>
+          </div>
+          <a href="{{ url_for('loc.loc_paiement', id=item.id) }}" class="btn btn-accent btn-sm">💳 Émettre Quittance →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PANE 2 : DECLARATIONS ─── -->
+<div id="paneDecls" class="dossier-tab-pane">
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>📄 Historique des Quittances & Règlements</h3>
+      <a href="{{ url_for('loc.loc_paiement', id=item.id) }}" class="btn btn-accent btn-sm">+ Nouvelle Quittance</a>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>N° Quittance</th>
+            <th>Année</th>
+            <th>Période</th>
+            <th>Montant Loyer</th>
+            <th>N° Bulletin</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in declarations %}
+          <tr>
+            <td><small style="color:var(--primary);font-weight:700">{{ d.numero }}</small></td>
+            <td><strong>{{ d.annee }}</strong></td>
+            <td>{% if d.trimestre == 0 %}<span class="badge b-primary">Année Complète</span>{% else %}<span class="badge b-info">T{{ d.trimestre }}</span>{% endif %}</td>
+            <td><strong style="color:var(--primary);font-size:.95rem">{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
+            <td><small style="font-weight:700">{{ d.numero_bulletin or '—' }}</small></td>
+            <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="empty-state"><span class="ei">🏢</span>Aucune quittance enregistrée</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal modifier -->
+<div class="modal-overlay" id="editBail">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ Modifier le Bail</h3>
+      <button class="modal-close" onclick="closeModal('editBail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{{ url_for('loc.loc_modifier', id=item.id) }}">
+        <div class="form-grid mb-3">
+          <div class="form-group"><label>Réf Local</label><input name="ref_local" value="{{ item.ref_local or '' }}"></div>
+          <div class="form-group"><label>Adresse</label><input name="adresse" value="{{ item.adresse or '' }}"></div>
+          <div class="form-group"><label>Superficie (m²)</label><input type="number" step="0.1" name="superficie" value="{{ item.superficie or '' }}"></div>
+          <div class="form-group"><label>Loyer Mensuel (DH)</label><input type="number" step="0.01" name="loyer_mensuel" value="{{ item.loyer_mensuel or 0 }}" required></div>
+          <div class="form-group"><label>Date début</label><input type="date" name="date_debut" value="{{ item.date_debut or '' }}"></div>
+          <div class="form-group"><label>Date fin</label><input type="date" name="date_fin" value="{{ item.date_fin or '' }}"></div>
+          <div class="form-group"><label>Statut</label>
+            <select name="statut">
+              <option value="actif" {{ 'selected' if item.statut=='actif' }}>Actif</option>
+              <option value="expire" {{ 'selected' if item.statut=='expire' }}>Expiré</option>
+              <option value="resilie" {{ 'selected' if item.statut=='resilie' }}>Résilié</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--line);margin:0 -20px -20px;padding:14px 20px">
+          <button type="button" class="btn btn-outline" onclick="closeModal('editBail')">Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchLocTab(btn, paneId) {
+  document.querySelectorAll('#locTabs .dossier-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dossier-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -761,8 +761,14 @@ async function saveSection(section) {
       }
     }
     const res = await apiPost(cfg.url, fd);
-    if (res.ok) showFeedback(section, '✅ ' + res.msg, 'ok');
-    else showFeedback(section, '❌ ' + res.error, 'err');
+    if (res.ok) {
+      showFeedback(section, '✅ ' + res.msg, 'ok');
+      if (section === 'modules') {
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    } else {
+      showFeedback(section, '❌ ' + res.error, 'err');
+    }
   } catch(e) {
     showFeedback(section, '❌ Erreur réseau : ' + e, 'err');
   }
@@ -869,7 +875,14 @@ async function importDb() {
       return;
     }
   }
-  if (!confirm('⚠️ ATTENTION : Cette opération remplace la base actuelle (une sauvegarde automatique sera créée).\nContinuer ?')) return;
+  const ok = await showConfirm({
+    type: 'danger',
+    title: 'Restauration de la Base de Données',
+    msg: '⚠️ <strong>ATTENTION :</strong> Cette opération va remplacer l\'intégralité des données actuelles par le fichier importé.',
+    detail: 'Une sauvegarde automatique de sécurité de la base actuelle sera créée avant le remplacement.',
+    confirmText: '⚡ Oui, Restaurer la base'
+  });
+  if (!ok) return;
   showFeedback('import', '⏳ Restauration et vérification en cours...', 'loading');
   const fd = new FormData();
   fd.append('db_file', selectedFile);
@@ -1013,7 +1026,14 @@ async function doUpdate() {
 
 // ── Init DB ─────────────────────────────────────────────────
 async function initDb() {
-  if (!confirm('Initialiser / mettre à jour la structure de la base de données ?')) return;
+  const ok = await showConfirm({
+    type: 'warning',
+    title: 'Initialisation de la base de données',
+    msg: 'Voulez-vous initialiser ou mettre à jour la structure de la base de données ?',
+    detail: 'Cette action applique les dernières migrations et structures sans affecter les données existantes.',
+    confirmText: '🔄 Initialiser / Mettre à jour'
+  });
+  if (!ok) return;
   showFeedback('initdb', '⏳ En cours...', 'loading');
   try {
     const res = await apiPost('/api/systeme/init-db', new FormData());

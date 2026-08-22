@@ -264,8 +264,13 @@
       <button class="btn btn-outline btn-xs"
               onclick="event.stopPropagation();openEditSec({{ s.id }},'{{ s.code }}','{{ s.libelle }}','{{ s.description|default('') }}',{{ s.ordre or 0 }})">✏️</button>
       <form method="post" action="{{ url_for('loc.loc_secteur_supprimer', id=s.id) }}"
-            onsubmit="event.stopPropagation();return confirm('Supprimer ce secteur et tous ses tarifs/boutiques ?')">
-        <button class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">🗑️</button>
+            onclick="event.stopPropagation()"
+            data-confirm="danger"
+            data-confirm-title="Supprimer le secteur"
+            data-confirm-msg="Supprimer le secteur « <strong>{{ s.libelle }}</strong> » ?"
+            data-confirm-detail="Tous les tarifs et boutiques rattachés à ce secteur seront également supprimés."
+            data-confirm-btn="🗑️ Supprimer le secteur">
+        <button class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none" title="Supprimer le secteur">🗑️</button>
       </form>
       {% endif %}
       <span id="chev-sec-{{ s.id }}">▼</span>
@@ -328,8 +333,13 @@
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('loc.loc_tarif_supprimer', id=t.id) }}"
-                onsubmit="event.stopPropagation();return confirm('Supprimer ce tarif et ses boutiques ?')">
-            <button class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">🗑️</button>
+                onclick="event.stopPropagation()"
+                data-confirm="danger"
+                data-confirm-title="Supprimer le tarif"
+                data-confirm-msg="Supprimer le tarif « <strong>{{ t.libelle }}</strong> » ?"
+                data-confirm-detail="Toutes les boutiques associées à ce tarif seront également supprimées."
+                data-confirm-btn="🗑️ Supprimer le tarif">
+            <button class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none" title="Supprimer le tarif">🗑️</button>
           </form>
           {% endif %}
           <span id="chev-tarif-{{ t.id }}">▾</span>
@@ -368,8 +378,11 @@
                    title="Affecter un locataire">📋</a>
                 {% endif %}
                 <form method="post" action="{{ url_for('loc.loc_boutique_supprimer', id=b.id) }}"
-                      onsubmit="return confirm('Supprimer boutique N°{{ b.numero }} ?')">
-                  <button class="btn btn-xs" style="padding:1px 5px;background:#fee2e2;color:#dc2626;border:none;font-size:.6rem">✕</button>
+                      data-confirm="danger"
+                      data-confirm-title="Supprimer la boutique"
+                      data-confirm-msg="Voulez-vous supprimer la boutique <strong>N°{{ b.numero }}</strong> ?"
+                      data-confirm-btn="🗑️ Supprimer">
+                  <button class="btn btn-xs" style="padding:1px 5px;background:#fee2e2;color:#dc2626;border:none;font-size:.6rem" title="Supprimer la boutique">✕</button>
                 </form>
                 {% endif %}
               </span>

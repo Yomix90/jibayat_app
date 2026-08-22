@@ -332,7 +332,7 @@
           {% if user.peut_creer_bulletin or user.peut_ajouter %}
           <button type="submit" class="btn btn-accent"
                   style="width:100%;justify-content:center;font-size:.88rem;padding:11px"
-                  onclick="return confirmPay()">
+                  onclick="return confirmPay(event)">
             🏦 Envoyer en attente &rarr; Régisseur /paiements
           </button>
           {% else %}
@@ -421,11 +421,14 @@
       </div>
       {% endif %}
       {% endif %}
-      <form method="post" action="{{ url_for('sou.sou_renouveler', id=ref_id) }}" style="margin-top:16px">
+      <form method="post" action="{{ url_for('sou.sou_renouveler', id=ref_id) }}" style="margin-top:16px"
+            data-confirm="info"
+            data-confirm-title="Renouvellement de contrat"
+            data-confirm-msg="Confirmer le renouvellement officiel du contrat pour une nouvelle période ?"
+            data-confirm-btn="🔄 Confirmer le renouvellement">
         <div class="modal-footer" style="border-top:none;padding:0">
           <button type="button" class="btn btn-outline" onclick="closeModal('modalRenouveler')">Annuler</button>
-          <button type="submit" class="btn btn-primary"
-                  onclick="return confirm('Confirmer le renouvellement du contrat ?')">
+          <button type="submit" class="btn btn-primary">
             🔄 Confirmer le renouvellement
           </button>
         </div>
@@ -442,7 +445,12 @@
       <button class="modal-close" onclick="closeModal('modalTerminer')">✕</button>
     </div>
     <div class="modal-body">
-      <form method="post" action="{{ url_for('sou.sou_terminer', id=ref_id) }}">
+      <form method="post" action="{{ url_for('sou.sou_terminer', id=ref_id) }}"
+            data-confirm="danger"
+            data-confirm-title="Résiliation du contrat"
+            data-confirm-msg="Êtes-vous sûr de vouloir résilier définitivement ce contrat ?"
+            data-confirm-detail="La résiliation est irréversible. Assurez-vous que tous les paiements dus ont été encaissés."
+            data-confirm-btn="🛑 Confirmer la résiliation">
         <div class="form-group mb-3">
           <label>Date de résiliation</label>
           <input type="date" name="date_resiliation" value="{{ today }}" required>
@@ -456,8 +464,7 @@
         </div>
         <div class="modal-footer" style="border-top:none;padding:0;margin-top:12px">
           <button type="button" class="btn btn-outline" onclick="closeModal('modalTerminer')">Annuler</button>
-          <button type="submit" class="btn btn-sm" style="background:var(--danger);color:#fff"
-                  onclick="return confirm('Confirmer la résiliation du contrat ?')">
+          <button type="submit" class="btn btn-sm" style="background:var(--danger);color:#fff">
             🛑 Confirmer la résiliation
           </button>
         </div>
@@ -606,12 +613,33 @@ function toggleEdit() {
   f.classList.toggle('open');
   b.textContent = f.classList.contains('open') ? '✕ Fermer' : '✏️ Modifier';
 }
-function confirmPay() {
+function confirmPay(e) {
+  if (e) e.preventDefault();
   const nb    = MOIS_INPUTS.filter(c => c.checked).length;
   const total = document.getElementById('totalCalculeInput').value;
   const bull  = document.getElementById('numBulInput')?.value || '';
-  if (!bull.trim()) { alert('Veuillez saisir le N° Bulletin'); return false; }
-  return confirm(`Confirmer le paiement de ${nb} mois pour ${parseFloat(total).toFixed(2)} DH ?\nBulletin : ${bull}`);
+  if (!bull.trim()) {
+    showAlert('Veuillez saisir le N° Bulletin de paiement.', {type: 'warning', title: 'N° Bulletin requis'});
+    return false;
+  }
+  if (nb === 0) {
+    showAlert('Veuillez sélectionner au moins un mois à payer.', {type: 'warning', title: 'Sélection requise'});
+    return false;
+  }
+  showConfirm({
+    type: 'success',
+    icon: '💳',
+    title: 'Confirmer le paiement',
+    msg: `Confirmer le paiement de <strong>${nb} mois</strong> pour un montant total de <strong>${parseFloat(total).toFixed(2)} DH</strong> ?`,
+    detail: `Bulletin N° : <strong>${bull}</strong>`,
+    confirmText: '💳 Confirmer & Transmettre',
+    onOk: () => {
+      const form = document.getElementById('payForm');
+      form.dataset.confirmed = 'true';
+      form.submit();
+    }
+  });
+  return false;
 }
 
 updateRecap();

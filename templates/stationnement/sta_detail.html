@@ -1,81 +1,220 @@
 {% extends 'base.html' %}
-{% block title %}Véhicule {{ vehicule.immatriculation }}{% endblock %}
-{% block page_title %}🚗 Véhicule — {{ vehicule.immatriculation }}{% endblock %}
+{% block title %}Dossier N° {{ vehicule.numero }} — Véhicule {{ vehicule.immatriculation }}{% endblock %}
+{% block page_title %}🚗 Fiche Véhicule & Stationnement (TPV){% endblock %}
+
 {% block content %}
-<div class="df gap-2 mb-3" style="flex-wrap:wrap;align-items:center">
-  <a href="{{ url_for('sta.sta_liste') }}" class="btn btn-outline btn-sm">← Liste</a>
-  <a href="{{ url_for('sta.sta_paiement', id=vehicule.id) }}" class="btn btn-accent">💳 Paiement Annuel</a>
-  <button onclick="openModal('editVeh')" class="btn btn-primary btn-sm">✏️ Modifier</button>
-  <form method="post" action="{{ url_for('sta.sta_supprimer', id=vehicule.id) }}" style="margin-left:auto"
-        onsubmit="return confirmForm(this, {title:'Supprimer le véhicule',msg:'Archiver le véhicule <strong>{{ vehicule.immatriculation }}</strong> ? Les paiements enregistrés ne seront pas supprimés.',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})">
-    <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Supprimer</button>
-  </form>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-  <div class="card">
-    <div class="card-header"><h3>🚗 Informations Véhicule</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        <div><span class="text-muted" style="font-size:.7rem">N°</span><div><strong style="color:var(--primary)">{{ vehicule.numero }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Immatriculation</span><div><strong style="font-size:1.1rem">{{ vehicule.immatriculation }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Type</span><div><span class="badge b-info">{{ vehicule.type_vehicule }}</span></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Sièges</span><div>{{ vehicule.nombre_sieges or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">N° Autorisation</span><div>{{ vehicule.num_autorisation or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Date Autorisation</span><div>{{ vehicule.date_autorisation or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Statut</span><div><span class="badge {{ 'b-ok' if vehicule.statut=='actif' else 'b-danger' }}">{{ vehicule.statut }}</span></div></div>
-      </div>
-    </div>
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ url_for('sta.sta_liste') }}" class="btn btn-outline btn-sm">← Liste Véhicules</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    {% if can_bulletin() or can_pay() %}
+    <a href="{{ url_for('sta.sta_paiement', id=vehicule.id) }}" class="btn btn-accent btn-sm">💳 Saisir Déclaration & Paiement</a>
+    {% endif %}
+    {% if can_edit('sta') %}
+    <button onclick="openModal('editVeh')" class="btn btn-primary btn-sm">✏️ Modifier</button>
+    {% endif %}
   </div>
-  <div class="card">
-    <div class="card-header"><h3>👤 Propriétaire</h3></div>
-    <div class="card-body" style="font-size:.84rem">
-      <div style="display:grid;gap:8px">
-        <div><span class="text-muted" style="font-size:.7rem">N° Contribuable</span><div><strong style="color:var(--primary)">{{ vehicule.ctb_num }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Nom</span><div><strong>{{ vehicule.nom }} {{ vehicule.prenom or vehicule.raison_sociale or '' }}</strong></div></div>
-        <div><span class="text-muted" style="font-size:.7rem">CIN</span><div>{{ vehicule.cin or '—' }}</div></div>
-        <div><span class="text-muted" style="font-size:.7rem">Téléphone</span><div>{{ vehicule.telephone or '—' }}</div></div>
-      </div>
+  <div class="dossier-actions-right">
+    {% if can_delete('sta') %}
+    <form method="post" action="{{ url_for('sta.sta_supprimer', id=vehicule.id) }}" style="display:inline"
+          onsubmit="return confirmForm(this, {title:'Supprimer le véhicule',msg:'Archiver le véhicule <strong>{{ vehicule.immatriculation }}</strong> ?',type:'danger',confirmText:'🗑️ Supprimer',icon:'🗑️'})">
+      <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5">🗑️ Archiver</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-sta">
+  <span class="dossier-hero-watermark">🚗</span>
+  <div class="dossier-avatar">🚗</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">{{ vehicule.immatriculation }}</h2>
+    <div class="dossier-sub">
+      <span>👤 {{ vehicule.nom }} {{ vehicule.prenom or vehicule.raison_sociale or '' }}</span>
+      <span>·</span>
+      <span>🪪 CIN / Ref : <strong>{{ vehicule.cin or vehicule.ctb_num }}</strong></span>
+      <span>·</span>
+      <span>🚍 {{ vehicule.type_vehicule }}</span>
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Dossier : {{ vehicule.numero }}</span>
+      <span class="dossier-badge {{ 'ok' if vehicule.statut=='actif' else 'danger' }}">
+        {{ '✅ Actif' if vehicule.statut=='actif' else ('❌ Radié' if vehicule.statut=='radie' else vehicule.statut) }}
+      </span>
       {% if annees_manquantes %}
-      <div style="margin-top:12px;background:var(--warn-bg);border-radius:8px;padding:10px;border-left:4px solid var(--warn-bd)">
-        <div style="font-size:.72rem;font-weight:700;color:#856404">⚠️ Années impayées: {% for a in annees_manquantes %}<span class="badge b-warn">{{ a }}</span> {% endfor %}</div>
-        <a href="{{ url_for('sta.sta_paiement', id=vehicule.id) }}" class="btn btn-accent btn-xs mt-2">Régulariser →</a>
-      </div>
+      <span class="dossier-badge danger">⚠️ {{ annees_manquantes|length }} année(s) impayée(s)</span>
+      {% else %}
+      <span class="dossier-badge ok">✅ Paiements à jour</span>
       {% endif %}
     </div>
   </div>
-</div>
-<div class="card">
-  <div class="card-header"><h3>📄 Historique Paiements</h3><a href="{{ url_for('sta.sta_paiement', id=vehicule.id) }}" class="btn btn-accent btn-sm">+ Paiement</a></div>
-  <div class="table-responsive">
-    <table>
-      <thead><tr><th>N° Décl.</th><th>Année</th><th>Trim.</th><th>TPV</th><th>STA</th><th>Pén. TPV</th><th>Total</th><th>Bulletin</th><th>Statut</th></tr></thead>
-      <tbody>
-        {% for d in declarations %}
-        <tr>
-          <td><small style="color:var(--primary)">{{ d.numero }}</small></td>
-          <td><strong>{{ d.annee }}</strong></td>
-          <td><span class="badge b-info" style="font-size:.65rem">T{{ d.trimestre }}</span></td>
-          <td style="color:var(--primary);font-weight:700">{{ "%.2f"|format(d.base_calcul or 0) }}</td>
-          <td style="color:#166534;font-weight:700">{{ "%.2f"|format(d.taux or 0) }}</td>
-          <td>{% if d.penalite_retard>0 %}<span class="text-danger">{{ "%.2f"|format(d.penalite_retard) }}</span>{% else %}—{% endif %}</td>
-          <td><strong>{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
-          <td><small>{{ d.numero_bulletin or '—' }}</small></td>
-          <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="9" class="empty-state">Aucun paiement enregistré</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Création dossier</div>
+    <div style="font-weight:800;font-size:.88rem">{{ (vehicule.date_creation or '')[:10] }}</div>
   </div>
 </div>
+
+<!-- ═══ KPIS ══════════════════════════════════════════════════════ -->
+<div class="dossier-kpis">
+  <div class="dossier-kpi ok">
+    <div class="kpi-val">{{ vehicule.type_vehicule }}</div>
+    <div class="kpi-lbl">Catégorie TPV</div>
+    <div class="kpi-sub">{{ vehicule.nombre_sieges or 0 }} siège(s)</div>
+  </div>
+  <div class="dossier-kpi {{ 'danger' if annees_manquantes else 'ok' }}">
+    <div class="kpi-val">{{ annees_manquantes|length }} <span style="font-size:.8rem">Année(s)</span></div>
+    <div class="kpi-lbl">Périodes Impayées</div>
+    <div class="kpi-sub">{% if annees_manquantes %}{{ annees_manquantes|join(', ') }}{% else %}À jour{% endif %}</div>
+  </div>
+  <div class="dossier-kpi info">
+    <div class="kpi-val">{{ declarations|length }}</div>
+    <div class="kpi-lbl">Paiements Enregistrés</div>
+    <div class="kpi-sub">Historique fiscal</div>
+  </div>
+  <div class="dossier-kpi warn">
+    <div class="kpi-val">{{ vehicule.num_autorisation or '—' }}</div>
+    <div class="kpi-lbl">N° Autorisation TPV</div>
+    <div class="kpi-sub">{{ vehicule.date_autorisation or 'Non renseignée' }}</div>
+  </div>
+</div>
+
+<!-- ─── TABS ─── -->
+<div class="dossier-tabs" id="staTabs">
+  <button class="dossier-tab-btn active" onclick="switchStaTab(this, 'paneInfo')">📋 Infos Véhicule & Propriétaire</button>
+  <button class="dossier-tab-btn" onclick="switchStaTab(this, 'paneDecls')">💳 Historique des Paiements
+    {% if declarations %}<span class="badge b-primary" style="font-size:.65rem">{{ declarations|length }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="paneInfo" class="dossier-tab-pane active">
+  <div class="dossier-grid">
+    <!-- Carte Véhicule -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>🚗 Informations Véhicule TPV</h3>
+        <span class="badge {{ 'b-ok' if vehicule.statut=='actif' else 'b-danger' }}">{{ vehicule.statut }}</span>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° de Dossier</span>
+            <span class="fval">{{ vehicule.numero }}</span>
+          </div>
+          <div class="field-box primary-box">
+            <span class="flbl">Immatriculation</span>
+            <span class="fval" style="font-size:1.1rem;font-weight:800">{{ vehicule.immatriculation }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Type de Véhicule</span>
+            <span class="fval">{{ vehicule.type_vehicule }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nombre de Sièges</span>
+            <span class="fval">{{ vehicule.nombre_sieges or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">N° Autorisation</span>
+            <span class="fval">{{ vehicule.num_autorisation or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date Autorisation</span>
+            <span class="fval">{{ vehicule.date_autorisation or '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte Propriétaire -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>👤 Redevable / Propriétaire</h3>
+        <a href="{{ url_for('contribuables.ctb_detail', id=vehicule.contribuable_id) }}" class="btn btn-outline btn-xs">Voir fiche complète →</a>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° Contribuable / CIN</span>
+            <span class="fval">{{ vehicule.cin or vehicule.ctb_num }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Nom & Prénom / Raison Sociale</span>
+            <span class="fval">{{ vehicule.nom }} {{ vehicule.prenom or vehicule.raison_sociale or '' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Téléphone</span>
+            <span class="fval">{{ vehicule.telephone or '—' }}</span>
+          </div>
+        </div>
+
+        {% if annees_manquantes %}
+        <div class="dossier-alert-box warn" style="margin-top:16px;margin-bottom:0">
+          <div>
+            <strong>⚠️ Années impayées détectées</strong>
+            <div style="font-size:.78rem;margin-top:2px">Exercices à régulariser : {% for a in annees_manquantes %}<span class="badge b-warn" style="font-size:.65rem">{{ a }}</span> {% endfor %}</div>
+          </div>
+          <a href="{{ url_for('sta.sta_paiement', id=vehicule.id) }}" class="btn btn-accent btn-sm">💳 Payer maintenant →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PANE 2 : DECLARATIONS ─── -->
+<div id="paneDecls" class="dossier-tab-pane">
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>📄 Historique des Paiements TPV & Stationnement</h3>
+      <a href="{{ url_for('sta.sta_paiement', id=vehicule.id) }}" class="btn btn-accent btn-sm">+ Nouveau Paiement</a>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>N° Décl.</th>
+            <th>Année</th>
+            <th>Trimestre</th>
+            <th>TPV (DH)</th>
+            <th>Stationnement (DH)</th>
+            <th>Pén. TPV</th>
+            <th>Total Payé</th>
+            <th>Bulletin</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in declarations %}
+          <tr>
+            <td><small style="color:var(--primary);font-weight:700">{{ d.numero }}</small></td>
+            <td><strong>{{ d.annee }}</strong></td>
+            <td><span class="badge b-info">T{{ d.trimestre }}</span></td>
+            <td style="color:var(--primary);font-weight:700">{{ "%.2f"|format(d.base_calcul or 0) }} DH</td>
+            <td style="color:#166534;font-weight:700">{{ "%.2f"|format(d.taux or 0) }} DH</td>
+            <td>{% if d.penalite_retard>0 %}<span class="text-danger" style="font-weight:700">{{ "%.2f"|format(d.penalite_retard) }} DH</span>{% else %}—{% endif %}</td>
+            <td><strong style="color:var(--primary);font-size:.95rem">{{ "%.2f"|format(d.montant_total) }} DH</strong></td>
+            <td><small style="font-weight:700">{{ d.numero_bulletin or '—' }}</small></td>
+            <td><span class="badge {% if d.statut=='paye' %}b-ok{% elif d.statut=='emis' %}b-warn{% else %}b-sec{% endif %}">{{ d.statut }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="empty-state"><span class="ei">🚗</span>Aucun paiement enregistré</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal modifier -->
 <div class="modal-overlay" id="editVeh">
   <div class="modal">
-    <div class="modal-header"><h3>✏️ Modifier Véhicule</h3><button class="modal-close" onclick="closeModal('editVeh')">✕</button></div>
+    <div class="modal-header"><h3>✏️ Modifier le Véhicule</h3><button class="modal-close" onclick="closeModal('editVeh')">✕</button></div>
     <div class="modal-body">
       <form method="post" action="{{ url_for('sta.sta_modifier', id=vehicule.id) }}">
         <div class="form-grid mb-3">
-          <div class="form-group"><label>Immatriculation</label><input name="immatriculation" value="{{ vehicule.immatriculation or '' }}"></div>
+          <div class="form-group"><label>Immatriculation</label><input name="immatriculation" value="{{ vehicule.immatriculation or '' }}" required></div>
           <div class="form-group"><label>Type véhicule</label>
             <select name="type_vehicule">
               {% for t in tarifs %}<option value="{{ t.libelle }}" {{ 'selected' if t.libelle==vehicule.type_vehicule }}>{{ t.libelle }}</option>{% endfor %}
@@ -84,10 +223,14 @@
           <div class="form-group"><label>N° Autorisation</label><input name="num_autorisation" value="{{ vehicule.num_autorisation or '' }}"></div>
           <div class="form-group"><label>Nombre sièges</label><input type="number" name="nombre_sieges" value="{{ vehicule.nombre_sieges or 0 }}"></div>
           <div class="form-group"><label>Statut</label>
-            <select name="statut"><option value="actif" {{ 'selected' if vehicule.statut=='actif' }}>Actif</option><option value="inactif" {{ 'selected' if vehicule.statut=='inactif' }}>Inactif</option><option value="radie" {{ 'selected' if vehicule.statut=='radie' }}>Radié</option></select>
+            <select name="statut">
+              <option value="actif" {{ 'selected' if vehicule.statut=='actif' }}>Actif</option>
+              <option value="inactif" {{ 'selected' if vehicule.statut=='inactif' }}>Inactif</option>
+              <option value="radie" {{ 'selected' if vehicule.statut=='radie' }}>Radié</option>
+            </select>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="border-top:1px solid var(--line);margin:0 -20px -20px;padding:14px 20px">
           <button type="button" class="btn btn-outline" onclick="closeModal('editVeh')">Annuler</button>
           <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
         </div>
@@ -95,4 +238,14 @@
     </div>
   </div>
 </div>
+
+<script>
+function switchStaTab(btn, paneId) {
+  document.querySelectorAll('#staTabs .dossier-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dossier-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+</script>
 {% endblock %}

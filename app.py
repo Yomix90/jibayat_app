@@ -8,10 +8,15 @@ import sys, io, json, os, shutil, threading, logging, urllib.request as _urllib_
 from datetime import datetime, date, timedelta
 import secrets as _secrets
 
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[logging.FileHandler('jibayat.log'), logging.StreamHandler()]
+    handlers=[logging.FileHandler('jibayat.log', encoding='utf-8'), logging.StreamHandler()]
 )
 logger = logging.getLogger('jibayat')
 
@@ -160,13 +165,32 @@ def _security_and_csrf_check():
         flash('Session expirée ou requête invalide. Veuillez réessayer.', 'danger')
         return redirect(url_for('index'))
 
+from modules.helpers import check_user_permission
+
 @app.context_processor
 def _inject_global_context():
     if '_csrf_token' not in session:
         session['_csrf_token'] = _secrets.token_hex(32)
+    current_user = get_current_user()
+    user_modules_map = get_all_user_modules(current_user) if current_user else {}
+    
+    def can_do(action, module_code=None):
+        return check_user_permission(current_user, action, module_code)
+
     return {
         'csrf_token': session['_csrf_token'],
-        'license_status': get_license_status()
+        'license_status': get_license_status(),
+        'user': current_user,
+        'current_user': current_user,
+        'user_modules': user_modules_map,
+        'can_do': can_do,
+        'can_add': lambda mod=None: can_do('ajouter', mod),
+        'can_edit': lambda mod=None: can_do('modifier', mod),
+        'can_delete': lambda mod=None: can_do('supprimer', mod),
+        'can_bulletin': lambda: can_do('creer_bulletin'),
+        'can_pay': lambda: can_do('valider_paiement'),
+        'can_config': lambda: can_do('config'),
+        'can_view': lambda mod=None: can_do('voir', mod),
     }
 
 # ── Enregistrement des Blueprints ─────────────────────────────
@@ -436,12 +460,18 @@ def index():
             idx = int(r[0]) - 1
             if 0 <= idx < 12: mois_paye[idx] = round(float(r[1] or 0), 2)
 
-    chart_modules_labels = [m['label'] for m in modules_stats.values()]
-    chart_modules_data   = [m['emis'] for m in modules_stats.values()]
-    chart_modules_colors = [m['color'] for m in modules_stats.values()]
+    from modules.helpers import is_system_module_active
+    active_modules_stats = {
+        k: v for k, v in modules_stats.items()
+        if is_system_module_active(k) and check_user_permission(user, 'voir', k)
+    }
+
+    chart_modules_labels = [m['label'] for m in active_modules_stats.values()]
+    chart_modules_data   = [m['emis'] for m in active_modules_stats.values()]
+    chart_modules_colors = [m['color'] for m in active_modules_stats.values()]
 
     return render_template('index.html',
-        user=user, stats=stats, modules_stats=modules_stats,
+        user=user, stats=stats, modules_stats=active_modules_stats,
         recent_bulletins=recent_bulletins, recent_decls=recent_decls,
         commune=commune, annee_cur=annee_cur,
         mois_labels=mois_labels, mois_emis=mois_emis, mois_paye=mois_paye,
@@ -452,6 +482,14 @@ def index():
 @app.route('/module/<module>/dashboard')
 @login_required
 def mod_dashboard(module):
+    from modules.helpers import is_system_module_active
+    if not is_system_module_active(module):
+        flash(f'Le module {module.upper()} est actuellement désactivé sur le système.', 'warning')
+        return redirect(url_for('index'))
+    user = get_current_user()
+    if not check_user_permission(user, 'voir', module):
+        flash(f'Accès non autorisé au module {module.upper()}.', 'danger')
+        return redirect(url_for('index'))
     mod_upper = module.upper()
     conn = get_db()
     user = get_current_user()
@@ -606,11 +644,45 @@ def mod_dashboard(module):
 
 if __name__ == '__main__':
     init_db()
-    import socket as _sock
+    PORT = 443
+    USE_HTTPS = True
+
     try:
-        s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80)); ip = s.getsockname()[0]; s.close()
+        from modules.network_announcer import start_network_announcer, get_local_ip
+        ip = get_local_ip()
     except Exception:
-        ip = 'localhost'
-    print(f"\n{'='*55}\n  JIBAYAT — Gestion Fiscale Communale\n  Local : http://localhost:5050\n  Réseau: http://{ip}:5050\n{'='*55}\n")
-    app.run(host='0.0.0.0', port=5050, debug=False)
+        import socket as _sock
+        try:
+            s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80)); ip = s.getsockname()[0]; s.close()
+        except Exception:
+            ip = 'localhost'
+
+    ssl_ctx = None
+    if USE_HTTPS:
+        try:
+            from modules.ssl_helper import get_or_create_ssl_files
+            cert_file, key_file = get_or_create_ssl_files(hostname="jibayat", local_ip=ip)
+            if cert_file and key_file:
+                ssl_ctx = (cert_file, key_file)
+        except Exception as e:
+            logger.warning(f"Erreur initialisation SSL : {e}")
+
+    try:
+        from modules.network_announcer import start_network_announcer
+        start_network_announcer(port=PORT, hostname="jibayat", is_ssl=(ssl_ctx is not None))
+    except Exception:
+        pass
+
+    proto = "https" if ssl_ctx else "http"
+    port_suffix = f":{PORT}" if PORT not in (80, 443) else ""
+
+    print(f"\n{'='*58}")
+    print(f"  JIBAYAT — Gestion Fiscale Communale ({proto.upper()})")
+    print(f"  👉 Local       : {proto}://localhost{port_suffix}")
+    print(f"  👉 Nom Réseau  : {proto}://jibayat.local{port_suffix}")
+    print(f"  👉 IP Réseau   : {proto}://{ip}{port_suffix}")
+    print(f"{'='*58}\n")
+    app.run(host='0.0.0.0', port=PORT, debug=False, ssl_context=ssl_ctx)
+
+

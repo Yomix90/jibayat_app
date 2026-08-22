@@ -105,7 +105,7 @@ class JibayatSetupWizard(tk.Tk):
         drive = os.environ.get('SystemDrive', 'C:')
         default_dir = os.path.join(drive, '\\JIBAYAT')
         self.var_install_dir = tk.StringVar(value=default_dir)
-        self.var_commune_nom = tk.StringVar(value="Commune")
+        self.var_commune_nom = tk.StringVar(value="")
         self.var_create_desktop_icon = tk.BooleanVar(value=True)
         self.var_launch_after = tk.BooleanVar(value=True)
 
@@ -126,8 +126,8 @@ class JibayatSetupWizard(tk.Tk):
                 try:
                     with open(cfg_path, 'r', encoding='utf-8') as f:
                         cfg = json.load(f)
-                    nom = cfg.get('commune', {}).get('nom')
-                    if nom:
+                    nom = cfg.get('commune', {}).get('nom', '').strip()
+                    if nom and nom.lower() not in ('ma commune', 'commune', 'ma_commune'):
                         self.var_commune_nom.set(nom)
                 except Exception:
                     pass
@@ -244,12 +244,14 @@ class JibayatSetupWizard(tk.Tk):
                 tk.Label(badge_box, text="🛡️ Mode Mise à Jour : Vos données existantes seront protégées et conservées.",
                          bg="#1e3a5f", fg="#60a5fa", font=("Segoe UI", 9, "bold")).pack(anchor="w")
 
-            tk.Label(self.content_frame, text="2. Nom de la Commune :",
-                     bg="#0f172a", fg="#f8fafc", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(0, 4))
+            tk.Label(self.content_frame, text="2. Nom Officiel de la Commune * (Obligatoire) :",
+                     bg="#0f172a", fg="#f8fafc", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(0, 2))
+            tk.Label(self.content_frame, text="⚠️ Ce nom sera enregistré dans la base de données et figurera sur tous les états officiels.",
+                     bg="#0f172a", fg="#fbbf24", font=("Segoe UI", 8)).pack(anchor="w", pady=(0, 6))
 
             ent_commune = tk.Entry(self.content_frame, textvariable=self.var_commune_nom, bg="#1e293b", fg="#ffffff",
-                                   insertbackground="#ffffff", font=("Segoe UI", 9), relief="flat")
-            ent_commune.pack(fill="x", pady=(0, 14), ipady=4)
+                                   insertbackground="#ffffff", font=("Segoe UI", 10), relief="flat")
+            ent_commune.pack(fill="x", pady=(0, 14), ipady=5)
 
             # Options
             tk.Checkbutton(self.content_frame, text="Créer ou actualiser l'icône sur le Bureau",
@@ -327,6 +329,14 @@ class JibayatSetupWizard(tk.Tk):
         if self.current_step == 1:
             self.show_step(2)
         elif self.current_step == 2:
+            nom = self.var_commune_nom.get().strip()
+            if not nom or nom.lower() in ('ma commune', 'commune', 'ma_commune', 'mon commune'):
+                messagebox.showerror(
+                    "Nom de la Commune obligatoire",
+                    "⚠️ Le nom officiel de la commune est obligatoire pour poursuivre l'installation.\n\n"
+                    "Veuillez saisir le nom exact de votre commune (ex: Commune de Marrakech, Commune Ait Amira, etc.)."
+                )
+                return
             self.show_step(3)
 
     def prev_step(self):
@@ -441,13 +451,32 @@ class JibayatSetupWizard(tk.Tk):
                 cfg['license_activated_at'] = now.strftime('%Y-%m-%d %H:%M:%S')
                 if 'commune' not in cfg:
                     cfg['commune'] = {}
-                cfg['commune']['nom'] = commune_nom
+                if commune_nom and commune_nom.lower() not in ('ma commune', 'commune'):
+                    cfg['commune']['nom'] = commune_nom
                 self.log(f"Nouvelle licence d'évaluation configurée : {license_30d}")
             else:
+                if 'commune' not in cfg:
+                    cfg['commune'] = {}
+                if commune_nom and commune_nom.lower() not in ('ma commune', 'commune'):
+                    cfg['commune']['nom'] = commune_nom
                 self.log(f"Licence existante préservée ({cfg.get('license_type', 'Standard')})")
 
             # Mettre à jour le webhook de télémétrie si manquant
             cfg['telemetry_webhook_url'] = "https://script.google.com/macros/s/AKfycbzVbZPmKK8kjFYvZI0D7ZvcUVJMyKdLHgGO_WU-Rf6XlE_UJI8rXWFmI5yIlBpUIMVM1g/exec"
+
+            # Identifiant unique de l'installation et adresse MAC physique
+            import uuid, socket, hashlib
+            mac_num = uuid.getnode()
+            mac_hex = f"{mac_num:012X}"
+            mac_str = ":".join(mac_hex[i:i+2] for i in range(0, 12, 2))
+            host_str = socket.gethostname() if hasattr(socket, 'gethostname') else "HOST"
+            raw_m = f"{mac_str}_{host_str}".encode('utf-8')
+            m_hash = hashlib.sha256(raw_m).hexdigest()[:8].upper()
+            unique_machine = f"PC-{mac_str.replace(':', '')[-6:]}-{m_hash}"
+
+            cfg['machine_id'] = unique_machine
+            cfg['mac_address'] = mac_str
+            cfg['installation_id'] = unique_machine
 
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(cfg, f, indent=2, ensure_ascii=False)
@@ -470,13 +499,39 @@ class JibayatSetupWizard(tk.Tk):
                     region TEXT, region_ar TEXT, province TEXT, province_ar TEXT, logo TEXT,
                     code TEXT, actif INTEGER DEFAULT 1
                 )''')
-                if not is_update:
-                    c.execute("INSERT OR REPLACE INTO communes (id, nom) VALUES (1, ?)", (commune_nom,))
+                if commune_nom and commune_nom.lower() not in ('ma commune', 'commune'):
+                    c.execute('''INSERT INTO communes (id, nom) VALUES (1, ?)
+                        ON CONFLICT(id) DO UPDATE SET nom=excluded.nom''', (commune_nom,))
                 conn.commit()
                 conn.close()
-                self.log(f"Base de données validée : {db_path}")
+                self.log(f"Base de données validée avec commune : {commune_nom}")
             except Exception as e:
                 self.log(f"Note DB : {e}")
+
+            # Envoi télémétrie installation vers Google Sheets
+            try:
+                import urllib.request
+                hook_url = cfg.get('telemetry_webhook_url')
+                if hook_url and hook_url.startswith('https://'):
+                    t_payload = {
+                        'action': 'install' if not is_update else 'update',
+                        'machine_id': unique_machine,
+                        'mac_address': mac_str,
+                        'installation_id': unique_machine,
+                        'commune_nom': commune_nom,
+                        'hostname': host_str,
+                        'version': APP_VERSION,
+                        'license_state': 'Essai (30 jours)' if not is_update else 'Mise à jour',
+                        'license_key': cfg.get('license_key', ''),
+                        'install_date': cfg.get('install_date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                    t_json = json.dumps(t_payload, ensure_ascii=False).encode('utf-8')
+                    t_req = urllib.request.Request(hook_url, data=t_json, headers={'Content-Type': 'application/json; charset=utf-8'}, method='POST')
+                    urllib.request.urlopen(t_req, timeout=8)
+                    self.log("Télémétrie de la commune transmise au cloud.")
+            except Exception as _te:
+                self.log(f"Note télémétrie cloud : {_te}")
 
             time.sleep(0.3)
             self.update_progress(90, "5/5 Configuration du raccourci Bureau...")

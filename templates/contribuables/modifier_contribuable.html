@@ -39,14 +39,15 @@
         </div>
       </div>
       <hr>
-      <div style="font-size:.72rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
-        <span style="background:var(--primary);color:#fff;padding:2px 8px;border-radius:4px">🔑 Identifiants Uniques</span>
-        <span style="font-size:.66rem;color:var(--muted);font-weight:400;text-transform:none">CIN = personne physique &mdash; ICE/RC = personne morale</span>
+      <!-- Identifiants Uniques -->
+      <div style="font-size:.75rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:6px">🪪 Identifiant Unique (CIN)</span>
+        <span style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:none">La Carte d'Identité Nationale constitue l'identifiant unique officiel du contribuable</span>
       </div>
       <div class="form-grid mb-3">
         <div class="form-group" id="cin_group">
-          <label>CIN <span style="font-size:.65rem;color:var(--muted);font-weight:400">(Personne physique)</span></label>
-          <input name="cin" value="{{ contrib.cin or '' }}" placeholder="AB123456" style="border-color:var(--primary)">
+          <label>N° CIN <span style="font-size:.65rem;color:var(--muted);font-weight:400">(Identifiant unique redevable)</span></label>
+          <input name="cin" id="cinInput" value="{{ contrib.cin or '' }}" placeholder="Ex: JB123456" style="border:2px solid var(--primary);font-weight:800;letter-spacing:1px;text-transform:uppercase;background:#f0f7ff;">
         </div>
         <div class="form-group" id="ice_group" {% if contrib.type_personne == 'physique' %}style="display:none"{% endif %}>
           <label>ICE <span style="font-size:.65rem;color:var(--muted);font-weight:400">(Identifiant Commun Entreprise)</span></label>

@@ -1,200 +1,302 @@
 {% extends 'base.html' %}
-{% block title %}Dossier {{ dossier.numero }}{% endblock %}
-{% block page_title %}🔑 Dossier Fourrière{% endblock %}
+{% block title %}Dossier N° {{ dossier.numero }} — Fourrière ({{ dossier.immatriculation or 'Sans immatriculation' }}){% endblock %}
+{% block page_title %}🔑 Fiche Dossier Fourrière{% endblock %}
 {% block extra_head %}
 <style>
-.hero-fou{background:linear-gradient(135deg,#2d3561,#4a4e69);color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:18px;display:flex;gap:18px;align-items:flex-start}
-.hero-fou .hf-icon{font-size:2.4rem;flex-shrink:0}
-.hero-fou h2{margin:0;font-size:1.2rem;font-weight:900}
-.hero-fou .sub{font-size:.78rem;opacity:.75;margin-top:3px}
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
-.kpi{background:var(--card);border-radius:10px;padding:12px;text-align:center;border-top:4px solid var(--primary);box-shadow:var(--shadow)}
-.kpi.danger{border-top-color:var(--danger)}.kpi.ok{border-top-color:var(--ok)}.kpi.purple{border-top-color:#6f42c1}
-.kv{font-size:1.3rem;font-weight:900;color:var(--primary)}.kpi.danger .kv{color:var(--danger)}.kpi.ok .kv{color:var(--ok)}.kpi.purple .kv{color:#6f42c1}
-.kl{font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:2px}
-
-.workflow{display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap}
-.wf-step{flex:1;min-width:120px;padding:10px 14px;border:1px solid var(--border);background:var(--bg);text-align:center;font-size:.72rem;font-weight:700;position:relative}
-.wf-step:not(:last-child):after{content:'→';position:absolute;right:-10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.9rem;z-index:1}
-.wf-step.done{background:#d4edda;border-color:#28a745;color:#155724}
-.wf-step.active{background:#fff3cd;border-color:#ffc107;color:#856404}
-.wf-step:first-child{border-radius:8px 0 0 8px}
-.wf-step:last-child{border-radius:0 8px 8px 0}
-
-.info-table td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:.82rem}
-.info-table td:first-child{width:35%;font-weight:700;color:var(--muted);font-size:.73rem}
-.action-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg);border-radius:10px;margin-bottom:14px;border:1px solid var(--border)}
-
-.badge-plus365{background:#dc2626;color:#fff;border-radius:4px;padding:2px 7px;font-size:.65rem;font-weight:900}
+.workflow{display:flex;gap:0;margin-bottom:20px;border-radius:12px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+.wf-step{flex:1;min-width:120px;padding:12px 14px;background:#f8fafc;text-align:center;font-size:.76rem;font-weight:800;position:relative;border-right:1px solid var(--line)}
+.wf-step:last-child{border-right:none}
+.wf-step.done{background:#d4edda;color:#155724}
+.wf-step.active{background:#fff3cd;color:#856404}
+.badge-plus365{background:#dc2626;color:#fff;border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:800}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="df gap-2 mb-3">
-  <a href="{{ url_for('fou.fou_liste') }}" class="btn btn-outline btn-sm">← Retour liste</a>
+<!-- ═══ RETOUR & ACTIONS ══════════════════════════════════════════ -->
+<div class="dossier-actions">
+  <div class="dossier-actions-left">
+    <a href="{{ url_for('fou.fou_liste') }}" class="btn btn-outline btn-sm">← Liste Fourrière</a>
+    <span class="sep" style="width:1px;height:20px;background:var(--line)"></span>
+    {% if dossier.statut == 'en_fourriere' and (can_bulletin() or can_pay()) %}
+    <a href="{{ url_for('fou.fou_paiement', id=dossier.id) }}" class="btn btn-accent btn-sm">💳 Saisir Paiement & Libération</a>
+    {% endif %}
+    {% if dossier.statut == 'en_attente_sortie' and can_edit('fou') %}
+    <form method="post" action="{{ url_for('fou.fou_sortie', id=dossier.id) }}" style="display:inline"
+          onsubmit="return confirmForm(this, {title:'Sortie du véhicule',msg:'Confirmer la <strong>sortie définitive</strong> de ce véhicule de la fourrière ?',type:'warning',confirmText:'🚗 Confirmer la sortie',icon:'🚗'})">
+      <button type="submit" class="btn btn-sm" style="background:#fd7e14;color:#fff;font-weight:800">🚗 Valider Sortie Définitive</button>
+    </form>
+    {% endif %}
+    {% if can_edit('fou') %}
+    <button onclick="openModal('modalModifier')" class="btn btn-primary btn-sm">✏️ Modifier</button>
+    {% endif %}
+  </div>
+  <div class="dossier-actions-right">
+    <span class="badge {% if dossier.statut=='sortie' %}b-ok{% elif dossier.statut=='en_attente_sortie' %}b-warn{% else %}b-danger{% endif %}">
+      Statut : {{ dossier.statut|upper }}
+    </span>
+  </div>
 </div>
 
-<!-- Hero -->
-<div class="hero-fou">
-  <div class="hf-icon">🚗</div>
-  <div style="flex:1">
-    <h2>{{ dossier.immatriculation or 'Sans immatriculation' }} — {{ dossier.type_vehicule or '—' }}</h2>
-    <div class="sub">N° {{ dossier.numero }} · Dépôt: {{ dossier.num_depot or '—' }}</div>
-    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-      <span style="background:rgba(255,255,255,.15);border-radius:12px;padding:2px 10px;font-size:.68rem">
-        📅 Entrée: {{ dossier.date_mise_fourriere or '—' }}
-      </span>
-      <span style="background:rgba(255,255,255,.15);border-radius:12px;padding:2px 10px;font-size:.68rem">
-        📆 {{ dossier.nb_jours }} jours
+<!-- ═══ HERO BANNER ══════════════════════════════════════════════ -->
+<div class="dossier-hero hero-fou">
+  <span class="dossier-hero-watermark">🔑</span>
+  <div class="dossier-avatar">🚗</div>
+  <div class="dossier-info">
+    <h2 class="dossier-title">{{ dossier.immatriculation or 'Sans immatriculation' }} — {{ dossier.type_vehicule or 'Véhicule' }}</h2>
+    <div class="dossier-sub">
+      <span>🔑 N° Dépôt : <strong>{{ dossier.num_depot or '—' }}</strong></span>
+      <span>·</span>
+      <span>📅 Entrée : {{ dossier.date_mise_fourriere or '—' }}</span>
+      <span>·</span>
+      <span>👮 Déposant : {{ dossier.deposant or 'Police/Gendarmerie' }}</span>
+    </div>
+    <div class="dossier-badges">
+      <span class="dossier-badge light">N° Dossier : {{ dossier.numero }}</span>
+      <span class="dossier-badge {{ 'ok' if dossier.statut=='sortie' else ('warn' if dossier.statut=='en_attente_sortie' else 'danger') }}">
+        {% if dossier.statut == 'en_fourriere' %}🔑 En fourrière ({{ dossier.nb_jours }} j)
+        {% elif dossier.statut == 'en_attente_sortie' %}⏳ Attente sortie
+        {% else %}✅ Véhicule Sorti{% endif %}
       </span>
       {% if dossier.plus365 %}
-      <span class="badge-plus365">⚠️ +365 JOURS</span>
+      <span class="badge-plus365">⚠️ +365 JOURS D'IMMOBILISATION</span>
       {% endif %}
     </div>
   </div>
-  <div style="text-align:right">
-    <div style="font-size:.68rem;opacity:.7">Créé le {{ (dossier.date_creation or '')[:10] }}</div>
-    <div style="font-size:1.1rem;font-weight:900;margin-top:4px">
-      {{ "%.2f"|format(dossier.montant_du) }} DH
-    </div>
-    <div style="font-size:.65rem;opacity:.7">montant dû</div>
+  <div class="dossier-hero-meta">
+    <div style="font-size:.72rem;opacity:.8">Montant Total Calculé</div>
+    <div style="font-size:1.4rem;font-weight:900;line-height:1.2">{{ "%.2f"|format(dossier.montant_du) }} DH</div>
   </div>
 </div>
 
 <!-- Workflow -->
 <div class="workflow">
   <div class="wf-step {{ 'done' if dossier.statut in ('en_fourriere','en_attente_sortie','sortie') else 'active' }}">
-    🔑 En fourrière
+    1. 🔑 En Fourrière
+    <div style="font-size:.65rem;color:var(--muted)">Entrée : {{ dossier.date_mise_fourriere }}</div>
   </div>
   <div class="wf-step {{ 'done' if dossier.numero_bulletin else ('' if dossier.statut=='en_fourriere' else '') }}">
-    💳 Bulletin émis
-    {% if dossier.numero_bulletin %}<div style="font-size:.6rem">{{ dossier.numero_bulletin }}</div>{% endif %}
+    2. 💳 Paiement & Bulletin
+    {% if dossier.numero_bulletin %}<div style="font-size:.65rem;font-weight:800">{{ dossier.numero_bulletin }}</div>{% endif %}
   </div>
   <div class="wf-step {{ 'done' if dossier.statut in ('en_attente_sortie','sortie') else '' }}">
-    🏦 Validé régisseur
+    3. 🏦 Validé Régisseur
   </div>
   <div class="wf-step {{ 'done' if dossier.statut == 'sortie' else ('active' if dossier.statut=='en_attente_sortie' else '') }}">
-    ✅ Sorti
-    {% if dossier.date_sortie_validee %}<div style="font-size:.6rem">{{ dossier.date_sortie_validee }}</div>{% endif %}
+    4. ✅ Sorti Définitivement
+    {% if dossier.date_sortie_validee %}<div style="font-size:.65rem">{{ dossier.date_sortie_validee }}</div>{% endif %}
   </div>
 </div>
 
-<!-- KPIs -->
-<div class="kpi-row">
-  <div class="kpi danger"><div class="kv">{{ dossier.nb_jours }}</div><div class="kl">Jours</div></div>
-  <div class="kpi"><div class="kv">{{ "%.0f"|format(dossier.tarif_journalier or 0) }}</div><div class="kl">DH / Jour</div></div>
-  <div class="kpi danger"><div class="kv">{{ "%.0f"|format(dossier.montant_du) }}</div><div class="kl">Montant dû DH</div></div>
-  <div class="kpi purple"><div class="kv">{{ "%.0f"|format(dossier.frais_remorquage or 0) }}</div><div class="kl">Remorquage DH</div></div>
-</div>
-
-<!-- Actions -->
-<div class="action-bar">
-  {% if dossier.statut == 'en_fourriere' %}
-  <a href="{{ url_for('fou.fou_paiement', id=dossier.id) }}"
-     class="btn btn-sm" style="background:#28a745;color:#fff">💳 Saisir Paiement</a>
-  {% endif %}
-  {% if dossier.statut == 'en_attente_sortie' %}
-  <form method="post" action="{{ url_for('fou.fou_sortie', id=dossier.id) }}"
-        onsubmit="return confirmForm(this, {title:'Sortie du véhicule',msg:'Confirmer la <strong>sortie définitive</strong> de ce véhicule de la fourrière ?',type:'warning',confirmText:'🚗 Confirmer la sortie',icon:'🚗'})">
-    <button type="submit" class="btn btn-sm" style="background:#fd7e14;color:#fff">🚗 Valider Sortie</button>
-  </form>
-  {% endif %}
-  <button onclick="document.getElementById('modalModifier').classList.add('open')"
-          class="btn btn-outline btn-sm">✏️ Modifier</button>
-</div>
-
-<!-- Infos en 2 colonnes -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-  <div class="card">
-    <div class="card-header"><h3>🚗 Informations véhicule</h3></div>
-    <table class="info-table" style="width:100%">
-      <tr><td>Immatriculation</td><td><strong>{{ dossier.immatriculation or '—' }}</strong></td></tr>
-      <tr><td>Type</td><td>{{ dossier.type_vehicule or '—' }}</td></tr>
-      <tr><td>N° Dépôt</td><td>{{ dossier.num_depot or '—' }}</td></tr>
-      <tr><td>Déposant</td><td>{{ dossier.deposant or '—' }}</td></tr>
-      <tr><td>Motif</td><td>{{ dossier.motif or '—' }}</td></tr>
-      <tr><td>Tarif / Jour</td><td><strong>{{ "%.2f"|format(dossier.tarif_journalier or 0) }} DH</strong></td></tr>
-      <tr><td>Frais remorquage</td><td>{{ "%.2f"|format(dossier.frais_remorquage or 0) }} DH</td></tr>
-      <tr><td>Notes</td><td>{{ dossier.notes or '—' }}</td></tr>
-    </table>
+<!-- ═══ KPIS ══════════════════════════════════════════════════════ -->
+<div class="dossier-kpis">
+  <div class="dossier-kpi {{ 'danger' if dossier.nb_jours > 30 else 'warn' }}">
+    <div class="kpi-val">{{ dossier.nb_jours }} <span style="font-size:.8rem">Jours</span></div>
+    <div class="kpi-lbl">Durée de Séjour</div>
+    <div class="kpi-sub">{{ dossier.date_mise_fourriere or '—' }}</div>
   </div>
-  <div class="card">
-    <div class="card-header"><h3>👤 Propriétaire</h3></div>
-    <table class="info-table" style="width:100%">
-      <tr><td>Nom propriétaire</td><td><strong>{{ dossier.nom_proprietaire or '—' }}</strong></td></tr>
-      <tr><td>CIN</td><td>{{ dossier.cin_proprietaire or '—' }}</td></tr>
-      <tr><td>Téléphone</td><td>{{ dossier.telephone_prop or '—' }}</td></tr>
-      <tr><td>N° Bulletin</td><td>
-        {% if dossier.numero_bulletin %}
-        <strong style="color:var(--primary)">{{ dossier.numero_bulletin }}</strong>
-        {% else %}<span style="color:var(--muted)">—</span>{% endif %}
-      </td></tr>
-      <tr><td>Statut</td><td>
-        <span style="font-weight:700;
-          color:{% if dossier.statut=='sortie' %}var(--ok){% elif dossier.statut=='en_attente_sortie' %}#fd7e14{% else %}var(--danger){% endif %}">
-          {% if dossier.statut == 'en_fourriere' %}🔑 En fourrière
-          {% elif dossier.statut == 'en_attente_sortie' %}⏳ Attente sortie
-          {% else %}✅ Sorti{% endif %}
-        </span>
-      </td></tr>
-    </table>
+  <div class="dossier-kpi info">
+    <div class="kpi-val">{{ "%.2f"|format(dossier.tarif_journalier or 0) }} <span style="font-size:.8rem">DH/j</span></div>
+    <div class="kpi-lbl">Tarif Journalier</div>
+    <div class="kpi-sub">{{ dossier.type_vehicule }}</div>
+  </div>
+  <div class="dossier-kpi danger">
+    <div class="kpi-val">{{ "%.2f"|format(dossier.montant_du) }} <span style="font-size:.8rem">DH</span></div>
+    <div class="kpi-lbl">Montant Dû Total</div>
+    <div class="kpi-sub">Frais de séjour + remorquage</div>
+  </div>
+  <div class="dossier-kpi purple">
+    <div class="kpi-val">{{ "%.2f"|format(dossier.frais_remorquage or 0) }} <span style="font-size:.8rem">DH</span></div>
+    <div class="kpi-lbl">Frais de Remorquage</div>
+    <div class="kpi-sub">{{ dossier.deposant or 'Non spécifié' }}</div>
+  </div>
+</div>
 
-    {% if bulletins %}
-    <div style="padding:10px;border-top:1px solid var(--border)">
-      <div style="font-size:.72rem;font-weight:700;margin-bottom:6px">💳 Bulletins de paiement</div>
-      {% for b in bulletins %}
-      <div style="font-size:.72rem;padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
-        <span style="color:var(--primary)">{{ b.numero_bulletin }}</span>
-        <span>{{ "%.2f"|format(b.montant or 0) }} DH</span>
-        <span class="badge b-{{ b.statut }}">{{ b.statut }}</span>
+<!-- ─── TABS ─── -->
+<div class="dossier-tabs" id="fouTabs">
+  <button class="dossier-tab-btn active" onclick="switchFouTab(this, 'paneInfo')">📋 Infos Véhicule & Propriétaire</button>
+  <button class="dossier-tab-btn" onclick="switchFouTab(this, 'paneBull')">💳 Bulletins & Règlements
+    {% if bulletins %}<span class="badge b-primary" style="font-size:.65rem">{{ bulletins|length }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- ─── PANE 1 : INFOS ─── -->
+<div id="paneInfo" class="dossier-tab-pane active">
+  <div class="dossier-grid">
+    <!-- Carte Véhicule -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>🚗 Informations Véhicule Mis en Fourrière</h3>
       </div>
-      {% endfor %}
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">N° de Dossier</span>
+            <span class="fval">{{ dossier.numero }}</span>
+          </div>
+          <div class="field-box primary-box">
+            <span class="flbl">Immatriculation</span>
+            <span class="fval" style="font-size:1.1rem;font-weight:800">{{ dossier.immatriculation or 'Non immatriculé' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">N° de Dépôt</span>
+            <span class="fval">{{ dossier.num_depot or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Type de Véhicule</span>
+            <span class="fval">{{ dossier.type_vehicule or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Déposant</span>
+            <span class="fval">{{ dossier.deposant or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Date d'Entrée</span>
+            <span class="fval">{{ dossier.date_mise_fourriere or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Motif de Mise en Fourrière</span>
+            <span class="fval">{{ dossier.motif or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Observations / Notes</span>
+            <span class="fval">{{ dossier.notes or '—' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
-    {% endif %}
+
+    <!-- Carte Propriétaire -->
+    <div class="dossier-card">
+      <div class="dossier-card-head">
+        <h3>👤 Propriétaire & Statut de Sortie</h3>
+      </div>
+      <div class="dossier-card-body">
+        <div class="field-grid">
+          <div class="field-box highlight">
+            <span class="flbl">Nom Propriétaire</span>
+            <span class="fval">{{ dossier.nom_proprietaire or 'Non renseigné' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">CIN Propriétaire</span>
+            <span class="fval">{{ dossier.cin_proprietaire or '—' }}</span>
+          </div>
+          <div class="field-box">
+            <span class="flbl">Téléphone</span>
+            <span class="fval">{{ dossier.telephone_prop or '—' }}</span>
+          </div>
+          <div class="field-box ok-box">
+            <span class="flbl">Statut Actuel</span>
+            <span class="fval">
+              {% if dossier.statut == 'en_fourriere' %}🔑 En fourrière
+              {% elif dossier.statut == 'en_attente_sortie' %}⏳ Attente sortie
+              {% else %}✅ Sorti le {{ dossier.date_sortie_validee or '' }}{% endif %}
+            </span>
+          </div>
+        </div>
+
+        {% if dossier.statut == 'en_fourriere' %}
+        <div class="dossier-alert-box warn" style="margin-top:16px;margin-bottom:0">
+          <div>
+            <strong>Véhicule actuellement immobilisé</strong>
+            <div style="font-size:.78rem;margin-top:2px">Montant total dû à ce jour : <strong>{{ "%.2f"|format(dossier.montant_du) }} DH</strong></div>
+          </div>
+          <a href="{{ url_for('fou.fou_paiement', id=dossier.id) }}" class="btn btn-accent btn-sm">💳 Saisir Paiement →</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PANE 2 : BULLETINS ─── -->
+<div id="paneBull" class="dossier-tab-pane">
+  <div class="dossier-card">
+    <div class="dossier-card-head">
+      <h3>💳 Bulletins de Paiement Émis</h3>
+      {% if dossier.statut == 'en_fourriere' %}
+      <a href="{{ url_for('fou.fou_paiement', id=dossier.id) }}" class="btn btn-accent btn-sm">+ Nouveau Bulletin</a>
+      {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>N° Bulletin</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bulletins %}
+          <tr>
+            <td><strong style="color:var(--primary)">{{ b.numero_bulletin }}</strong></td>
+            <td><strong style="color:var(--ok);font-size:1rem">{{ "%.2f"|format(b.montant or 0) }} DH</strong></td>
+            <td><span class="badge b-{{ b.statut }}">{{ b.statut }}</span></td>
+            <td>
+              <a href="{{ url_for('fou.fou_paiement', id=dossier.id) }}" class="btn btn-xs btn-outline">Détails →</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty-state"><span class="ei">💳</span>Aucun bulletin de paiement émis</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <!-- Modal Modifier -->
-<div class="modal-backdrop" id="modalModifier"
-     onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="modal-box">
-    <h3>✏️ Modifier le dossier</h3>
-    <form method="post" action="{{ url_for('fou.fou_modifier', id=dossier.id) }}">
-      <div class="form-grid">
-        <div class="form-group"><label>N° Dépôt</label>
-          <input name="num_depot" value="{{ dossier.num_depot or '' }}"></div>
-        <div class="form-group"><label>Immatriculation</label>
-          <input name="immatriculation" value="{{ dossier.immatriculation or '' }}"></div>
-        <div class="form-group"><label>Type véhicule</label>
-          <select name="type_vehicule">
-            {% for t in types_vh %}
-            <option value="{{ t.code }}" {{ 'selected' if t.code==dossier.type_vehicule }}>
-              {{ t.libelle }} ({{ "%.0f"|format(t.tarif_journalier) }} DH/j)
-            </option>
-            {% endfor %}
-          </select></div>
-        <div class="form-group"><label>Date entrée</label>
-          <input type="date" name="date_mise_fourriere" value="{{ dossier.date_mise_fourriere or today }}"></div>
-        <div class="form-group"><label>Déposant</label>
-          <select name="deposant">
-            <option value="">—</option>
-            {% for d in deposants %}
-            <option value="{{ d.libelle }}" {{ 'selected' if d.libelle==dossier.deposant }}>{{ d.libelle }}</option>
-            {% endfor %}
-          </select></div>
-        <div class="form-group"><label>Motif</label>
-          <input name="motif" value="{{ dossier.motif or '' }}"></div>
-        <div class="form-group"><label>Frais remorquage (DH)</label>
-          <input type="number" name="frais_remorquage" value="{{ dossier.frais_remorquage or 0 }}" step="0.01"></div>
-        <div class="form-group"><label>Notes</label>
-          <input name="notes" value="{{ dossier.notes or '' }}"></div>
-      </div>
-      <div class="df gap-2" style="margin-top:14px;justify-content:flex-end">
-        <button type="button" onclick="document.getElementById('modalModifier').classList.remove('open')"
-                class="btn btn-outline btn-sm">Annuler</button>
-        <button type="submit" class="btn btn-primary btn-sm">💾 Enregistrer</button>
-      </div>
-    </form>
+<div class="modal-overlay" id="modalModifier">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3>✏️ Modifier le Dossier Fourrière</h3>
+      <button class="modal-close" onclick="closeModal('modalModifier')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{{ url_for('fou.fou_modifier', id=dossier.id) }}">
+        <div class="form-grid mb-3">
+          <div class="form-group"><label>N° Dépôt</label><input name="num_depot" value="{{ dossier.num_depot or '' }}"></div>
+          <div class="form-group"><label>Immatriculation</label><input name="immatriculation" value="{{ dossier.immatriculation or '' }}"></div>
+          <div class="form-group"><label>Type véhicule</label>
+            <select name="type_vehicule">
+              {% for t in types_vh %}
+              <option value="{{ t.code }}" {{ 'selected' if t.code==dossier.type_vehicule }}>
+                {{ t.libelle }} ({{ "%.0f"|format(t.tarif_journalier) }} DH/j)
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group"><label>Date entrée</label><input type="date" name="date_mise_fourriere" value="{{ dossier.date_mise_fourriere or today }}"></div>
+          <div class="form-group"><label>Déposant</label>
+            <select name="deposant">
+              <option value="">— Sélectionner —</option>
+              {% for d in deposants %}
+              <option value="{{ d.libelle }}" {{ 'selected' if d.libelle==dossier.deposant }}>{{ d.libelle }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group"><label>Motif</label><input name="motif" value="{{ dossier.motif or '' }}"></div>
+          <div class="form-group"><label>Frais remorquage (DH)</label><input type="number" name="frais_remorquage" value="{{ dossier.frais_remorquage or 0 }}" step="0.01"></div>
+          <div class="form-group"><label>Notes</label><input name="notes" value="{{ dossier.notes or '' }}"></div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--line);margin:0 -20px -20px;padding:14px 20px">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modalModifier')">Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
+
+<script>
+function switchFouTab(btn, paneId) {
+  document.querySelectorAll('#fouTabs .dossier-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dossier-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+</script>
 {% endblock %}

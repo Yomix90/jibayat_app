@@ -86,10 +86,8 @@
     <div class="ref-val">{{ avis_num }}</div>
     <div class="ref-lbl" style="margin-top:4px">التاريـخ</div>
     <div class="ref-val">{{ today }}</div>
-    <div class="ref-lbl" style="margin-top:4px">رقم المكلف</div>
-    <div class="ref-val">{{ contrib.numero }}</div>
-    <div class="ref-lbl" style="margin-top:4px">ب. التعريف</div>
-    <div class="ref-val">{{ contrib.cin or contrib.ice or '—' }}</div>
+    <div class="ref-lbl" style="margin-top:4px">رقم التعريف (CIN)</div>
+    <div class="ref-val">{{ contrib.cin or contrib.numero }}</div>
   </div>
 </div>
 

@@ -117,9 +117,12 @@
   <a href="{{ url_for('avis') }}#lettres" class="btn-act btn-back">← Retour</a>
   <button onclick="window.print()" class="btn-act btn-print">🖨️ Imprimer / PDF</button>
   {% if lettre.statut == 'brouillon' %}
-  <form method="post" action="{{ url_for('lettre_approuver', id=lettre.id) }}" style="display:inline">
-    <button type="submit" class="btn-act btn-approve"
-            onclick="return confirm('Confirmer l\'envoi de cette lettre ?')">
+  <form method="post" action="{{ url_for('lettre_approuver', id=lettre.id) }}" style="display:inline"
+        data-confirm="success"
+        data-confirm-title="Confirmer l'envoi de la lettre"
+        data-confirm-msg="Confirmer l'envoi officiel et marquer cette lettre comme <strong>Envoyée</strong> ?"
+        data-confirm-btn="✅ Confirmer & Marquer Envoyée">
+    <button type="submit" class="btn-act btn-approve">
       ✅ Confirmer & Marquer Envoyée
     </button>
   </form>

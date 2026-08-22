@@ -3,7 +3,7 @@ from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, session, send_file)
 from datetime import datetime, date
 from database import get_db
-from modules.helpers import login_required, get_current_user, gen_num
+from modules.helpers import login_required, get_current_user, gen_num, permission_required
 import os, uuid
 
 bp = Blueprint('contribuables', __name__)
@@ -56,6 +56,7 @@ def _get_modules_ctb(conn, ctb_id):
 # ════════════════════════════════════════════════════════════
 @bp.route('/contribuables')
 @login_required
+@permission_required('voir', 'contribuables')
 def contribuables():
     user = get_current_user()
     conn = get_db()
@@ -106,6 +107,7 @@ def contribuables():
 
 @bp.route('/contribuables/export-excel')
 @login_required
+@permission_required('voir', 'contribuables')
 def export_excel():
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
@@ -145,6 +147,7 @@ def export_excel():
 # ════════════════════════════════════════════════════════════
 @bp.route('/contribuables/<int:id>/detail')
 @login_required
+@permission_required('voir', 'contribuables')
 def ctb_detail(id):
     user = get_current_user()
     conn = get_db()
@@ -291,6 +294,7 @@ def ctb_doc_telecharger(doc_id):
 # ════════════════════════════════════════════════════════════
 @bp.route('/contribuables/<int:id>/avis-non-paiement')
 @login_required
+@permission_required('voir', 'contribuables')
 def ctb_avis_non_paiement(id):
     conn = get_db()
     contrib = conn.execute(
@@ -374,6 +378,7 @@ def ctb_avis_non_paiement(id):
 # ════════════════════════════════════════════════════════════
 @bp.route('/contribuables/ajouter', methods=['GET', 'POST'])
 @login_required
+@permission_required('ajouter', 'contribuables')
 def ajouter_contribuable():
     user = get_current_user()
     conn = get_db()
@@ -400,6 +405,7 @@ def ajouter_contribuable():
 
 @bp.route('/contribuables/<int:id>/modifier', methods=['GET', 'POST'])
 @login_required
+@permission_required('modifier', 'contribuables')
 def modifier_contribuable(id):
     user = get_current_user()
     conn = get_db()
@@ -423,10 +429,10 @@ def modifier_contribuable(id):
 
 @bp.route('/contribuables/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'contribuables')
 def supprimer_contribuable(id):
-    user = get_current_user()
-    if user['peut_supprimer']:
-        conn = get_db()
-        conn.execute('UPDATE contribuables SET actif=0 WHERE id=?', (id,))
-        conn.commit(); conn.close()
+    conn = get_db()
+    conn.execute('UPDATE contribuables SET actif=0 WHERE id=?', (id,))
+    conn.commit(); conn.close()
+    flash('Contribuable supprimé ✅', 'success')
     return redirect(url_for('contribuables.contribuables'))

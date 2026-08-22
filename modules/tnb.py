@@ -5,7 +5,7 @@ from datetime import datetime, date
 from database import get_db
 from modules.helpers import (login_required, get_current_user, annees_non_payees,
                               get_tarifs_module, get_param, calculer_penalites, gen_num,
-                              majore_centimes)
+                              majore_centimes, get_next_seq_num, permission_required)
 import os, uuid
 
 bp = Blueprint('tnb', __name__)
@@ -253,6 +253,7 @@ def tnb_liste():
     zones        = sorted(set(t['zone']        for t in terrains_raw if t['zone']))
     lotissements = sorted(set(t['lotissement'] for t in terrains_raw if t['lotissement']))
     alerts       = _check_permis_alerts(conn)
+    next_numero_terrain = get_next_seq_num('terrains', 'numero_terrain', conn)
     conn.close()
 
     return render_template('tnb/tnb_liste.html',
@@ -260,7 +261,7 @@ def tnb_liste():
         contribuables=contribuables, tarifs=tarifs,
         q=q, zones=zones, lotissements=lotissements,
         zone_f=zone_f, statut_f=statut_f, lotissement_f=lotissement_f,
-        alerts=alerts)
+        alerts=alerts, next_numero_terrain=next_numero_terrain)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -268,17 +269,15 @@ def tnb_liste():
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'tnb')
 def tnb_ajouter():
     conn   = get_db()
     f      = request.form
     ctb_id = int(f['contribuable_id'])
     # Obtenir ou créer le dossier du contribuable
     _did, _num_dossier = _get_or_create_dossier(conn, ctb_id)
-    # Numéro terrain interne unique
-    n_ter = (conn.execute(
-        'SELECT COUNT(*) as c FROM terrains WHERE contribuable_id=?', (ctb_id,)
-    ).fetchone()['c'] or 0) + 1
-    num = f"TER{datetime.now().year}{ctb_id:04d}-{n_ter:03d}"
+    # Numéro terrain séquentiel / personnalisé
+    num = f.get('numero_terrain', '').strip() or get_next_seq_num('terrains', 'numero_terrain', conn)
     conn.execute('''INSERT INTO terrains
         (numero_terrain, contribuable_id, commune_id,
          adresse, adresse_ar, quartier, lotissement, arrondissement,
@@ -292,7 +291,7 @@ def tnb_ajouter():
          f.get('statut', 'non_bati'), f.get('date_acquisition', '')))
     conn.commit()
     conn.close()
-    flash(f'Terrain ajouté au Dossier N°{_num_dossier}', 'success')
+    flash(f'Terrain N° {num} ajouté au Dossier N° {_num_dossier}', 'success')
     return redirect(url_for('tnb.tnb_liste'))
 
 
@@ -385,6 +384,7 @@ def tnb_detail(id):
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_modifier(id):
     f = request.form
     conn = get_db()
@@ -406,6 +406,7 @@ def tnb_modifier(id):
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/archiver', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'tnb')
 def tnb_archiver(id):
     user = get_current_user()
     if not user['peut_supprimer']:
@@ -424,6 +425,7 @@ def tnb_archiver(id):
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/permis', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_permis(id):
     f = request.form
     conn = get_db()
@@ -466,6 +468,7 @@ def tnb_permis(id):
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/transfert', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_transfert(id):
     f = request.form
     conn = get_db()
@@ -601,6 +604,7 @@ def tnb_paiement(id):
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/multi_declarations', methods=['POST'])
 @login_required
+@permission_required('creer_bulletin')
 def tnb_multi_declarations(id):
     user = get_current_user()
     f = request.form
@@ -843,6 +847,7 @@ def tnb_avis_multiple():
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/upload_doc', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_upload_doc(id):
     user = get_current_user()
     if 'fichier' not in request.files:
@@ -887,6 +892,7 @@ def tnb_telecharger_doc(doc_id):
 
 @bp.route('/tnb/docs/<int:doc_id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_supprimer_doc(doc_id):
     conn      = get_db()
     doc       = conn.execute('SELECT * FROM tnb_documents WHERE id=?', (doc_id,)).fetchone()
@@ -908,11 +914,8 @@ def tnb_supprimer_doc(doc_id):
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'tnb')
 def tnb_supprimer(id):
-    user = get_current_user()
-    if not user['peut_supprimer']:
-        flash('Droits insuffisants', 'danger')
-        return redirect(url_for('tnb.tnb_detail', id=id))
     conn   = get_db()
     nb_p   = conn.execute(
         "SELECT COUNT(*) as c FROM declarations WHERE module='TNB' AND reference_id=? AND statut='paye'",
@@ -956,6 +959,7 @@ def tnb_api_groupes():
 # ═══════════════════════════════════════════════════════════════
 @bp.route('/tnb/<int:id>/coproprio/ajouter', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_coproprio_ajouter(id):
     """Ajoute un co-propriétaire à un terrain."""
     f = request.form
@@ -991,6 +995,7 @@ def tnb_coproprio_ajouter(id):
 
 @bp.route('/tnb/<int:id>/coproprio/<int:cp_id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_coproprio_supprimer(id, cp_id):
     """Supprime un co-propriétaire d'un terrain."""
     conn = get_db()
@@ -1003,6 +1008,7 @@ def tnb_coproprio_supprimer(id, cp_id):
 
 @bp.route('/tnb/<int:id>/coproprio/<int:cp_id>/modifier', methods=['POST'])
 @login_required
+@permission_required('modifier', 'tnb')
 def tnb_coproprio_modifier(cp_id, id):
     """Met à jour la part d'un co-propriétaire."""
     f = request.form
@@ -1059,24 +1065,23 @@ def tnb_recensement():
         'FROM contribuables WHERE actif=1 ORDER BY nom'
     ).fetchall()
     tarifs = get_tarifs_module('TNB')
+    next_numero_terrain = get_next_seq_num('terrains', 'numero_terrain', conn)
     conn.close()
 
     return render_template('tnb/tnb_recensement.html',
         user=user, terrains=rows, contribuables=contribuables,
-        tarifs=tarifs, q=q, total=len(rows))
+        tarifs=tarifs, q=q, total=len(rows), next_numero_terrain=next_numero_terrain)
 
 
 @bp.route('/tnb/recensement/ajouter', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'tnb')
 def tnb_recensement_ajouter():
     """Ajoute un terrain en liste de recensement (recensement=1, pas de dossier)."""
     conn = get_db()
     f   = request.form
     ctb_id = int(f['contribuable_id'])
-    n_ter = (conn.execute(
-        'SELECT COUNT(*) as c FROM terrains WHERE contribuable_id=?', (ctb_id,)
-    ).fetchone()['c'] or 0) + 1
-    num = f"REC{datetime.now().year}{ctb_id:04d}-{n_ter:03d}"
+    num = f.get('numero_terrain', '').strip() or get_next_seq_num('terrains', 'numero_terrain', conn)
     conn.execute('''INSERT INTO terrains
         (numero_terrain, contribuable_id, commune_id,
          adresse, adresse_ar, quartier, lotissement, arrondissement,
@@ -1091,12 +1096,13 @@ def tnb_recensement_ajouter():
          f.get('statut', 'non_bati'), f.get('date_acquisition', '')))
     conn.commit()
     conn.close()
-    flash('Terrain ajouté au recensement', 'success')
+    flash(f'Terrain N° {num} ajouté au recensement', 'success')
     return redirect(url_for('tnb.tnb_recensement'))
 
 
 @bp.route('/tnb/recensement/<int:id>/transferer', methods=['POST'])
 @login_required
+@permission_required('ajouter', 'tnb')
 def tnb_recensement_transferer(id):
     """Transfère un terrain du recensement vers la liste principale (crée le dossier)."""
     conn = get_db()
@@ -1121,6 +1127,7 @@ def tnb_recensement_transferer(id):
 
 @bp.route('/tnb/recensement/<int:id>/supprimer', methods=['POST'])
 @login_required
+@permission_required('supprimer', 'tnb')
 def tnb_recensement_supprimer(id):
     """Supprime définitivement un terrain du recensement."""
     conn = get_db()

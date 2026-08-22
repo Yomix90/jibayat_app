@@ -1,42 +1,130 @@
 {% extends 'base.html' %}
 {% block title %}Débits de Boissons{% endblock %}
 {% block page_title %}🍺 Taxe sur Débits de Boissons{% endblock %}
+
 {% block content %}
-<div class="alert alert-info">📋 Loi 47-06 | Taux: {% for t in tarifs %}{{ t.libelle }}: <strong>{{ t.valeur }}%</strong>{% if not loop.last %} · {% endif %}{% endfor %} | Déclaration trimestrielle dans les 30 jours
-  <div class="ms-auto df gap-2"><a href="{{ url_for('export_excel', module='DEBITS_BOISSONS') }}" class="btn btn-success btn-sm">📊 Excel</a></div>
+<!-- ═══ MODULE HERO BANNER ════════════════════════════════════════ -->
+<div class="module-hero hero-tdb">
+  <span class="module-watermark">🍺</span>
+  <div class="module-hero-left">
+    <div class="module-avatar">🍺</div>
+    <div>
+      <h2 class="module-hero-title">Taxe sur les Débits de Boissons</h2>
+    </div>
+  </div>
+  <div class="module-hero-actions">
+    {% if can_add('tdb') %}
+    <button onclick="openModal('addEtab')" class="btn btn-accent btn-sm">➕ Nouvel Établissement</button>
+    {% endif %}
+    <a href="{{ url_for('tdb.tdb_pdf_creation_cessation', type_decl='creation') }}" target="_blank" class="btn btn-outline btn-sm">🖨️ Formulaire Déclaration</a>
+    <a href="{{ url_for('export_excel', module='DEBITS_BOISSONS') }}" class="btn btn-outline btn-sm">📊 Excel</a>
+    <button onclick="window.print()" class="btn btn-outline btn-sm">🖨️ Imprimer PDF</button>
+  </div>
 </div>
-<div class="card">
-  <div class="card-header">
-    <h3>Établissements ({{ items|length }})</h3>
+
+<!-- ═══ STATS RAPIDES ════════════════════════════════════════════ -->
+{% set ns = namespace(nb_actifs=0, nb_retard=0, total_dette=0) %}
+{% for e in items %}
+  {% if e.statut == 'actif' %}
+    {% set ns.nb_actifs = ns.nb_actifs + 1 %}
+    {% if e.dernier_trimestre_non_paye %}
+      {% set ns.nb_retard = ns.nb_retard + 1 %}
+      {% set ns.total_dette = ns.total_dette + (e.montant_estime_retard or 0) %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+<div class="module-stats-strip">
+  <div class="module-stat-card">
+    <div class="stat-icon-wrap">🍺</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ items|length }}</div>
+      <div class="stat-lbl">Total Établissements</div>
+    </div>
+  </div>
+  <div class="module-stat-card ok">
+    <div class="stat-icon-wrap">✅</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ ns.nb_actifs }}</div>
+      <div class="stat-lbl">Établissements Actifs</div>
+    </div>
+  </div>
+  <div class="module-stat-card {{ 'danger' if ns.nb_retard > 0 else 'ok' }}">
+    <div class="stat-icon-wrap">⏳</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ ns.nb_retard }}</div>
+      <div class="stat-lbl">Dossiers en Retard</div>
+    </div>
+  </div>
+  <div class="module-stat-card warn">
+    <div class="stat-icon-wrap">💰</div>
+    <div class="stat-body">
+      <div class="stat-val">{{ "%.2f"|format(ns.total_dette) }} <span style="font-size:.8rem">DH</span></div>
+      <div class="stat-lbl">Dette Estimée Retard</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TABLEAU PRINCIPAL ═══════════════════════════════════════ -->
+<div class="module-table-card">
+  <div class="module-table-header">
+    <h3>📋 Liste des Établissements (<span id="visibleCount">{{ items|length }}</span>)</h3>
+    {% if can_add('tdb') %}
     <button onclick="openModal('addEtab')" class="btn btn-primary btn-sm">➕ Nouvel Établissement</button>
+    {% endif %}
   </div>
-  <div class="search-bar">
-    <form method="get" style="display:flex;gap:8px;flex:1">
-      <input name="q" value="{{ q }}" placeholder="Chercher établissement, contribuable...">
-      <select name="statut" class="form-control" style="width:150px">
-        <option value="">Tous les statuts</option>
-        <option value="actif" {{ 'selected' if request.args.get('statut') == 'actif' }}>Actif</option>
-        <option value="cesse" {{ 'selected' if request.args.get('statut') == 'cesse' }}>Cessé</option>
-      </select>
-      <button type="submit" class="btn btn-primary btn-sm">🔍 Filtrer</button>
-      {% if q or request.args.get('statut') %}<a href="{{ url_for('tdb.tdb_liste') }}" class="btn btn-outline btn-sm">✕</a>{% endif %}
-    </form>
+
+  <div class="module-filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher par N° dossier, nom établissement, propriétaire, CIN, adresse..." oninput="filterTdbTable()">
+    <select id="filterStatut" onchange="filterTdbTable()">
+      <option value="">— Tous les statuts —</option>
+      <option value="actif">✅ Actifs</option>
+      <option value="cesse">⚠️ Cessés</option>
+    </select>
+    <select id="filterType" onchange="filterTdbTable()">
+      <option value="">— Tous les types —</option>
+      {% for t in tarifs %}
+      <option value="{{ t.code_tarif }}">{{ t.libelle }}</option>
+      {% endfor %}
+    </select>
+    <button class="filter-reset-btn" onclick="resetTdbFilters()">✕ Réinitialiser</button>
+    <span class="filter-count" id="filterCount"></span>
   </div>
+
   <div class="table-responsive">
-    <table>
-      <thead><tr><th>N°</th><th>Établissement</th><th>Propriétaire</th><th>Type</th><th>Statut</th><th>Retard / Dette estimée</th><th>Actions</th></tr></thead>
+    <table id="tdbTable">
+      <thead>
+        <tr>
+          <th>N° Dossier</th>
+          <th>Établissement</th>
+          <th>Exploitant / Redevable</th>
+          <th>Type &amp; Superficie</th>
+          <th>Statut</th>
+          <th>Situation</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for e in items %}
-        <tr>
-          <td><strong style="color:var(--primary)">{{ e.numero }}</strong></td>
-          <td><strong>{{ e.nom_etablissement }}</strong></td>
+        <tr class="tdb-row" data-statut="{{ e.statut }}" data-type="{{ e.type_etablissement }}">
+          <td><span class="badge-dossier">{{ e.numero }}</span></td>
           <td>
-            <a class="ctb-link" onclick="showCtbInfo({{ e.contribuable_id }})" style="cursor:pointer;color:var(--primary);font-weight:600;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-              {{ e.nom }} {{ e.prenom or e.raison_sociale or '' }}
-            </a>
-            <br><small class="text-muted">{{ e.ctb_num }}</small>
+            <strong>{{ e.nom_etablissement }}</strong>
+            {% if e.adresse %}<br><small style="color:var(--muted)">📍 {{ e.adresse }}</small>{% endif %}
+            {% if e.numero_autorisation %}<br><small style="color:var(--muted)">Aut. {{ e.numero_autorisation }}</small>{% endif %}
           </td>
-          <td><span class="badge b-info">{{ e.type_etablissement }}</span></td>
+          <td>
+            <div class="redevable-cell">
+              <span class="ctb-nom" onclick="showCtbInfo({{ e.contribuable_id }})">
+                {{ e.nom }} {{ e.prenom or e.raison_sociale or '' }}
+              </span>
+              <span class="ctb-cin">CIN / Ref : {{ e.cin or e.ctb_num }}</span>
+            </div>
+          </td>
+          <td style="font-size:.78rem">
+            <div>{{ e.type_etablissement|upper }}</div>
+            {% if e.superficie %}<div style="color:var(--muted)">{{ e.superficie }} m²</div>{% endif %}
+          </td>
           <td>
             {% if e.statut == 'actif' %}<span class="badge b-ok">Actif</span>
             {% elif e.statut == 'cesse' %}<span class="badge b-danger">Cessé</span>
@@ -44,62 +132,138 @@
           </td>
           <td>
             {% if e.statut != 'cesse' and e.dernier_trimestre_non_paye %}
-            <div style="font-size:.75rem;color:var(--danger);font-weight:bold">
-              ⏳ Depuis: {{ e.dernier_trimestre_non_paye }}<br>
-              ⚠️ Est: {{ "%.2f"|format(e.montant_estime_retard) }} DH
-            </div>
+            <span class="pill-impaye">
+              ⏳ Retard : {{ e.dernier_trimestre_non_paye }} (≈ {{ "%.2f"|format(e.montant_estime_retard) }} DH)
+            </span>
             {% else %}
-            <span class="badge b-ok">À jour</span>
+            <span class="pill-ok">✅ À jour</span>
             {% endif %}
           </td>
           <td>
             <div class="df gap-2">
-              <a href="{{ url_for('tdb.tdb_detail', id=e.id) }}" class="btn btn-primary btn-xs">🔍</a>
-              <a href="{{ url_for('tdb.tdb_paiement', id=e.id) }}" class="btn btn-accent btn-xs">💳</a>
+              <a href="{{ url_for('tdb.tdb_detail', id=e.id) }}" class="btn btn-outline btn-xs" title="Consulter la fiche">🔍</a>
+              {% if can_bulletin() or can_pay() %}
+              <a href="{{ url_for('tdb.tdb_paiement', id=e.id) }}" class="btn btn-accent btn-xs" title="Déclarer & Payer">💳</a>
+              {% endif %}
             </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" class="empty-state"><span class="ei">🍺</span>Aucun établissement</td></tr>
+        <tr><td colspan="7" class="empty-state"><span class="ei">🍺</span>Aucun établissement enregistré</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
 <!-- Modal ajout -->
 <div class="modal-overlay" id="addEtab">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>🍺 Nouvel Établissement</h3>
-      <a href="{{ url_for('tdb.tdb_pdf_creation_cessation', type_decl='creation') }}" target="_blank" class="btn btn-outline btn-sm" style="margin-left:auto;margin-right:10px">🖨️ Formulaire Vierge</a>
-      <button class="modal-close" onclick="closeModal('addEtab')">✕</button>
+      <div class="modal-header-left">
+        <div class="modal-avatar">🍺</div>
+        <div>
+          <h3>Nouvel Établissement — Débit de Boissons</h3>
+          <div class="modal-header-sub">Création d'un dossier fiscal pour un café, restaurant ou débit de boissons soumis à la taxe communale</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('addEtab')" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <form method="post" action="{{ url_for('tdb.tdb_ajouter') }}">
-        <div class="form-group mb-3"><label>Contribuable / Propriétaire *</label>
-          <select name="contribuable_id" required>
-            <option value="">— Sélectionner —</option>
-            {% for c in contribuables %}<option value="{{ c.id }}">{{ c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="form-grid mb-3">
-          <div class="form-group"><label>Nom établissement *</label><input name="nom_etablissement" required></div>
-          <div class="form-group"><label>Type</label>
-            <select name="type_etablissement">
-              {% for t in tarifs %}<option value="{{ t.code_tarif }}">{{ t.libelle }}</option>{% endfor %}
+        
+        <div class="modal-section-title">🪪 1. Dossier & Exploitant (Propriétaire)</div>
+        <div class="form-grid mb-3" style="grid-template-columns: 1fr 2fr;">
+          <div class="form-group dossier-num-highlight">
+            <label>N° Dossier * <span style="font-size:.68rem;color:var(--muted);display:block">Généré auto (modifiable)</span></label>
+            <input name="numero" value="{{ next_numero }}" required>
+          </div>
+          <div class="form-group">
+            <label>Contribuable / Propriétaire exploitant *</label>
+            <select name="contribuable_id" required style="height:44px">
+              <option value="">— Sélectionner un contribuable —</option>
+              {% for c in contribuables %}
+              <option value="{{ c.id }}">{{ c.cin or c.numero }} — {{ c.nom }} {{ c.prenom or c.raison_sociale or '' }}</option>
+              {% endfor %}
             </select>
           </div>
-          <div class="form-group"><label>Adresse</label><input name="adresse"></div>
-          <div class="form-group"><label>Superficie (m²)</label><input type="number" name="superficie" step="0.1"></div>
-          <div class="form-group"><label>N° Autorisation</label><input name="numero_autorisation"></div>
-          <div class="form-group"><label>Date Autorisation</label><input type="date" name="date_autorisation"></div>
         </div>
+
+        <div class="modal-section-title">🏪 2. Caractéristiques & Localisation</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Nom de l'Établissement *</label>
+            <input name="nom_etablissement" required placeholder="Ex: Café Central, Restaurant Al Bahia...">
+          </div>
+          <div class="form-group">
+            <label>Type d'Établissement (Tarif)</label>
+            <select name="type_etablissement">
+              {% for t in tarifs %}
+              <option value="{{ t.code_tarif }}">{{ t.libelle }} ({{ t.valeur }}%)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Superficie (m²)</label>
+            <input type="number" name="superficie" step="0.1" placeholder="Ex: 85.0">
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label>Adresse complète de l'établissement</label>
+          <input name="adresse" placeholder="Ex: Angle Bd Mohamed V et Rue Ibn Battouta">
+        </div>
+
+        <div class="modal-section-title">📜 3. Autorisation Administrative</div>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>N° Décision d'Autorisation</label>
+            <input name="numero_autorisation" placeholder="Ex: AUT-2026-089">
+          </div>
+          <div class="form-group">
+            <label>Date de l'Autorisation</label>
+            <input type="date" name="date_autorisation">
+          </div>
+        </div>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline" onclick="closeModal('addEtab')">Annuler</button>
-          <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+          <button type="button" class="btn btn-outline" onclick="closeModal('addEtab')">✕ Annuler</button>
+          <button type="submit" class="btn btn-primary">💾 Enregistrer l'Établissement</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+function filterTdbTable() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const st = (document.getElementById('filterStatut').value || '').toLowerCase();
+  const ty = (document.getElementById('filterType').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#tdbTable tbody .tdb-row');
+  let visible = 0;
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    const rowSt = (r.getAttribute('data-statut') || '').toLowerCase();
+    const rowTy = (r.getAttribute('data-type') || '').toLowerCase();
+    const matchQ = !q || text.includes(q);
+    const matchSt = !st || rowSt === st;
+    const matchTy = !ty || rowTy === ty;
+    const match = matchQ && matchSt && matchTy;
+    r.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('filterCount').textContent = (q || st || ty) ? visible + ' résultat(s)' : '';
+  const visEl = document.getElementById('visibleCount');
+  if (visEl) visEl.textContent = visible;
+}
+
+function resetTdbFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterStatut').value = '';
+  document.getElementById('filterType').value = '';
+  filterTdbTable();
+}
+</script>
 {% endblock %}
+

@@ -1,232 +1,485 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connexion — JIBAYAT | Gestion Fiscale Communale</title>
+<title>Connexion — JIBAYAT | Système Fiscal Communal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Changa:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Changa:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/app.ico') }}">
+
 <style>
 :root {
-  --ink-950: #070d18;
-  --ink-900: #0e1626;
-  --ink-800: #152238;
-  --card-bg: rgba(255, 255, 255, 0.96);
+  --navy-950: #040812;
+  --navy-900: #091220;
+  --navy-850: #0f1c32;
+  --navy-800: #152642;
+  --navy-700: #1c3254;
 
-  --accent: #f6a21e;
-  --accent-light: #ffbe58;
-  --accent-dark: #d97706;
-  --accent-ink: #1f1402;
+  --gold-500: #f59e0b;
+  --gold-400: #fbbf24;
+  --gold-300: #fcd34d;
+  --gold-600: #d97706;
+  --gold-glow: rgba(245, 158, 11, 0.28);
 
-  --green: #0f9d6a;
-  --red: #e14b4b;
-  --red-soft: #fdeaea;
+  --emerald: #10b981;
+  
+  --card-surface: rgba(255, 255, 255, 0.97);
+  --text-dark: #0f172a;
+  --text-muted: #64748b;
+  --danger: #ef4444;
 
-  --font-body: 'Cairo', 'Inter', system-ui, sans-serif;
-  --font-display: 'Changa', 'Cairo', system-ui, sans-serif;
+  --font-main: 'Plus Jakarta Sans', 'Cairo', system-ui, sans-serif;
+  --font-ar: 'Cairo', system-ui, sans-serif;
+  --font-title: 'Changa', 'Cairo', system-ui, sans-serif;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
-  font-family: var(--font-body);
-  background: var(--ink-950);
+  font-family: var(--font-main);
+  background-color: var(--navy-950);
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(28, 50, 84, 0.85) 0%, transparent 60%),
+    radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.08) 0%, transparent 45%),
+    linear-gradient(180deg, var(--navy-950) 0%, var(--navy-900) 50%, var(--navy-950) 100%);
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  color: #fff;
+  padding: 24px 20px;
+  color: #ffffff;
   position: relative;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
-/* Background animated gradient mesh & light orbs */
-.bg-glow {
-  position: absolute;
+/* ════════════════════════════════════════════════════════════
+   BACKGROUND LOGO (À GAUCHE, FIXE, GRAND & OPACITÉ 10%)
+   ════════════════════════════════════════════════════════════ */
+.bg-fixed-watermark {
+  position: fixed;
+  top: 50%;
+  left: 25%;
+  transform: translate(-50%, -50%);
+  width: 780px;
+  height: 780px;
+  max-width: 55vw;
+  max-height: 85vh;
+  background: url("{{ url_for('static', filename=commune_logo) }}") no-repeat center center;
+  background-size: contain;
+  opacity: 0.10;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 0 35px rgba(245, 158, 11, 0.35));
+}
+
+/* Ambient Subtle Grid & Glow Halos */
+.bg-grid-overlay {
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  background: 
-    radial-gradient(circle at 50% 0%, rgba(246, 162, 30, 0.16) 0%, transparent 65%),
-    radial-gradient(circle at 10% 80%, rgba(21, 34, 56, 0.8) 0%, transparent 50%),
-    radial-gradient(circle at 90% 90%, rgba(246, 162, 30, 0.08) 0%, transparent 45%);
+  z-index: 0;
+  background-size: 45px 45px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  mask-image: radial-gradient(circle at 40% 50%, black 40%, transparent 85%);
+  -webkit-mask-image: radial-gradient(circle at 40% 50%, black 40%, transparent 85%);
 }
 
-.orb {
-  position: absolute;
+.luminous-halo {
+  position: fixed;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(100px);
   pointer-events: none;
   z-index: 0;
 }
-.orb-1 {
-  width: 420px; height: 420px;
-  background: rgba(246, 162, 30, 0.12);
-  top: -120px; left: -100px;
-  animation: floatOrb 18s ease-in-out infinite alternate;
+.halo-left {
+  width: 580px;
+  height: 580px;
+  background: rgba(245, 158, 11, 0.14);
+  top: 15%;
+  left: 5%;
 }
-.orb-2 {
-  width: 500px; height: 500px;
-  background: rgba(30, 58, 95, 0.35);
-  bottom: -160px; right: -120px;
-  animation: floatOrb 22s ease-in-out infinite alternate-reverse;
-}
-@keyframes floatOrb {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(60px, 40px) scale(1.1); }
+.halo-right {
+  width: 500px;
+  height: 500px;
+  background: rgba(30, 58, 95, 0.45);
+  bottom: 10%;
+  right: 5%;
 }
 
-/* Outer layout container */
-.login-container {
-  width: 100%;
-  max-width: 440px;
+/* ════════════════════════════════════════════════════════════
+   MAIN PAGE TWO-COLUMN LAYOUT (DESKTOP SPLIT)
+   ════════════════════════════════════════════════════════════ */
+.login-page-container {
   position: relative;
   z-index: 10;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 48px;
 }
 
-/* Official Kingdom Emblem Header */
-.official-header {
-  text-align: center;
-  margin-bottom: 24px;
-  animation: fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+/* ── LEFT SIDE: Institutional Presentation ── */
+.institutional-hero-side {
+  padding-left: 20px;
+  animation: fadeInLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.official-header .royaume-title {
+
+.hero-kingdom-emblem {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  border-radius: 99px;
+  padding: 8px 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.hero-kingdom-emblem .flag {
+  font-size: 1.3rem;
+}
+.hero-kingdom-emblem .text-fr {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #f8fafc;
+}
+.hero-kingdom-emblem .text-ar {
+  font-family: var(--font-ar);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--gold-400);
+}
+
+.hero-title-main {
+  font-family: var(--font-title);
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 1px;
+  color: #ffffff;
+  margin-bottom: 12px;
+  text-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+}
+.hero-title-main span.brand-name {
+  background: linear-gradient(135deg, var(--gold-400) 0%, #ffffff 50%, var(--gold-500) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-version-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 800;
+  vertical-align: middle;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+  color: var(--gold-300);
+  padding: 4px 14px;
+  border-radius: 99px;
+  letter-spacing: 0.6px;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+  margin-top: 6px;
+  width: fit-content;
+}
+.hero-version-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold-400);
+  box-shadow: 0 0 8px var(--gold-400);
+}
+.card-brand-version {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-main);
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-  margin-bottom: 2px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.4px;
+  vertical-align: middle;
 }
-.official-header .ministere-title {
-  font-size: 0.8rem;
+
+.hero-subtitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.hero-ar-desc {
+  font-family: var(--font-ar);
+  font-size: 1.05rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--gold-400);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.hero-commune-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.35);
+  border-radius: 18px;
+  padding: 12px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.hero-commune-badge .hcb-icon {
+  font-size: 1.4rem;
+}
+.hero-commune-badge .hcb-info {
+  display: flex;
+  flex-direction: column;
+}
+.hero-commune-badge .hcb-name {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
   letter-spacing: 1px;
 }
-
-/* Main Card */
-.login-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 26px;
-  padding: 40px 36px 36px;
-  box-shadow: 
-    0 0 0 1px rgba(255, 255, 255, 0.15),
-    0 0 60px rgba(246, 162, 30, 0.12),
-    0 30px 80px rgba(0, 0, 0, 0.65);
-  animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  color: #1b2437;
+.hero-commune-badge .hcb-ar {
+  font-family: var(--font-ar);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--gold-400);
 }
 
-@keyframes popIn {
-  from { opacity: 0; transform: translateY(24px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.hero-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 32px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  flex-wrap: wrap;
 }
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-16px); }
-  to { opacity: 1; transform: translateY(0); }
+.hero-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+.hero-feature-item svg {
+  color: var(--gold-400);
 }
 
-/* Logo & Brand */
-.brand-wrap {
+/* ── RIGHT SIDE: Login Card Wrapper ── */
+.login-card-side {
+  width: 100%;
+  max-width: 440px;
+  margin-left: auto;
+  animation: fadeInRight 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Official Ministry Mini Banner on Card Side */
+.card-official-banner {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 16px;
 }
-.logo-halo {
-  width: 82px;
-  height: 82px;
-  margin: 0 auto 16px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #152238 0%, #0e1626 100%);
-  padding: 3px;
-  box-shadow: 0 12px 30px rgba(14, 22, 38, 0.35);
+.card-official-banner .cob-kingdom {
+  font-family: var(--font-ar);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.card-official-banner .cob-ministry {
+  font-family: var(--font-ar);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--gold-400);
+}
+
+/* Login Card */
+.auth-card {
+  background: var(--card-surface);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border-radius: 28px;
+  padding: 36px 34px 30px;
+  color: var(--text-dark);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 0 50px rgba(245, 158, 11, 0.15),
+    0 25px 75px rgba(0, 0, 0, 0.65);
   position: relative;
 }
-.logo-halo::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, var(--accent), transparent);
-  z-index: -1;
-  opacity: 0.6;
+
+/* Brand Showcase & High-Definition Metallic Glass Logo */
+.brand-showcase {
+  text-align: center;
+  margin-bottom: 24px;
+  position: relative;
 }
-.logo-inner {
+
+/* Pedestal Fixe & Agrandie avec Reflet Métallique / Verre de Glace */
+.logo-pedestal {
+  position: relative;
+  width: 114px;
+  height: 114px;
+  margin: 0 auto 16px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(226, 232, 240, 0.9));
+  padding: 3px;
+  box-shadow: 
+    0 14px 35px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(245, 158, 11, 0.25),
+    0 0 25px rgba(245, 158, 11, 0.16);
+}
+
+.logo-pedestal-inner {
+  position: relative;
   width: 100%;
   height: 100%;
+  border-radius: 27px;
   background: #ffffff;
-  border-radius: 21px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px;
   overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
 }
-.logo-inner img {
-  width: 54px;
-  height: 54px;
+
+.logo-pedestal-inner img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+  position: relative;
+  z-index: 2;
 }
 
-.brand-wrap h1 {
-  font-family: var(--font-display);
-  font-size: 2.1rem;
+/* Reflet Verre de Glace (Glass Specular Overlay) */
+.glass-reflection-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 27px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    transparent 55%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Balayage de Lumière Métallique sur Verre (Metallic Light Sweep) */
+.glass-light-sheen {
+  position: absolute;
+  top: -60%;
+  left: -140%;
+  width: 65%;
+  height: 220%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 1.0) 52%,
+    rgba(255, 255, 255, 0.25) 65%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  z-index: 5;
+  pointer-events: none;
+  animation: metallicLightSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  mix-blend-mode: overlay;
+}
+
+@keyframes metallicLightSweep {
+  0% { left: -140%; opacity: 0; }
+  12% { opacity: 0.95; }
+  35% { left: 160%; opacity: 1; }
+  36% { opacity: 0; }
+  100% { left: 160%; opacity: 0; }
+}
+
+.brand-title {
+  font-family: var(--font-title);
+  font-size: 2.15rem;
   font-weight: 800;
-  letter-spacing: 1px;
-  color: #0e1626;
+  letter-spacing: 1.5px;
+  color: var(--navy-900);
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
-.brand-wrap p.desc {
-  font-size: 0.84rem;
-  color: #64748b;
-  font-weight: 600;
+.brand-subtitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
-/* Alert error */
-.alert-error {
-  background: var(--red-soft);
-  color: var(--red);
-  padding: 13px 16px;
+/* Alert Message */
+.auth-alert {
+  background: #fef2f2;
+  border-left: 4px solid var(--danger);
+  color: #991b1b;
   border-radius: 12px;
+  padding: 12px 16px;
   font-size: 0.85rem;
   font-weight: 700;
-  margin-bottom: 24px;
-  border-left: 4px solid var(--red);
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 20px;
   animation: shake 0.4s ease-in-out;
 }
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
-}
 
-/* Form controls */
-.form-group {
-  margin-bottom: 20px;
+/* Form Styles */
+.form-field {
+  margin-bottom: 18px;
 }
-.form-group label {
+.form-field label {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
   color: #334155;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  letter-spacing: 0.6px;
+  margin-bottom: 7px;
 }
-
-.input-box {
+.input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
-.input-icon {
+.field-icon {
   position: absolute;
   left: 14px;
   width: 20px;
@@ -235,11 +488,11 @@ body {
   pointer-events: none;
   transition: color 0.2s;
 }
-.input-box input {
+.input-control {
   width: 100%;
   padding: 13px 16px 13px 44px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 12px;
+  border: 1.8px solid #cbd5e1;
+  border-radius: 14px;
   background: #f8fafc;
   color: #0f172a;
   font-size: 0.95rem;
@@ -247,25 +500,21 @@ body {
   font-weight: 600;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.input-box input::placeholder {
-  color: #94a3b8;
-  font-weight: 400;
-}
-.input-box input:focus {
+.input-control:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gold-500);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(246, 162, 30, 0.18);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
 }
-.form-group:focus-within label {
-  color: var(--accent-dark);
+.form-field:focus-within label {
+  color: var(--gold-600);
 }
-.form-group:focus-within .input-icon {
-  color: var(--accent-dark);
+.form-field:focus-within .field-icon {
+  color: var(--gold-600);
 }
 
-/* Toggle password button */
-.btn-toggle-pwd {
+/* Toggle Password Visibility */
+.pwd-toggle-btn {
   position: absolute;
   right: 12px;
   background: none;
@@ -273,25 +522,38 @@ body {
   color: #94a3b8;
   cursor: pointer;
   padding: 6px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: all 0.15s;
 }
-.btn-toggle-pwd:hover {
-  color: #334155;
+.pwd-toggle-btn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
 }
 
-/* Options row */
-.form-options {
+/* Capslock Warning Banner */
+.caps-warning {
+  display: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fffbeb;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+/* Auxiliary Options */
+.auth-aux-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   font-size: 0.82rem;
 }
-.remember-me {
+.remember-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -300,194 +562,392 @@ body {
   color: #475569;
   user-select: none;
 }
-.remember-me input[type="checkbox"] {
+.remember-toggle input {
   width: 17px;
   height: 17px;
-  accent-color: var(--accent-dark);
+  accent-color: var(--gold-600);
   cursor: pointer;
 }
-.sec-badge {
+.ssl-indicator {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--green);
-  font-weight: 700;
-  font-size: 0.76rem;
+  color: var(--emerald);
+  font-weight: 800;
+  font-size: 0.75rem;
 }
 
-/* Submit button */
-.btn-submit {
+/* Login Submit Button */
+.btn-login-submit {
   width: 100%;
   padding: 15px;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-  color: var(--accent-ink);
-  font-family: var(--font-display);
+  background: linear-gradient(135deg, var(--gold-500) 0%, var(--gold-600) 100%);
+  color: #ffffff;
+  font-family: var(--font-title);
   font-size: 1.05rem;
   font-weight: 800;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(246, 162, 30, 0.35);
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.38);
+  transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
-.btn-submit::after {
+.btn-login-submit::before {
   content: '';
   position: absolute;
   top: 0; left: -100%; width: 60%; height: 100%;
   background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transform: skewX(-20deg);
-  transition: none;
+  transform: skewX(-25deg);
 }
-.btn-submit:hover {
+.btn-login-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(246, 162, 30, 0.45);
+  box-shadow: 0 14px 32px rgba(245, 158, 11, 0.48);
 }
-.btn-submit:hover::after {
-  animation: shine 0.75s ease-in-out;
+.btn-login-submit:hover::before {
+  animation: shineSweep 0.8s ease-in-out;
 }
-@keyframes shine {
-  100% { left: 180%; }
-}
-.btn-submit:active {
+.btn-login-submit:active {
   transform: translateY(0);
 }
 
-/* Footer & Security Chips */
-.login-footer {
-  margin-top: 32px;
+@keyframes shineSweep {
+  100% { left: 180%; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   FOOTER COMMUNE EMBLEM & SECURITY BADGES
+   ════════════════════════════════════════════════════════════ */
+.auth-footer {
+  margin-top: 22px;
   text-align: center;
 }
-.commune-name-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.08);
+
+.commune-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
   border-radius: 99px;
-  padding: 8px 20px;
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 1px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  margin-bottom: 16px;
+  padding: 7px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
-.chips-row {
+.commune-ribbon .cr-icon {
+  font-size: 1.05rem;
+}
+.commune-ribbon .cr-name {
+  font-family: var(--font-title);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--gold-400);
+  letter-spacing: 1px;
+}
+.commune-ribbon .cr-ar {
+  font-family: var(--font-ar);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.compliance-chips {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.5);
+  gap: 12px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
   flex-wrap: wrap;
 }
-.chip {
-  display: flex;
+.compliance-chip {
+  display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+.compliance-chip svg {
+  color: var(--gold-400);
+}
+
+/* Animations */
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT BREAKPOINTS
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .login-page-container {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 480px;
+  }
+  .institutional-hero-side {
+    display: none;
+  }
+  .login-card-side {
+    margin: 0 auto;
+    max-width: 460px;
+  }
+  .bg-fixed-watermark {
+    left: 50%;
+    width: 650px;
+    height: 650px;
+    max-width: 85vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 28px 20px 24px;
+    border-radius: 24px;
+  }
+  .bg-fixed-watermark {
+    width: 360px;
+    height: 360px;
+  }
 }
 </style>
 </head>
 <body>
 
-<div class="bg-glow"></div>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
+<!-- ═══ GRAND LOGO EN ARRIÈRE-PLAN (À GAUCHE, FIXE & OPACITÉ 10%) ═══ -->
+<div class="bg-fixed-watermark" aria-hidden="true"></div>
+<div class="bg-grid-overlay"></div>
+<div class="luminous-halo halo-left"></div>
+<div class="luminous-halo halo-right"></div>
 
-<div class="login-container">
+<!-- ═══ CONTENEUR PRINCIPAL (GAUCHE / DROITE) ═══ -->
+<div class="login-page-container">
 
-  <!-- En-tête Officiel -->
-  <div class="official-header">
-    <div class="royaume-title">Royaume du Maroc — المملكة المغربية</div>
-    <div class="ministere-title">Ministère de l'Intérieur — وزارة الداخلية</div>
-  </div>
+  <!-- ── CÔTÉ GAUCHE : PRÉSENTATION INSTITUTIONNELLE ── -->
+  <div class="institutional-hero-side">
+    <div class="hero-kingdom-emblem">
+      <span class="text-fr">Royaume du Maroc</span>
+      <span style="opacity:0.4;">•</span>
+      <span class="text-ar">المملكة المغربية</span>
+    </div>
 
-  <!-- Carte de Connexion -->
-  <div class="login-card">
+    <h1 class="hero-title-main">
+      <span>Système Fiscal</span>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span class="brand-name">JIBAYAT</span>
+        <span class="hero-version-tag"><span class="hero-version-dot"></span>v{{ app_version if app_version else '1.5.2' }}</span>
+      </div>
+    </h1>
     
-    <div class="brand-wrap">
-      <div class="logo-halo">
-        <div class="logo-inner">
-          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Commune">
-        </div>
-      </div>
-      <h1>JIBAYAT</h1>
-      <p class="desc">Gestion Fiscale &amp; Recettes Communales</p>
+    <p class="hero-subtitle">
+      Plateforme Intégrée de Gestion &amp; Recouvrement des Recettes Communales
+    </p>
+    
+    <p class="hero-ar-desc">
+      المنظومة الرقمية المندمجة لتدبير الجبايات والرسوم الجماعية
+    </p>
+
+
+    <div class="hero-badges-row">
+      <span class="hero-feature-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        Sécurité Renforcée SSL
+      </span>
+      <span>•</span>
+      <span class="hero-feature-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Conformité Loi 47-06
+      </span>
+      <span>•</span>
+      <span class="hero-feature-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        Édition Pro
+      </span>
     </div>
-
-    {% if error %}
-    <div class="alert-error">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-      <span>{{ error }}</span>
-    </div>
-    {% endif %}
-
-    <form method="POST">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-      
-      <div class="form-group">
-        <label for="email">Identifiant / Email</label>
-        <div class="input-box">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <input type="email" id="email" name="email" required autofocus placeholder="admin@commune.ma" value="admin@commune.ma">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="password">Mot de passe</label>
-        <div class="input-box">
-          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-          <input type="password" id="password" name="password" required placeholder="••••••••">
-          <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility()" title="Afficher/Masquer le mot de passe">
-            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="form-options">
-        <label class="remember-me">
-          <input type="checkbox" name="remember" checked>
-          <span>Se souvenir de moi</span>
-        </label>
-        <div class="sec-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-          <span>Session SSL</span>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit">Accéder à l'Espace Sécurisé ➔</button>
-    </form>
   </div>
 
-  <!-- Pied de page officiel -->
-  <div class="login-footer">
-    <div class="commune-name-badge">
-      🏛️ {{ commune_nom if commune_nom else 'COMMUNE URBAINE' }}
+  <!-- ── CÔTÉ DROIT : CARTE DE CONNEXION ── -->
+  <div class="login-card-side">
+
+    <!-- Bannière Officielle -->
+    <div class="card-official-banner">
+      <div class="cob-kingdom">المملكة المغربية — Royaume du Maroc</div>
+      <div class="cob-ministry">وزارة الداخلية — Ministère de l'Intérieur</div>
     </div>
 
-    <div class="chips-row">
-      <span class="chip">🔒 Chiffrement 256-Bit</span>
-      <span>•</span>
-      <span class="chip">📜 Loi 47-06</span>
-      <span>•</span>
-      <span class="chip">⚡ JIBAYAT v2.5</span>
+    <!-- Carte Glassmorphism -->
+    <div class="auth-card">
+      
+      <!-- En-tête Marque & Logo en Clair avec Reflet Verre Métallique -->
+      <div class="brand-showcase">
+        <div class="logo-pedestal">
+          <div class="logo-pedestal-inner">
+            <img src="{{ url_for('static', filename=commune_logo) }}" 
+                 alt="Logo Commune {{ commune_nom }}" 
+                 id="main-commune-logo"
+                 data-fallback="{{ url_for('static', filename='img/app.ico') }}"
+                 onerror="this.onerror=null; this.src=this.dataset.fallback;">
+            <div class="glass-reflection-overlay"></div>
+            <div class="glass-light-sheen"></div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:4px;">
+          <h2 class="brand-title" style="margin-bottom:0;">JIBAYAT</h2>
+          <span class="card-brand-version">v{{ app_version if app_version else '1.5.2' }}</span>
+        </div>
+        <p class="brand-subtitle">Espace Sécurisé d'Authentification</p>
+      </div>
+
+      <!-- Message d'erreur éventuel -->
+      {% if error %}
+      <div class="auth-alert" role="alert">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Formulaire de Connexion -->
+      <form method="POST" autocomplete="on" id="loginForm">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        
+        <!-- Identifiant / Nom d'utilisateur -->
+        <div class="form-field">
+          <label for="username">Nom d'utilisateur / Identifiant</label>
+          <div class="input-wrapper">
+            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <input type="text" 
+                   id="username" 
+                   name="username" 
+                   class="input-control" 
+                   required 
+                   autofocus 
+                   autocomplete="username"
+                   placeholder="ex: admin" 
+                   value="admin">
+          </div>
+        </div>
+
+        <!-- Mot de passe -->
+        <div class="form-field">
+          <label for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <input type="password" 
+                   id="password" 
+                   name="password" 
+                   class="input-control" 
+                   required 
+                   autocomplete="current-password"
+                   placeholder="••••••••">
+            <button type="button" 
+                    class="pwd-toggle-btn" 
+                    id="btnTogglePwd"
+                    onclick="togglePasswordVisibility()" 
+                    title="Afficher / Masquer le mot de passe"
+                    aria-label="Afficher le mot de passe">
+              <svg id="eye-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+          <div id="capsWarning" class="caps-warning">⚠️ Touche Verr.Maj activée</div>
+        </div>
+
+        <!-- Options : Se souvenir & SSL -->
+        <div class="auth-aux-row">
+          <label class="remember-toggle">
+            <input type="checkbox" name="remember" checked>
+            <span>Mémoriser la session</span>
+          </label>
+          <div class="ssl-indicator" title="Connexion sécurisée chiffrée de bout en bout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>SSL 256-Bit</span>
+          </div>
+        </div>
+
+        <!-- Bouton de Soumission -->
+        <button type="submit" class="btn-login-submit" id="submitBtn">
+          <span>Se connecter à l'Espace Sécurisé</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+      </form>
     </div>
+
+    <!-- Pied de page officiel sur le côté droit -->
+    <div class="auth-footer">
+      <div class="commune-ribbon">
+        <span class="cr-icon">🏛️</span>
+        <span class="cr-name">{{ commune_nom }}</span>
+        {% if commune_nom_ar %}
+        <span style="opacity:0.4;">|</span>
+        <span class="cr-ar">{{ commune_nom_ar }}</span>
+        {% endif %}
+      </div>
+
+      <div class="compliance-chips">
+        <span class="compliance-chip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Session Chiffrée
+        </span>
+        <span>•</span>
+        <span class="compliance-chip">📜 Loi 47-06</span>
+        <span>•</span>
+        <span class="compliance-chip">⚡ JIBAYAT</span>
+      </div>
+    </div>
+
   </div>
 
 </div>
 
+<!-- ═══ INTERACTIONS JAVASCRIPT ═══ -->
 <script>
 function togglePasswordVisibility() {
-  const pwdInput = document.getElementById('password');
+  const pwd = document.getElementById('password');
   const eyeIcon = document.getElementById('eye-icon');
-  if (pwdInput.type === 'password') {
-    pwdInput.type = 'text';
+  if (pwd.type === 'password') {
+    pwd.type = 'text';
     eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
   } else {
-    pwdInput.type = 'password';
+    pwd.type = 'password';
     eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
   }
+}
+
+// CapsLock Detector
+const pwdInput = document.getElementById('password');
+const capsWarning = document.getElementById('capsWarning');
+if (pwdInput && capsWarning) {
+  pwdInput.addEventListener('keyup', function(e) {
+    if (e.getModifierState && e.getModifierState('CapsLock')) {
+      capsWarning.style.display = 'block';
+    } else {
+      capsWarning.style.display = 'none';
+    }
+  });
+}
+
+// Feedback visuel au clic de connexion
+const loginForm = document.getElementById('loginForm');
+const submitBtn = document.getElementById('submitBtn');
+if (loginForm && submitBtn) {
+  loginForm.addEventListener('submit', function() {
+    submitBtn.style.opacity = '0.85';
+    submitBtn.innerHTML = '<span>Connexion en cours...</span><span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span>';
+  });
 }
 </script>
 
